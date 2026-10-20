@@ -1,0 +1,65 @@
+Screen {
+    layout: vertical;
+}
+
+#body {
+    height: 1fr;
+}
+
+#sidebar {
+    width: 42;
+    padding: 0 1;
+    background: $panel;
+    border-right: tall $primary-darken-2;
+}
+
+#sidebar .section {
+    margin-top: 1;
+    text-style: bold;
+    color: $accent;
+}
+
+#sidebar Select {
+    width: 100%;
+}
+
+#skills {
+    height: auto;
+    max-height: 12;
+    border: round $primary-darken-1;
+}
+
+#agents {
+    height: 1fr;
+    min-height: 8;
+    border: round $primary-darken-1;
+    background: $surface;
+}
+
+#main {
+    width: 1fr;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+RichLog {
+    background: $surface;
+    padding: 0 1;
+    scrollbar-gutter: stable;
+}
+
+#launchbar {
+    height: auto;
+    padding: 0 1;
+    background: $panel;
+}
+
+#prompt {
+    width: 1fr;
+}
+
+#launchbar Button {
+    margin-left: 1;
+}

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openswarm"
+version = "0.4.0"
+description = "Multi-agent TUI orchestrator for the opencode CLI (parallel Storm mode, sequential Cowork mode, git-worktree isolation)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "textual>=0.80",
+    "pydantic>=2.5",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+openswarm = "openswarm.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+openswarm = ["styles.tcss", "web_ui.html", "openswarm.svg"]

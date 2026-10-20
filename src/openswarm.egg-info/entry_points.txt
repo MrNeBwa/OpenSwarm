@@ -1,0 +1,2 @@
+[console_scripts]
+openswarm = openswarm.main:main

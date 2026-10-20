@@ -1,0 +1,63 @@
+# OpenSwarm configuration (auto-generated on first run at ~/.config/openswarm/swarm_config.yaml;
+# a ./swarm_config.yaml in the working directory takes precedence).
+# Skills, presets, prompts and the built-in workflows are generated into your file; edit or add entries by `id`.
+# Missing built-ins are re-added automatically after an upgrade.
+
+default_mode: chat          # chat | auto | storm | best | cowork | research | write | review | wf:<workflow id>
+max_parallel: 8             # agents at once; 0 = no limit (everything simultaneously)
+max_review_rounds: 3
+verify_command: ""          # e.g. "pytest -q": run in each worktree before merging; failures go back to the coder
+fix_attempts: 2             # ... this many times
+best_of_n: 3                # candidates in Best-of-N mode
+max_agents_per_run: 40      # budget guards
+run_timeout_minutes: 60
+cleanup_on_success: true
+
+models:                     # `openswarm doctor --live` / `--list-models` show what your opencode really offers
+  - {id: opencode/deepseek-r1-free,      label: DeepSeek R1,      free: true, builtin: true}
+  - {id: opencode/gemini-2.5-flash-free, label: Gemini 2.5 Flash, free: true, builtin: true}
+  - {id: opencode/qwen-2.5-coder-free,   label: Qwen 2.5 Coder,   free: true, builtin: true}
+  - {id: anthropic/claude-sonnet-4-5,    label: Claude Sonnet 4.5}
+  - {id: openai/gpt-5,                   label: GPT-5}
+  - {id: "ollama/qwen2.5-coder:7b",      label: "Ollama: qwen2.5-coder 7B (local)"}
+
+roles:
+  planner: opencode/deepseek-r1-free
+  architect: opencode/deepseek-r1-free
+  coder: opencode/qwen-2.5-coder-free
+  reviewer: opencode/gemini-2.5-flash-free
+
+security:
+  sandbox: "off"            # bwrap = bubblewrap: system read-only, only the project writable, ~/.ssh etc. hidden
+  sandbox_hide: [.ssh, .gnupg, .aws, .config/gcloud, .netrc, .kube]
+  sandbox_network: true
+  allowed_roots: []         # e.g. ["~/projects", "~/Documents"]; empty = any directory
+  audit: true               # ~/.local/state/openswarm/audit.log
+  snapshots: true           # tar snapshot before in-place runs outside git -> "Undo this run"
+  snapshot_limit_mb: 200
+  permission_default: reject   # answer when nobody responds to a permission prompt in time
+
+opencode:
+  binary: opencode
+  use_server: true          # warm `opencode serve` per directory (password-protected, localhost only)
+  use_api: true             # chat through the HTTP API: permission prompts, tool cards, token/cost
+  retries: 2                # rate-limit / overload retries with exponential backoff
+  role_agents: {}           # optional: {planner: plan}
+  link_mode: symlink
+  timeout_seconds: 1800
+
+# --- your own pipelines: placeholders {request}, {<earlier step id>}, {item} (foreach) -------------------
+workflows:
+  - id: translate_check
+    label: Translate + back-check
+    description: Translate, then verify by translating back
+    steps:
+      - {id: translated, role: coder,   prompt: "Translate to English, keep formatting:\n{request}"}
+      - {id: back,       role: planner, prompt: "Translate this back to the source language:\n{translated}"}
+      - {id: report,     role: planner, result: true, prompt: "Compare ORIGINAL and BACK-TRANSLATION and list meaning drift. Then give the final English text.\nORIGINAL:\n{request}\nBACK:\n{back}\nENGLISH:\n{translated}"}
+
+# --- run while `openswarm web` is open ----------------------------------------------------------------
+schedules: []
+#  - {id: morning-news, every: "daily 08:30", workdir: "~/notes", preset: researcher, prompt: "Summarise today's news about Arch Linux"}
+triggers: []
+#  - {id: inbox, watch: "~/Inbox", glob: "*.docx", preset: office, prompt: "Summarise @{file} into a 5-line brief"}
