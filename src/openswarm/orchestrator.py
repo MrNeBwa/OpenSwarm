@@ -114,22 +114,63 @@ def slugify(text: str, fallback: str) -> str:
     return s or fallback
 
 
+def _escape_raw_controls(text: str) -> str:
+    """Escape literal control characters inside JSON strings.
+
+    LLMs frequently emit multi-line prompt strings with real newlines instead of ``\\n``; Python's
+    json module rejects that. Escaping only characters inside quotes keeps the rest of the document
+    (including pretty-printed whitespace) untouched.
+    """
+    out: list[str] = []
+    in_string = False
+    escaped = False
+    for ch in text:
+        if in_string:
+            if escaped:
+                out.append(ch)
+                escaped = False
+            elif ch == "\\":
+                out.append(ch)
+                escaped = True
+            elif ch == '"':
+                out.append(ch)
+                in_string = False
+            elif ch == "\n":
+                out.append("\\n")
+            elif ch == "\r":
+                out.append("\\r")
+            elif ch == "\t":
+                out.append("\\t")
+            elif ord(ch) < 0x20:
+                out.append(f"\\u{ord(ch):04x}")
+            else:
+                out.append(ch)
+        else:
+            out.append(ch)
+            if ch == '"':
+                in_string = True
+    return "".join(out)
+
+
 def extract_subtasks(text: str) -> list[Subtask]:
     """Find the first JSON array (or {"subtasks": [...]}) of task objects in noisy LLM output."""
     text = strip_ansi(text)
     dec = json.JSONDecoder()
     for m in re.finditer(r"[\[{]", text):
-        try:
-            obj, _ = dec.raw_decode(text[m.start():])
-        except ValueError:
-            continue
-        if isinstance(obj, dict):
-            obj = obj.get("subtasks") or obj.get("tasks")
-        if isinstance(obj, list) and obj and all(isinstance(x, dict) and "prompt" in x for x in obj):
+        chunk = text[m.start():]
+        candidates = (chunk, _escape_raw_controls(chunk))
+        for cand in candidates:
             try:
-                return [Subtask.model_validate(x) for x in obj]
-            except ValidationError:
+                obj, _ = dec.raw_decode(cand)
+            except ValueError:
                 continue
+            if isinstance(obj, dict):
+                obj = obj.get("subtasks") or obj.get("tasks")
+            if isinstance(obj, list) and obj and all(isinstance(x, dict) and "prompt" in x for x in obj):
+                try:
+                    return [Subtask.model_validate(x) for x in obj]
+                except ValidationError:
+                    continue
     return []
 
 
@@ -315,6 +356,7 @@ class Orchestrator:
         session_title: str = "",
         prompt_override: str = "",
         model: str = "",
+        extra_env: dict[str, str] | None = None,
     ) -> RunResult:
         self._agent_count += 1
         if self.cfg.max_agents_per_run and self._agent_count > self.cfg.max_agents_per_run:
@@ -341,6 +383,7 @@ class Orchestrator:
                 self.cfg, cwd, agent_id=agent_id, role=role, model=mdl, skills=self.skills,
                 on_line=self._line_cb, continue_session=continue_session, session_id=session_id,
                 title=session_title, agent=oc.role_agents.get(role, ""), files=files, sandbox=sandbox, extra_rw=extra_rw,
+                extra_env=extra_env,
             )
             env = runner.build_env()
             if use_server:
@@ -405,7 +448,8 @@ class Orchestrator:
             await self._log("Best-of-N needs a git repository (candidates run in separate worktrees); using Chat instead.")
             mode = "chat"
         self.sel.mode = mode
-        if mode in ("storm", "cowork", "best") and await self.git.status(untracked=False):
+        needs_worktree = mode in ("storm", "cowork", "best")
+        if needs_worktree and await self.git.status(untracked=False):
             await self._log(
                 "Note: the main repo has uncommitted changes. Worktrees start from HEAD, so workers "
                 "will NOT see them (and merges may be refused). Commit or stash first for best results."
@@ -418,10 +462,12 @@ class Orchestrator:
             await self._log("Attached: " + ", ".join(Path(a).name for a in [*attached, *map(str, self._images)]))
         run_id = self.broker.create_run(mode, prompt)
         await self._log(f"Run {run_id} started in {mode.upper()} mode")
+        await _emit(self.hooks.on_event, "run", "run_started", {"run_id": run_id, "db": str(self.broker.path)})
         summary = RunSummary(run_id, mode)
         audit(self.cfg, "run_start", run=run_id, mode=mode, cwd=str(cwd), sandbox=self._sandbox_on(), prompt=prompt[:200])
         sec = self.cfg.security
-        if sec.snapshots and not self.git.is_git and mode not in READONLY_MODES:
+        writes = mode not in READONLY_MODES
+        if sec.snapshots and not self.git.is_git and writes:
             sid = await asyncio.to_thread(create_snapshot, cwd, run_id, sec.snapshot_limit_mb, sec.snapshot_keep)
             if sid:
                 summary.snapshot = sid
@@ -563,6 +609,26 @@ class Orchestrator:
         await _emit(self.hooks.on_result, sid, text, kind)
         (summary.merged if res.ok else summary.failed).append(kind)
 
+    # --------------------------------------------------------- agent messaging
+    def _comm_block(self, run_id: str, agent_id: str) -> str:
+        peers = [str(r["id"]) for r in self.broker.get_tasks(run_id) if str(r["id"]) != agent_id]
+        return (
+            "\n\n## Agent communication (best effort, never blocks unless you ask)\n"
+            f"You are agent `{agent_id}` in run `{run_id}`. Other agents: "
+            + (", ".join(f"`{p}`" for p in peers) if peers else "none")
+            + ".\n"
+            "Use the shared message bus from your bash tool:\n"
+            "  openswarm msg agents\n"
+            "  openswarm msg ask --to <agent-id> --body \"...\"   # send a question, keep working\n"
+            "  openswarm msg check                              # non-blocking: collect new replies\n"
+            "  openswarm msg reply <message-id> --body \"...\"     # answer a peer\n"
+            "  openswarm msg history --limit 20\n"
+            "Check messages at explicit checkpoints: (1) before committing to an interface or shared "
+            "assumption, (2) after a major step, (3) before you finalize. Do not busy-poll. Use "
+            "`inbox --wait N` (N <= 30) only when the answer is a hard dependency. Never wait more than "
+            "~60 seconds: state an assumption and continue. Do not send secrets."
+        )
+
     # ------------------------------------------------------------------ storm
     async def _plan(self, run_id: str, prompt: str) -> list[Subtask]:
         pid = f"{run_id}-planner"
@@ -615,8 +681,12 @@ class Orchestrator:
         wt = await self.git.create_worktree(t.id)
         self.broker.update_task(t.id, status="running", branch=wt.branch, worktree=str(wt.path))
         context = self.broker.context_block(run_id, topics=("result",))
-        body = t.prompt + (f"\n\n## Results of completed tasks\n{context}" if context else "")
-        res = await self._agent(t.id, t.title, "coder", body, wt.path, hints=t.recommended_skills, final_status=None)
+        comm = self._comm_block(run_id, t.id)
+        body = t.prompt + (f"\n\n## Results of completed tasks\n{context}" if context else "") + comm
+        res = await self._agent(
+            t.id, t.title, "coder", body, wt.path, hints=t.recommended_skills, final_status=None,
+            extra_env={"OPENSWARM_RUN_ID": run_id, "OPENSWARM_BROKER_DB": str(self.broker.path)},
+        )
         if not res.ok:
             self.broker.update_task(t.id, status="failed", result=res.errors[-2000:])
             await self._log(f"{t.title}: opencode exited {res.returncode}; worktree kept at {wt.path}")
@@ -631,8 +701,10 @@ class Orchestrator:
             fix = await self._agent(
                 t.id, t.title, "coder",
                 f"Your change fails the project's verification command (`{self.cfg.verify_command}`).\n\nOutput:\n{vout}\n\n"
-                f"Fix it without breaking the task.\nOriginal task:\n{t.prompt}",
+                f"Fix it without breaking the task.\nOriginal task:\n{t.prompt}"
+                + self._comm_block(run_id, t.id),
                 wt.path, final_status=None,
+                extra_env={"OPENSWARM_RUN_ID": run_id, "OPENSWARM_BROKER_DB": str(self.broker.path)},
             )
             if not fix.ok:
                 break

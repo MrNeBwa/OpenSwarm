@@ -1,4 +1,4 @@
-"""Textual TUI for OpenSwarm: parallel chat tabs + Storm/Cowork swarms."""
+"""Textual TUI for OpenSwarm: parallel chat tabs, Storm/Swarm/Cowork runs and a live message transcript."""
 
 from __future__ import annotations
 
@@ -98,6 +98,8 @@ class SwarmApp(App):
         self._sw_agent_logs: dict[str, RichLog] = {}
         self._sw_agent_nodes: dict[str, tuple[object, str, str]] = {}
         self._sw_first_agent_of_run = True
+        self._sw_msg_run = ""
+        self._sw_msg_after = 0
 
     # ----------------------------------------------------------------- layout
     def _model_options(self, current: str) -> list[tuple[str, str]]:
@@ -129,6 +131,8 @@ class SwarmApp(App):
                 with TabbedContent(id="tabs", initial="pane-swarm"):
                     with TabPane("Swarm", id="pane-swarm"):
                         yield RichLog(id="log-swarm", wrap=True, markup=False, highlight=False, max_lines=5000)
+                    with TabPane("💬 Messages", id="pane-messages"):
+                        yield RichLog(id="log-messages", wrap=True, markup=False, highlight=False, max_lines=5000)
         with Horizontal(id="launchbar"):
             yield Input(placeholder="Message the active chat / describe the swarm task (use @file.docx to attach), then Enter…", id="prompt")
             yield Button("Send", id="launch", variant="primary")
@@ -143,6 +147,7 @@ class SwarmApp(App):
         if self._sw_restored:
             self._swarm_log("Restored your last mode, models and skills.")
         self._sw_ready = True
+        self.set_interval(1.5, self._sw_poll_messages)
         if self.cfg.opencode.discover_models:
             self.run_worker(self._refresh_models(), name="models", exclusive=True)
 
@@ -165,6 +170,11 @@ class SwarmApp(App):
         if self.broker:
             self.broker.close()
         self.git, self.broker, self.repo_dir = git, broker, path
+        self._sw_msg_run, self._sw_msg_after = "", 0
+        try:
+            self.query_one("#log-messages", RichLog).clear()
+        except Exception:
+            pass
         if git.is_git:
             self._swarm_log(f"Workdir: {path} (git repo, branch {await git.current_branch()}) - all modes available")
         else:
@@ -366,6 +376,32 @@ class SwarmApp(App):
     def _swarm_log(self, msg: str) -> None:
         stamp = time.strftime("%H:%M:%S")
         self.query_one("#log-swarm", RichLog).write(Text(f"[{stamp}] {msg}"))
+
+    @staticmethod
+    def _short_agent(agent_id: str, run_id: str) -> str:
+        prefix = run_id + "-"
+        return agent_id[len(prefix):] if run_id and agent_id.startswith(prefix) else agent_id
+
+    def _sw_poll_messages(self) -> None:
+        """Best-effort live transcript of the newest run, without consuming unread messages."""
+        if not self.broker:
+            return
+        try:
+            run = self.broker.latest_run_id()
+            if not run:
+                return
+            log = self.query_one("#log-messages", RichLog)
+            if run != self._sw_msg_run:
+                self._sw_msg_run, self._sw_msg_after = run, 0
+                log.clear()
+                log.write(Text(f"run {run}", style="bold"))
+            for m in self.broker.messages_since(run, self._sw_msg_after):
+                self._sw_msg_after = int(m["id"])
+                sender = self._short_agent(str(m["sender"]), run)
+                recipient = self._short_agent(str(m["recipient"]), run)
+                log.write(Text(f"#{m['id']}  {sender} → {recipient}  [{m['kind']}]\n{str(m['body']).strip()}"))
+        except Exception:  # the poller must never take the UI down
+            return
 
     @staticmethod
     def _label(title: str, role: str, status: str) -> Text:

@@ -1,7 +1,7 @@
 # OpenSwarm
 
 Multi-agent TUI orchestrator around the [`opencode`](https://opencode.ai) CLI. It runs several `opencode`
-instances in isolated git worktrees, in parallel (**Storm**) or as an architect → coder → reviewer loop (**Cowork**).
+agents in isolated git worktrees, in parallel (**Storm**), or loops architect → coder → reviewer (**Cowork**).
 
 ## Install (Arch Linux)
 
@@ -91,10 +91,36 @@ curl -H "X-Token: secret" http://127.0.0.1:8787/api/state                       
 ```
 Schedules and file triggers (`schedules:` / `triggers:` in the config) run while `openswarm web` is open.
 
+## Agent-to-agent messages
+
+Storm agents share the run's SQLite broker, so they can ask each other questions while
+they work. The orchestrator exports `OPENSWARM_RUN_ID`, `OPENSWARM_BROKER_DB` and
+`OPENSWARM_AGENT` into every agent; the bus is a normal `bash` tool:
+
+```bash
+openswarm msg agents                                   # who is in this run
+openswarm msg ask --to <agent-id> --body "Which contract for parse()?"   # send & continue
+openswarm msg check                                    # non-blocking: collect new replies
+openswarm msg reply <message-id> --body "Use a tuple"  # answer a peer
+openswarm msg history --limit 20                       # full transcript
+```
+
+`ask` returns immediately with the message id, so an agent keeps working instead of waiting.
+Agents are told to check the bus at explicit checkpoints — before committing to an interface or
+shared assumption, after a major step, and before finalizing — so replies are picked up without
+busy-polling. `inbox --wait N` still exists, but only for a hard dependency (N ≤ 30 s).
+
+Messages are stored in the existing broker (`.swarm/swarm.db`, WAL). `inbox`/`check` atomically
+claim unread rows so two processes cannot consume the same message; `--peek` and the web UI viewer
+read without claiming. Broadcasts (`--to '*'`) are expanded to the run's participants at send time.
+Both front ends expose the transcript: the TUI has a **💬 Messages** tab (newest run, live), and the
+web UI has a **💬 Messages** drawer that polls the active run and shows who asked what, with
+`reply_to` links. The feature is best-effort on purpose: a silent peer can never stall a run.
+
 ## Verify your setup
 
 ```bash
-openswarm selftest            # 44 offline tests against a bundled fake opencode (~30 s)
+openswarm selftest            # 52 offline tests against a bundled fake opencode (~55 s)
 openswarm --doctor --live     # checks YOUR opencode: run flags, serve, password, HTTP API, sessions, sandbox, helper tools
 ```
 Run `--doctor --live` first: it confirms the assumptions OpenSwarm makes about opencode's CLI/API on your version.
@@ -131,8 +157,8 @@ companion for the Sysadmin preset). Add under `"plugin"` in `opencode.json`; Ope
 | Config | `config.py`, `swarm_config.yaml` | Pydantic schema, auto-generated defaults, live model discovery |
 | Runner | `runner.py` | `asyncio` subprocess wrapper, streams stdout/stderr line by line, kills the process group on cancel/timeout |
 | Git | `git_manager.py` | `git worktree add -b swarm/<id> .swarm/worktrees/<id> HEAD`, injects `.opencode/` etc., commit/diff/merge/cleanup |
-| Broker | `broker.py` | SQLite (`.swarm/swarm.db`): runs, task DAG state, shared notes (spec, results, review feedback) |
-| Orchestrator | `orchestrator.py` | Storm (planner → JSON plan → DAG-scheduled parallel workers → merge) and Cowork |
+| Broker | `broker.py` | SQLite (`.swarm/swarm.db`): runs, task DAG state, shared notes (spec, results, review feedback), agent messages |
+| Orchestrator | `orchestrator.py` | Storm (planner → JSON plan → DAG workers → merge) and Cowork |
 | TUI | `tui.py`, `styles.tcss` | Sidebar (mode, models, skills, agent tree), one live log tab per agent, launch bar |
 
 **Storm:** the planner (read-only) returns a JSON list of subtasks (`id`, `title`, `prompt`, `recommended_skills`,
@@ -150,7 +176,7 @@ worktree. They are added to `.git/info/exclude`, so they are never committed.
 
 ## Things to know
 
-- **Git repos only (Storm/Cowork):** worktrees start from `HEAD`, so uncommitted work is invisible to workers; commit or stash first.
+- **Git repos only (Storm/Cowork/Best of N):** worktrees start from `HEAD`, so uncommitted work is invisible to workers; commit or stash first.
 - **Outside git there is no isolation or undo.** With auto-approve on, an agent can run any command with your user's rights. For system work, consider turning auto-approve off or using a throwaway directory.
 - **Not a 1:1 opencode clone.** OpenSwarm drives `opencode run`, so interactive permission prompts, the session picker and slash commands are not replicated.
 - **Verify the opencode assumptions** (all overridable under `opencode:` in the YAML): the command shape

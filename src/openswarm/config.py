@@ -198,7 +198,6 @@ class Prompts(BaseModel):
         "severity (high/medium/low), file:line, problem, suggested fix."
     )
 
-
 class SecuritySettings(BaseModel):
     sandbox: Literal["off", "bwrap"] = "off"  # bwrap = bubblewrap: read-only system, writable workdir only
     sandbox_hide: list[str] = Field(default_factory=lambda: [".ssh", ".gnupg", ".aws", ".config/gcloud", ".netrc", ".kube"])
