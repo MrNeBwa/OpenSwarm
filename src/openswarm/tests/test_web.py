@@ -112,6 +112,23 @@ class WebTests(Web):
         audit = (await self.call("GET", "/api/audit?n=50"))[1]["lines"]
         self.assertTrue(any(l["event"] == "undo" for l in audit))
 
+    async def test_messages_endpoint_does_not_consume(self):
+        await self.start(); d = self.repo(); sid = await self.session(wd=d)
+        await self.call("POST", f"/api/sessions/{sid}/send", {**self.BODY, "prompt": "hi", "mode": "chat"})
+        started = await self.wait_for(sid, lambda e: e["type"] == "run_started")
+        run = started["run_id"]; self.assertTrue(run)
+        _, broker = await self.app.workspace(d)
+        mid = broker.send_message(run, "a", "b", "hello bus", "question")
+        st, got = await self.call("GET", f"/api/sessions/{sid}/messages?run={run}")
+        self.assertEqual(st, 200)
+        self.assertEqual([m["body"] for m in got["messages"]], ["hello bus"])
+        st, after = await self.call("GET", f"/api/sessions/{sid}/messages?run={run}&after={mid}")
+        self.assertEqual((st, after["messages"]), (200, []))
+        self.assertEqual(len(broker.inbox(run, "b")), 1)  # viewing must not acknowledge
+        # No run id -> falls back to the session's last run_started event.
+        st, auto = await self.call("GET", f"/api/sessions/{sid}/messages")
+        self.assertEqual((st, auto["run_id"]), (200, run))
+
     async def test_agents_md_traversal_and_allowed_roots(self):
         await self.start(); d = self.plain("proj"); sid = await self.session(wd=d)
         self.assertEqual((await self.call("PUT", f"/api/sessions/{sid}/agents-md", {"text": "# rules\nbe nice"}))[0], 200)

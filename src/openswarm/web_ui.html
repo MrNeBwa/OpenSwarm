@@ -58,6 +58,14 @@ pre.code{background:var(--code);padding:10px 12px;border-radius:10px;overflow:au
 #drawer{width:300px;background:var(--panel);border-left:1px solid var(--line);display:none;flex-direction:column;flex:none}
 #drawer.on{display:flex}#drawer header{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
 #files{flex:1;overflow:auto;padding:6px}.f{padding:4px 8px;border-radius:6px;cursor:pointer;display:flex;gap:6px}.f:hover{background:var(--panel2)}.f .s{margin-left:auto;color:var(--dim);font-size:11px}
+#msgdrawer{width:340px;background:var(--panel);border-left:1px solid var(--line);display:none;flex-direction:column;flex:none}
+#msgdrawer.on{display:flex}#msgdrawer header{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+#msglist{flex:1;overflow:auto;padding:6px}.mrow{padding:7px 9px;border-left:3px solid var(--line);border-radius:6px;margin:4px 2px;background:var(--panel2)}
+.mrow.q{border-left-color:var(--warn)}.mrow.a{border-left-color:var(--ok)}.mrow.n{border-left-color:var(--accent)}
+.mrow .meta{display:flex;gap:5px;align-items:center;color:var(--dim);font-size:11px;margin-bottom:3px;flex-wrap:wrap}
+.mrow .meta .who{color:var(--text);font-weight:600}.mrow .meta .k{text-transform:uppercase;letter-spacing:.04em;font-size:10px}
+.mrow .body{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12.5px}
+#msgsbtn.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--panel2))}
 .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:10}.modal.on{display:flex}
 .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(820px,94vw);max-height:88vh;overflow:auto;padding:18px}
 .presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin:10px 0}
@@ -105,7 +113,7 @@ button{transition:border-color .15s,background .15s,transform .1s}button:active{
 </aside>
 <section id="main">
   <div id="top"><span id="title">OpenSwarm</span><span id="wd"></span><span style="flex:1"></span>
-    <span id="usage" class="lbl"></span><span id="runstate" class="lbl"></span><button id="instrbtn" title="AGENTS.md - standing instructions for this project">📝 Instructions</button><button id="auditbtn" title="Audit log of runs, agents and permissions">🧾 Audit</button><button id="filesbtn">📁 Files</button></div>
+    <span id="usage" class="lbl"></span><span id="runstate" class="lbl"></span><button id="instrbtn" title="AGENTS.md - standing instructions for this project">📝 Instructions</button><button id="msgsbtn" title="Live agent-to-agent messages for this run">💬 Messages</button><button id="auditbtn" title="Audit log of runs, agents and permissions">🧾 Audit</button><button id="filesbtn">📁 Files</button></div>
   <div id="bar" style="display:none">
     <select id="mode" title="Mode"></select><span id="modedesc" class="lbl" style="max-width:260px"></span>
     <span class="lbl">Planner</span><select id="m_planner"></select>
@@ -126,6 +134,7 @@ button{transition:border-color .15s,background .15s,transform .1s}button:active{
   </div>
 </section>
 <aside id="drawer"><header><b>Files</b><span id="crumb" class="lbl" style="flex:1;overflow:hidden;text-overflow:ellipsis"></span><button id="up">↑</button><button id="closefiles">✕</button></header><div id="files"></div></aside>
+<aside id="msgdrawer"><header><b>Agent messages</b><span id="msgrun" class="lbl" style="flex:1;overflow:hidden;text-overflow:ellipsis"></span><button id="closemsgs">✕</button></header><div id="msglist"><div class="lbl msgempty" style="padding:10px">No messages yet. Agents post here with <code>openswarm msg ask</code>.</div></div></aside>
 <div id="skillpop"></div>
 <div class="modal" id="newmodal"><div class="sheet">
   <h3 style="margin:0">New session</h3><div class="lbl">Pick a preset (mode + skills) and a working directory — any directory, git repo or not.</div>
@@ -157,7 +166,7 @@ function md(src){const blocks=[];
   h=h.replace(/(^|\n)((?:\d+\. .*(?:\n|$))+)/g,(m,p,l)=>p+"<ol>"+l.trim().split("\n").map(x=>"<li>"+x.replace(/^\d+\. /,"")+"</li>").join("")+"</ol>\n");
   h=h.split(/\n{2,}/).map(p=>{const t=p.trim();return(!t||/^<(h\d|ul|ol|pre)/.test(t)||/^\u0000/.test(t))?p:"<p>"+p.replace(/\n/g,"<br>")+"</p>";}).join("");
   return h.replace(/\u0000(\d+)\u0000/g,(m,i)=>blocks[+i]);}
-let ST=null, CUR=null, ES=null, lastId=0, cards={}, board=null, busy=false, sel={mode:"chat",models:{},skills:new Set(),parallel:8,sandbox:false}, chosenPreset=null, viewPath="", usageBy={}, snap=null;
+let ST=null, CUR=null, ES=null, lastId=0, cards={}, board=null, busy=false, sel={mode:"chat",models:{},skills:new Set(),parallel:8,sandbox:false}, chosenPreset=null, viewPath="", usageBy={}, snap=null, runId="", msgAfter=0, msgTotal=0;
 function toast(t){const d=document.createElement("div");d.className="sys";d.textContent="⚠ "+t;$("stream").appendChild(d);scrollDown();}
 function scrollDown(force){const c=$("conv");if(force||c.scrollHeight-c.scrollTop-c.clientHeight<160)c.scrollTop=c.scrollHeight;}
 async function loadState(){ST=await api("/api/state");$("ver").textContent="v"+ST.version;MODEMAP=Object.fromEntries(ST.modes.map(m=>[m.id,m]));sel.sandbox=ST.sandbox;
@@ -176,19 +185,34 @@ function renderSessions(){const box=$("sessions");box.innerHTML="";for(const s o
   d.innerHTML=`<span class="dot ${s.busy?"run":""}"></span><div class="t">${esc(s.title)}<div class="m">${esc(modeInfo(s.mode)[1])} · ${esc(s.workdir.split("/").slice(-2).join("/"))}</div></div><button class="x" title="Delete">✕</button>`;
   d.onclick=()=>openSession(s.id);d.querySelector(".x").onclick=async e=>{e.stopPropagation();if(!confirm("Delete this session history?"))return;await api("/api/sessions/"+s.id,{method:"DELETE"});if(CUR&&CUR.id===s.id)closeSession();await refreshSessions();};box.appendChild(d);}}
 async function refreshSessions(){try{ST.sessions=(await api("/api/state")).sessions;renderSessions();}catch(e){}}
-function closeSession(){if(ES)ES.close();ES=null;CUR=null;$("stream").innerHTML="";showWelcome();$("bar").style.display=$("composer").style.display="none";$("title").textContent="OpenSwarm";$("wd").textContent="";}
+function closeSession(){if(ES)ES.close();ES=null;CUR=null;runId="";msgAfter=0;msgTotal=0;clearMsgList();$("msgdrawer").classList.remove("on");$("stream").innerHTML="";showWelcome();$("bar").style.display=$("composer").style.display="none";$("title").textContent="OpenSwarm";$("wd").textContent="";}
 function showWelcome(){$("stream").innerHTML=`<div id="welcome"><h1>🐝 OpenSwarm</h1><p>Chat, code, write, research and review — one agent or a whole swarm in parallel. Start from a preset:</p><div class="presets" id="wp"></div></div>`;
   const g=$("wp");for(const p of ST.presets){const d=document.createElement("div");d.className="preset";d.innerHTML=`<b>${esc(modeInfo(p.mode)[0])} ${esc(p.label)}</b><span>${esc(p.description)}</span>`;d.onclick=()=>createSession(p,ST.workdir);g.appendChild(d);}}
 async function createSession(preset,wd){try{if(preset){sel.mode=preset.mode;sel.skills=new Set(preset.skills);}
   const s=await api("/api/sessions",{method:"POST",body:JSON.stringify({workdir:wd,mode:sel.mode})});await refreshSessions();await openSession(s.id);$("newmodal").classList.remove("on");}catch(e){alert(e.message);}}
-async function openSession(id){if(ES)ES.close();const s=await api("/api/sessions/"+id);CUR=s;cards={};board=null;busy=false;lastId=0;usageBy={};snap=null;showUsage();ORB=orbInit(s.mode);$("stream").innerHTML="";
+async function openSession(id){if(ES)ES.close();const s=await api("/api/sessions/"+id);CUR=s;cards={};board=null;busy=false;lastId=0;usageBy={};snap=null;runId="";msgAfter=0;msgTotal=0;clearMsgList();$("msgrun").textContent="";$("msgsbtn").textContent="💬 Messages";$("msgsbtn").classList.remove("on");showUsage();ORB=orbInit(s.mode);$("stream").innerHTML="";
   $("bar").style.display="flex";$("composer").style.display="block";$("title").textContent=s.title;$("wd").textContent=s.workdir;$("wd").title=s.workdir;
   sel.mode=s.mode;renderModes();updateSkillCount();for(const ev of s.events)apply(ev,true);if(!s.events.length)$("stream").innerHTML='<div class="sys">Empty session — type a message below.</div>';
-  setBusy(busy);scrollDown(true);renderSessions();connect();loadFiles("");}
+  setBusy(busy);scrollDown(true);renderSessions();connect();loadFiles("");if(runId)loadMessages(true);}
 function connect(){if(!CUR)return;const id=CUR.id;ES=new EventSource(`/api/sessions/${id}/events?token=${TOKEN}&after=${lastId}`);
   ES.onmessage=m=>{const ev=JSON.parse(m.data);if(!CUR||CUR.id!==id)return;apply(ev,false);};
   ES.onerror=()=>{ES.close();setTimeout(()=>{if(CUR&&CUR.id===id)connect();},1500);};}
 function setBusy(b){busy=b;$("send").style.display=b?"none":"";$("stop").style.display=b?"":"none";$("runstate").textContent=b?"● running":"";}
+function clearMsgList(){$("msglist").innerHTML='<div class="lbl msgempty" style="padding:10px">No messages yet. Agents post here with <code>openswarm msg ask</code> / <code>openswarm msg reply</code>.</div>';}
+function shortAgent(id){id=String(id||"?");return runId&&id.startsWith(runId+"-")?id.slice(runId.length+1):id;}
+function updateMsgBadge(){const n=msgTotal;$("msgsbtn").textContent="💬 Messages"+(n?" ("+n+")":"");$("msgsbtn").classList.toggle("on",!!n);}
+function appendMsg(m){const box=$("msglist");const empty=box.querySelector(".msgempty");if(empty)empty.remove();const kind=m.kind||"note";
+  const d=document.createElement("div");d.className="mrow "+(kind==="question"?"q":kind==="answer"?"a":"n");
+  const t=m.created?new Date(m.created*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}):"";
+  d.innerHTML=`<div class="meta"><span class="who" title="${esc(m.sender)}">${esc(shortAgent(m.sender))}</span><span>→</span><span class="who" title="${esc(m.recipient)}">${esc(shortAgent(m.recipient))}</span><span class="k">${esc(kind)}</span>${m.reply_to?`<span class="k">↩ #${m.reply_to}</span>`:""}<span style="margin-left:auto">${esc(t)}</span></div><div class="body"></div>`;
+  d.querySelector(".body").textContent=m.body||"";box.appendChild(d);}
+async function loadMessages(force){if(!CUR||!runId)return;if(!force&&!busy&&!$("msgdrawer").classList.contains("on"))return;
+  try{const d=await api(`/api/sessions/${CUR.id}/messages?run=${encodeURIComponent(runId)}&after=${msgAfter}`);
+    if(!d.messages||!d.messages.length)return;const box=$("msglist");const near=box.scrollHeight-box.scrollTop-box.clientHeight<60;
+    for(const m of d.messages){appendMsg(m);msgAfter=Math.max(msgAfter,m.id||0);msgTotal++;}
+    updateMsgBadge();if(force||near)box.scrollTop=box.scrollHeight;}catch(e){}}
+$("msgsbtn").onclick=()=>{const d=$("msgdrawer");d.classList.toggle("on");if(d.classList.contains("on")){$("drawer").classList.remove("on");loadMessages(true);$("msglist").scrollTop=$("msglist").scrollHeight;}};
+$("closemsgs").onclick=()=>$("msgdrawer").classList.remove("on");
 function mkCard(id,title,role){if(!board){board=document.createElement("div");board.className="board";$("stream").appendChild(board);}
   const c=document.createElement("div");c.className="card"+(role==="chat"?" span":"");
   c.innerHTML=`<h5><span class="dot"></span><span class="n">${esc(title)}</span><span class="role">${esc(role)}</span></h5><div class="st">idle</div><pre class="log"></pre>`;
@@ -196,6 +220,7 @@ function mkCard(id,title,role){if(!board){board=document.createElement("div");bo
 function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev);const S=$("stream");const empty=S.querySelector(".sys");if(empty&&empty.textContent.startsWith("Empty session"))empty.remove();
   switch(ev.type){
   case"user":{board=null;busy=true;const d=document.createElement("div");d.className="msg user";d.innerHTML='<div class="bubble"></div>';d.firstChild.textContent=ev.text;S.appendChild(d);if(!replay)setBusy(true);break;}
+  case"run_started":{runId=ev.run_id||"";msgAfter=0;msgTotal=0;clearMsgList();$("msgrun").textContent=runId?("run "+runId):"";$("msgsbtn").textContent="💬 Messages";$("msgsbtn").classList.remove("on");if(!replay)loadMessages(true);break;}
   case"agent":mkCard(ev.agent,ev.title,ev.role);break;
   case"status":{const c=cards[ev.agent];if(c){c.querySelector(".st").textContent=ev.status;const d=c.querySelector(".dot");d.className="dot "+(ev.status==="Running"||ev.status==="Merging"?"run":ev.status==="Done"?"ok":ev.status==="Failed"?"bad":"");}break;}
   case"line":{const c=cards[ev.agent];if(c){const p=c.querySelector("pre.log");const sp=document.createElement("span");if(ev.err)sp.className="e";sp.textContent=ev.text.replace(ANSI,"")+"\n";p.appendChild(sp);while(p.childNodes.length>1500)p.removeChild(p.firstChild);if(!replay)p.scrollTop=p.scrollHeight;}break;}
@@ -215,7 +240,7 @@ function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev)
       b.onclick=async()=>{try{await api(`/api/sessions/${CUR.id}/permission`,{method:"POST",body:JSON.stringify({id:r.id,response:val})});}catch(e){toast(e.message);}};t.appendChild(b);}
     S.appendChild(d);break;}
   case"permission_resolved":{const d=document.getElementById("perm-"+ev.pid);if(d){d.querySelector(".tools").textContent="→ "+({once:"allowed once",always:"always allowed",reject:"denied"}[ev.decision]||ev.decision);}break;}
-  case"done":{busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);}
+  case"done":{busy=false;if(!replay){setBusy(false);loadMessages(true);refreshSessions();loadFiles(viewPath);}
     const d=document.createElement("div");d.className="sys";d.textContent=(ev.ok?"✔ finished":"✘ finished with problems")+(ev.failed&&ev.failed.length?" — "+ev.failed.join(", "):"")+(ev.usage&&ev.usage.tokens?` · ${ev.usage.tokens.input}→${ev.usage.tokens.output} tokens`+(ev.usage.cost?` · $${Number(ev.usage.cost).toFixed(4)}`:""):"");
     if(ev.snapshot){const b=document.createElement("button");b.textContent="↩ Undo this run";b.style.marginLeft="8px";b.onclick=()=>undo(ev.snapshot);d.appendChild(b);}
     if(!["research","write","review"].includes(ev.mode)){const b=document.createElement("button");b.textContent="± Show changes";b.style.marginLeft="6px";b.onclick=showDiff;d.appendChild(b);}
@@ -241,7 +266,7 @@ async function loadFiles(path){viewPath=path;if(!CUR)return;try{const d=await ap
 async function viewFile(path){try{const d=await api(`/api/sessions/${CUR.id}/file?path=${encodeURIComponent(path)}`);$("vname").textContent=path;$("vbody").textContent=d.text+(d.truncated?"\n… (truncated)":"");$("vinsert").onclick=()=>{insertRef(path);$("viewmodal").classList.remove("on");};$("vinsert").style.display="";$("viewmodal").classList.add("on");}catch(e){toast(e.message);}}
 function insertRef(p){const t=$("prompt");t.value+=(t.value&&!t.value.endsWith(" ")?" ":"")+"@"+(/\s/.test(p)?'"'+p+'"':p)+" ";t.focus();autosize();}
 $("vclose").onclick=()=>$("viewmodal").classList.remove("on");
-$("filesbtn").onclick=()=>$("drawer").classList.toggle("on");$("closefiles").onclick=()=>$("drawer").classList.remove("on");
+$("filesbtn").onclick=()=>{const d=$("drawer");d.classList.toggle("on");if(d.classList.contains("on"))$("msgdrawer").classList.remove("on");};$("closefiles").onclick=()=>$("drawer").classList.remove("on");
 $("up").onclick=()=>loadFiles(viewPath.split("/").slice(0,-1).join("/"));
 async function upload(files){if(!CUR)return;for(const f of files){try{const r=await api(`/api/sessions/${CUR.id}/upload?name=${encodeURIComponent(f.name)}`,{method:"POST",body:await f.arrayBuffer(),headers:{"Content-Type":"application/octet-stream"}});insertRef(r.path);}catch(e){toast("upload failed: "+e.message);}}loadFiles(viewPath);}
 $("attach").onclick=()=>$("file").click();$("file").onchange=e=>{upload([...e.target.files]);e.target.value="";};
@@ -380,7 +405,7 @@ $("instrclose").onclick=()=>$("instrmodal").classList.remove("on");
 $("instrsave").onclick=async()=>{try{await api(`/api/sessions/${CUR.id}/agents-md`,{method:"PUT",body:JSON.stringify({text:$("instr").value})});$("instrmodal").classList.remove("on");toast("AGENTS.md saved");loadFiles(viewPath);}catch(e){toast(e.message);}};
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest(".pvbtn");if(b){$("pvf").srcdoc=PV[+b.dataset.pv];$("pvmodal").classList.add("on");}});
 $("pvclose").onclick=()=>{$("pvmodal").classList.remove("on");$("pvf").srcdoc="";};
-(async()=>{try{await loadState();renderModes();showWelcome();orbBoot();setInterval(refreshSessions,5000);if(ST.sessions.length)openSession(ST.sessions[0].id);}catch(e){document.body.innerHTML="<pre style='padding:20px'>Cannot reach OpenSwarm: "+esc(e.message)+"</pre>";}})();
+(async()=>{try{await loadState();renderModes();showWelcome();orbBoot();setInterval(refreshSessions,5000);setInterval(()=>{if(CUR&&runId&&(busy||$("msgdrawer").classList.contains("on")))loadMessages();},2000);if(ST.sessions.length)openSession(ST.sessions[0].id);}catch(e){document.body.innerHTML="<pre style='padding:20px'>Cannot reach OpenSwarm: "+esc(e.message)+"</pre>";}})();
 </script>
 </body>
 </html>

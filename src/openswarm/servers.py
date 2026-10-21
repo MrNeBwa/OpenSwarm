@@ -53,7 +53,7 @@ class ServerPool:
             port = _free_port()
             binary = shutil.which(oc.binary) or oc.binary
             password = secrets.token_urlsafe(24)  # other local processes / web pages cannot drive the server
-            srv_env = {**env, "OPENCODE_SERVER_PASSWORD": password}
+            srv_env = {**env, "OPENCODE_SERVER_PASSWORD": password, "PWD": str(cwd)}
             try:
                 cmd = maybe_sandbox([binary, *oc.serve_command, "--port", str(port), "--hostname", "127.0.0.1"], cwd, self.cfg, sandbox)
                 proc = await asyncio.create_subprocess_exec(

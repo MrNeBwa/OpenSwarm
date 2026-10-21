@@ -125,6 +125,10 @@ def main(argv: list[str] | None = None) -> None:
         from .selftest import run_selftest
 
         sys.exit(run_selftest("-v" in argv))
+    if argv and argv[0] == "msg":  # `openswarm msg send|inbox|history|agents`: agent-to-agent bus
+        from .comm import comm_main
+
+        sys.exit(comm_main(argv[1:]))
     if argv and argv[0] == "ask":  # `openswarm ask "prompt" --mode research --json`  (scripting)
         argv = ["--headless", *argv[1:]]
     if argv and argv[0] == "audit":

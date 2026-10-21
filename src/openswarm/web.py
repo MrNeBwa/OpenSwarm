@@ -431,6 +431,18 @@ class WebApp:
                 res = next((e for e in reversed(s.events) if e["type"] == "result"), None)
                 done = next((e for e in reversed(s.events) if e["type"] == "done"), None)
                 return await _json(writer, {"busy": s.busy, "result": res["text"] if res else "", "done": done})
+            if rest == ["messages"] and method == "GET":
+                _, broker = await self.workspace(s.workdir)
+                run_id = (q.get("run") or [""])[0]
+                if not run_id:
+                    s.load_events()
+                    ev = next((e for e in reversed(s.events) if e.get("type") == "run_started"), None)
+                    run_id = str(ev.get("run_id")) if ev else broker.latest_run_id()
+                try:
+                    after = int((q.get("after") or ["0"])[0] or 0)
+                except ValueError:
+                    after = 0
+                return await _json(writer, {"run_id": run_id, "messages": broker.messages_since(run_id, after)})
             if rest == ["cancel"] and method == "POST":
                 if s.task:
                     s.task.cancel()

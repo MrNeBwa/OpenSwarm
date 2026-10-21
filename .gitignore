@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+
+# Generated packaging artifacts
+build/
+dist/
+*.egg-info/
+# Per-project OpenSwarm state
+.swarm/

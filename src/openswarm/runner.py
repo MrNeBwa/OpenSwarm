@@ -125,6 +125,9 @@ class OpenCodeRunner:
         env.update(self.extra_env)
         env["OPENSWARM_AGENT"] = self.agent_id
         env["OPENSWARM_ROLE"] = self.role
+        # opencode v2 resolves its project directory from $PWD, not getcwd(). Keep them in sync so
+        # Storm workers stay inside their git worktree instead of writing into the main checkout.
+        env["PWD"] = str(self.cwd)
         return env
 
     # ------------------------------------------------------------------ run
