@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openswarm"
+version = "1.0.0"
+description = "Multi-agent TUI and Web orchestrator for the opencode CLI (parallel Storm, Cowork, Debate, Best-of-N, git-worktree isolation)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "textual>=0.80",
+    "pydantic>=2.5",
+    "pyyaml>=6.0",
+    "cryptography>=41.0",
+]
+
+[project.scripts]
+openswarm = "openswarm.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+openswarm = ["styles.tcss", "web_ui.html", "openswarm.svg", "data/*.json", "data/*.apk", "vpn_engine/data/*.json"]

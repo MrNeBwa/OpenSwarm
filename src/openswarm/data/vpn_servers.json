@@ -1,0 +1,1689 @@
+[
+  {
+    "id": "s-c84f280f710b880933992d38",
+    "name": "20.52.224.38:443",
+    "host": "20.52.224.38",
+    "port": 443,
+    "protocol": "vless",
+    "transport": "raw",
+    "security": "reality",
+    "country": "",
+    "country_code": "",
+    "city": "",
+    "premium": false,
+    "latency_ms": null,
+    "updated_at": null,
+    "tags": [
+      "imported"
+    ],
+    "params": {
+      "flow": "xtls-rprx-vision",
+      "sni": "www.microsoft.com",
+      "fingerprint": "chrome"
+    }
+  },
+  {
+    "id": "edge-apk-mask",
+    "name": "Ninja VPN (APK)",
+    "host": "20.52.224.38",
+    "port": 443,
+    "protocol": "vless",
+    "transport": "tcp",
+    "security": "reality",
+    "country": "",
+    "country_code": "",
+    "city": "",
+    "premium": false,
+    "latency_ms": null,
+    "updated_at": null,
+    "tags": [
+      "builtin",
+      "apk",
+      "reality"
+    ],
+    "params": {
+      "flow": "xtls-rprx-vision",
+      "sni": "www.microsoft.com",
+      "fingerprint": "chrome",
+      "provider": "apk-edge",
+      "edge_path": "mask",
+      "source": "apk"
+    }
+  },
+  {
+    "id": "s-2495c395daf360c2bd1b5d4d",
+    "name": "www.microsoft.com",
+    "host": "20.52.224.38",
+    "port": 443,
+    "protocol": "vless",
+    "transport": "tcp",
+    "security": "reality",
+    "country": "",
+    "country_code": "",
+    "city": "",
+    "premium": false,
+    "latency_ms": null,
+    "updated_at": null,
+    "tags": [
+      "builtin",
+      "mask"
+    ],
+    "params": {
+      "flow": "xtls-rprx-vision",
+      "sni": "www.microsoft.com",
+      "fingerprint": "chrome"
+    }
+  },
+  {
+    "id": "edge-ua",
+    "name": "UA",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "UA",
+    "country_code": "UA",
+    "city": "",
+    "premium": false,
+    "latency_ms": 432,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 432,
+      "latency_real": 432,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-pl",
+    "name": "PL",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "PL",
+    "country_code": "PL",
+    "city": "",
+    "premium": false,
+    "latency_ms": 479,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 479,
+      "latency_real": 479,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-ru",
+    "name": "RU",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "RU",
+    "country_code": "RU",
+    "city": "",
+    "premium": false,
+    "latency_ms": 675,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 675,
+      "latency_real": 675,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-fi",
+    "name": "FI",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "FI",
+    "country_code": "FI",
+    "city": "",
+    "premium": false,
+    "latency_ms": 719,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 719,
+      "latency_real": 719,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-se",
+    "name": "SE",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "SE",
+    "country_code": "SE",
+    "city": "",
+    "premium": false,
+    "latency_ms": 828,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 828,
+      "latency_real": 828,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-hu",
+    "name": "HU",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "HU",
+    "country_code": "HU",
+    "city": "",
+    "premium": false,
+    "latency_ms": 930,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 930,
+      "latency_real": 930,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-cz",
+    "name": "CZ",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "CZ",
+    "country_code": "CZ",
+    "city": "",
+    "premium": false,
+    "latency_ms": 989,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 989,
+      "latency_real": 989,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-dk",
+    "name": "DK",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "DK",
+    "country_code": "DK",
+    "city": "",
+    "premium": false,
+    "latency_ms": 992,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 992,
+      "latency_real": 992,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-at",
+    "name": "AT",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "AT",
+    "country_code": "AT",
+    "city": "",
+    "premium": false,
+    "latency_ms": 999,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 999,
+      "latency_real": 999,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-ro",
+    "name": "RO",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "RO",
+    "country_code": "RO",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1059,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1059,
+      "latency_real": 1059,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-rs",
+    "name": "RS",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "RS",
+    "country_code": "RS",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1134,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1134,
+      "latency_real": 1134,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-no",
+    "name": "NO",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "NO",
+    "country_code": "NO",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1215,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1215,
+      "latency_real": 1215,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-bg",
+    "name": "BG",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "BG",
+    "country_code": "BG",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1283,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1283,
+      "latency_real": 1283,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-de",
+    "name": "DE",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "DE",
+    "country_code": "DE",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1354,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1354,
+      "latency_real": 1354,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-tr",
+    "name": "TR",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "TR",
+    "country_code": "TR",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1437,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1437,
+      "latency_real": 1437,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-nl",
+    "name": "NL",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "NL",
+    "country_code": "NL",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1515,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1515,
+      "latency_real": 1515,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-ch",
+    "name": "CH",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "CH",
+    "country_code": "CH",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1523,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1523,
+      "latency_real": 1523,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-be",
+    "name": "BE",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "BE",
+    "country_code": "BE",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1593,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1593,
+      "latency_real": 1593,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-it",
+    "name": "IT",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "IT",
+    "country_code": "IT",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1613,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1613,
+      "latency_real": 1613,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-gr",
+    "name": "GR",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "GR",
+    "country_code": "GR",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1794,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1794,
+      "latency_real": 1794,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-fr",
+    "name": "FR",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "FR",
+    "country_code": "FR",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1821,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1821,
+      "latency_real": 1821,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-gb",
+    "name": "GB",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "GB",
+    "country_code": "GB",
+    "city": "",
+    "premium": false,
+    "latency_ms": 1865,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1865,
+      "latency_real": 1865,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-ie",
+    "name": "IE",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "IE",
+    "country_code": "IE",
+    "city": "",
+    "premium": false,
+    "latency_ms": 2215,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 2215,
+      "latency_real": 2215,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-es",
+    "name": "ES",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "ES",
+    "country_code": "ES",
+    "city": "",
+    "premium": false,
+    "latency_ms": 2759,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 2759,
+      "latency_real": 2759,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-pt",
+    "name": "PT",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "PT",
+    "country_code": "PT",
+    "city": "",
+    "premium": false,
+    "latency_ms": 3233,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 3233,
+      "latency_real": 3233,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-np",
+    "name": "NP",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "NP",
+    "country_code": "NP",
+    "city": "",
+    "premium": false,
+    "latency_ms": 5466,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 5466,
+      "latency_real": 5466,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-ca",
+    "name": "CA",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "CA",
+    "country_code": "CA",
+    "city": "",
+    "premium": false,
+    "latency_ms": 6697,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 6697,
+      "latency_real": 6697,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-lk",
+    "name": "LK",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "LK",
+    "country_code": "LK",
+    "city": "",
+    "premium": false,
+    "latency_ms": 6995,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 6995,
+      "latency_real": 6995,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-kr",
+    "name": "KR",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "KR",
+    "country_code": "KR",
+    "city": "",
+    "premium": false,
+    "latency_ms": 7269,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 7269,
+      "latency_real": 7269,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-th",
+    "name": "TH",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "TH",
+    "country_code": "TH",
+    "city": "",
+    "premium": false,
+    "latency_ms": 7660,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 7660,
+      "latency_real": 7660,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-cn",
+    "name": "CN",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "CN",
+    "country_code": "CN",
+    "city": "",
+    "premium": false,
+    "latency_ms": 7776,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 7776,
+      "latency_real": 7776,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-hk",
+    "name": "HK",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "HK",
+    "country_code": "HK",
+    "city": "",
+    "premium": false,
+    "latency_ms": 7806,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 7806,
+      "latency_real": 7806,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-tw",
+    "name": "TW",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "TW",
+    "country_code": "TW",
+    "city": "",
+    "premium": false,
+    "latency_ms": 8031,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 8031,
+      "latency_real": 8031,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-jp",
+    "name": "JP",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "JP",
+    "country_code": "JP",
+    "city": "",
+    "premium": false,
+    "latency_ms": 8125,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 8125,
+      "latency_real": 8125,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-vn",
+    "name": "VN",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "VN",
+    "country_code": "VN",
+    "city": "",
+    "premium": false,
+    "latency_ms": 8321,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 8321,
+      "latency_real": 8321,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-my",
+    "name": "MY",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "MY",
+    "country_code": "MY",
+    "city": "",
+    "premium": false,
+    "latency_ms": 8689,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 8689,
+      "latency_real": 8689,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-ph",
+    "name": "PH",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "PH",
+    "country_code": "PH",
+    "city": "",
+    "premium": false,
+    "latency_ms": 8920,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 8920,
+      "latency_real": 8920,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-sg",
+    "name": "SG",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "SG",
+    "country_code": "SG",
+    "city": "",
+    "premium": false,
+    "latency_ms": 8997,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 8997,
+      "latency_real": 8997,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-us",
+    "name": "US",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "US",
+    "country_code": "US",
+    "city": "",
+    "premium": false,
+    "latency_ms": 9698,
+    "updated_at": null,
+    "tags": [
+      "edge"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 9698,
+      "latency_real": 9698,
+      "expensive": false
+    }
+  },
+  {
+    "id": "edge-id",
+    "name": "ID",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "ID",
+    "country_code": "ID",
+    "city": "",
+    "premium": false,
+    "latency_ms": 9869,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 9869,
+      "latency_real": 9869,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-lu",
+    "name": "LU",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "LU",
+    "country_code": "LU",
+    "city": "",
+    "premium": true,
+    "latency_ms": 1545,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 1545,
+      "latency_real": 1545,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-az",
+    "name": "AZ",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "AZ",
+    "country_code": "AZ",
+    "city": "",
+    "premium": true,
+    "latency_ms": 2243,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 2243,
+      "latency_real": 2243,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-il",
+    "name": "IL",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "IL",
+    "country_code": "IL",
+    "city": "",
+    "premium": true,
+    "latency_ms": 2493,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 2493,
+      "latency_real": 2493,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-eg",
+    "name": "EG",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "EG",
+    "country_code": "EG",
+    "city": "",
+    "premium": true,
+    "latency_ms": 2672,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 2672,
+      "latency_real": 2672,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-bh",
+    "name": "BH",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "BH",
+    "country_code": "BH",
+    "city": "",
+    "premium": true,
+    "latency_ms": 3612,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 3612,
+      "latency_real": 3612,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-sa",
+    "name": "SA",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "SA",
+    "country_code": "SA",
+    "city": "",
+    "premium": true,
+    "latency_ms": 3616,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 3616,
+      "latency_real": 3616,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-kz",
+    "name": "KZ",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "KZ",
+    "country_code": "KZ",
+    "city": "",
+    "premium": true,
+    "latency_ms": 3732,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 3732,
+      "latency_real": 3732,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-qa",
+    "name": "QA",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "QA",
+    "country_code": "QA",
+    "city": "",
+    "premium": true,
+    "latency_ms": 3746,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 3746,
+      "latency_real": 3746,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-ae",
+    "name": "AE",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "AE",
+    "country_code": "AE",
+    "city": "",
+    "premium": true,
+    "latency_ms": 3940,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 3940,
+      "latency_real": 3940,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-om",
+    "name": "OM",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "OM",
+    "country_code": "OM",
+    "city": "",
+    "premium": true,
+    "latency_ms": 4422,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 4422,
+      "latency_real": 4422,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-pk",
+    "name": "PK",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "PK",
+    "country_code": "PK",
+    "city": "",
+    "premium": true,
+    "latency_ms": 4579,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 4579,
+      "latency_real": 4579,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-in",
+    "name": "IN",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "IN",
+    "country_code": "IN",
+    "city": "",
+    "premium": true,
+    "latency_ms": 5452,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 5452,
+      "latency_real": 5452,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-bd",
+    "name": "BD",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "BD",
+    "country_code": "BD",
+    "city": "",
+    "premium": true,
+    "latency_ms": 6125,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 6125,
+      "latency_real": 6125,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-za",
+    "name": "ZA",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "ZA",
+    "country_code": "ZA",
+    "city": "",
+    "premium": true,
+    "latency_ms": 8899,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 8899,
+      "latency_real": 8899,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-co",
+    "name": "CO",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "CO",
+    "country_code": "CO",
+    "city": "",
+    "premium": true,
+    "latency_ms": 10349,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 10349,
+      "latency_real": 10349,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-mx",
+    "name": "MX",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "MX",
+    "country_code": "MX",
+    "city": "",
+    "premium": true,
+    "latency_ms": 10410,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 10410,
+      "latency_real": 10410,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-ec",
+    "name": "EC",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "EC",
+    "country_code": "EC",
+    "city": "",
+    "premium": true,
+    "latency_ms": 11073,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 11073,
+      "latency_real": 11073,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-br",
+    "name": "BR",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "BR",
+    "country_code": "BR",
+    "city": "",
+    "premium": true,
+    "latency_ms": 11133,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 11133,
+      "latency_real": 11133,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-pe",
+    "name": "PE",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "PE",
+    "country_code": "PE",
+    "city": "",
+    "premium": true,
+    "latency_ms": 12041,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 12041,
+      "latency_real": 12041,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-ar",
+    "name": "AR",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "AR",
+    "country_code": "AR",
+    "city": "",
+    "premium": true,
+    "latency_ms": 13015,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 13015,
+      "latency_real": 13015,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-cl",
+    "name": "CL",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "CL",
+    "country_code": "CL",
+    "city": "",
+    "premium": true,
+    "latency_ms": 13459,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 13459,
+      "latency_real": 13459,
+      "expensive": true
+    }
+  },
+  {
+    "id": "edge-au",
+    "name": "AU",
+    "host": "63b42a60-f4ed-33c4-bb9c-8232c7e07d8b.com",
+    "port": 443,
+    "protocol": "wireguard",
+    "transport": "tcp",
+    "security": "tls",
+    "country": "AU",
+    "country_code": "AU",
+    "city": "",
+    "premium": true,
+    "latency_ms": 15143,
+    "updated_at": null,
+    "tags": [
+      "edge",
+      "premium",
+      "expensive"
+    ],
+    "params": {
+      "provider": "ninja-edge",
+      "edge_path": "rand",
+      "latency_pref": 15143,
+      "latency_real": 15143,
+      "expensive": true
+    }
+  }
+]

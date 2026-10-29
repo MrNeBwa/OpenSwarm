@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packaging / build artifacts
+build/
+*.egg-info/
+.eggs/
+*.whl
+
+# Pytest / unit test caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Portable runtime state & worktrees
+.openswarm-portable/
+.swarm/
+.venv/
+venv/
+
+# Android Gradle local build caches
+android/.gradle/
+android/app/build/
+android/local.properties
+*.keystore
+*.jks
+
+# OS / Editor files
+.DS_Store
+*.swp
+*~

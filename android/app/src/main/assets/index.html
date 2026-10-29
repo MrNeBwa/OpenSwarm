@@ -1,0 +1,1618 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>OpenSwarm Mobile</title>
+<style>
+:root,[data-theme="claude"]{--bg:#14110f;--panel:#1d1915;--p2:#26211c;--line:#363029;--text:#ece6dd;--dim:#9a9086;--acc:#d97757;--ok:#5fb37c;--bad:#d95858;--code:#0d0b0a}
+[data-theme="oled"]{--bg:#000000;--panel:#0b0b0e;--p2:#15151b;--line:#262630;--text:#f2f2f7;--dim:#8e8e98;--acc:#7c5cff;--ok:#32d74b;--bad:#ff453a;--code:#050507}
+[data-theme="nord"]{--bg:#191d24;--panel:#222832;--p2:#2b3340;--line:#394252;--text:#e5e9f0;--dim:#9099ab;--acc:#5e81ac;--ok:#a3be8c;--bad:#bf616a;--code:#12151a}
+[data-theme="light"]{--bg:#f7f4ef;--panel:#ffffff;--p2:#eee9e0;--line:#dcd5c9;--text:#1f1c18;--dim:#6f675e;--acc:#c96442;--ok:#2e8b57;--bad:#c93b3b;--code:#f0ece4}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit;background:var(--p2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;outline:none}
+button{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;user-select:none}
+button:active{transform:scale(.97)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.x{background:none;border:0;color:var(--dim);padding:5px 7px}
+#app{display:flex;flex-direction:column;height:100%}
+#top{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);padding-top:max(8px,env(safe-area-inset-top));background:var(--panel)}
+#top button{padding:7px 9px;border-radius:9px;font-size:14px}
+#titleWrap{flex:1;min-width:0;display:flex;flex-direction:column}
+#title{font-weight:600;font-size:14.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#substatus{font-size:11px;color:var(--ok);display:flex;align-items:center;gap:5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#conv{flex:1;overflow-y:auto;padding:12px;scroll-behavior:smooth}
+.msg{margin:9px 0;display:flex;flex-direction:column}
+.msg.u{align-items:flex-end}
+.msg.a{align-items:flex-start}
+.bub{max-width:94%;padding:10px 13px;border-radius:14px;background:var(--panel);border:1px solid var(--line);line-height:1.5;word-wrap:break-word;overflow-wrap:anywhere}
+.u .bub{background:var(--acc);border-color:var(--acc);color:#fff;white-space:pre-wrap}
+.bub pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:9px;overflow-x:auto;font-size:12.5px;margin:6px 0}
+.bub code{background:var(--code);padding:1px 5px;border-radius:5px;font-size:12.8px;font-family:monospace}
+.bub pre code{padding:0;background:none}
+.bub h1,.bub h2,.bub h3{margin:.55em 0 .25em;font-size:1.05em}
+.bub ul,.bub ol{padding-left:20px;margin:.4em 0}
+.bub blockquote{margin:6px 0;padding-left:10px;border-left:3px solid var(--acc);color:var(--dim)}
+.sys{color:var(--dim);font-size:12.5px;text-align:center;margin:8px 0}
+.tools-bar{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0;max-width:94%}
+.tchip{background:var(--p2);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:11.5px;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.tchip b{color:var(--acc)}
+.agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:6px;margin:8px 0}
+.ag{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 9px;font-size:12px}
+.ag b{display:block;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-run{color:var(--acc)}.st-ok{color:var(--ok)}.st-bad{color:var(--bad)}
+#comp{padding:7px 10px max(9px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--panel)}
+#opts{display:flex;gap:5px;margin-bottom:6px;overflow-x:auto;align-items:center;scrollbar-width:none}
+#opts::-webkit-scrollbar{display:none}
+#opts select,#opts input,#opts button{padding:4px 8px;font-size:12.5px;border-radius:8px;flex-shrink:0}
+#row{display:flex;gap:6px;align-items:flex-end}
+#prompt{flex:1;resize:none;max-height:130px;border-radius:13px;padding:8px 11px}
+#drawer{position:fixed;inset:0;display:none;background:rgba(0,0,0,.58);z-index:20}
+#drawer.on{display:block}
+#dside{width:85%;max-width:340px;height:100%;background:var(--bg);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px;padding-top:max(12px,env(safe-area-inset-top))}
+#list{flex:1;overflow-y:auto;margin-top:8px}
+.s{display:flex;align-items:center;gap:6px;padding:8px;border-radius:10px;cursor:pointer}
+.s.on{background:var(--p2);font-weight:600}
+.s span{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;z-index:30;align-items:flex-end;justify-content:center}
+.modal.on{display:flex}
+.sheet{background:var(--bg);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:92%;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:8px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.sheet label{font-size:12px;color:var(--dim);margin-top:2px}
+.sheet input,.sheet select,.sheet textarea{width:100%}
+.hint{font-size:12px;color:var(--dim);line-height:1.4}
+.frow{display:flex;align-items:center;gap:6px;padding:7px 9px;background:var(--panel);border:1px solid var(--line);border-radius:9px;font-size:13px}
+.frow span.fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace}
+.frow span.sz{font-size:11px;color:var(--dim)}
+.pill-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;justify-content:center}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+</style></head><body>
+<div id="app">
+ <div id="top">
+  <button id="menu" title="Чаты">☰</button>
+  <div id="titleWrap">
+   <span id="title">OpenSwarm</span>
+   <span id="substatus">● OpenCode Server · 📁 main</span>
+  </div>
+  <button id="filesb" title="Файлы и терминал">📁</button>
+  <button id="srvb" title="OpenCode Серверы">🖥</button>
+  <button id="schedb" title="Отложенные задачи">⏰</button>
+  <button id="themeb" title="Стиль оформления">🎨</button>
+  <button id="newb" title="Новый чат">＋</button>
+  <button id="setb" title="Настройки и модели">⚙</button>
+ </div>
+ <div id="conv"></div>
+ <div id="comp">
+  <div id="opts">
+   <select id="mode" title="Режим работы">
+    <option value="auto">✨ Авто</option>
+    <option value="chat">💬 Чат + Файлы</option>
+    <option value="swarm">🚀 Рой (Swarm)</option>
+    <option value="cowork">🤝 Cowork (План→Код→Ревью)</option>
+    <option value="heal">🩺 Heal (Авто-фикс)</option>
+    <option value="debate">⚖️ Дебаты</option>
+   </select>
+   <input id="nag" type="number" min="1" max="16" value="4" style="width:52px" title="Точное число агентов">
+   <select id="style" title="Стиль ответа">
+    <option value="">⚖️ Обычный</option>
+    <option value="concise">⚡ Кратко</option>
+    <option value="code">💻 Только код</option>
+    <option value="detailed">🎓 Подробно</option>
+    <option value="steps">🛠 По шагам</option>
+   </select>
+   <label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 7px;background:var(--p2);border:1px solid var(--line);border-radius:8px">
+    <input type="checkbox" id="askq" checked style="width:auto;margin:0"> ❓ Вопросы
+   </label>
+   <button id="atfile" title="Прикрепить файл из проекта">@файл</button>
+  </div>
+  <div id="row">
+   <button id="mic" title="Голосовой ввод">🎤</button>
+   <textarea id="prompt" rows="1" placeholder="Задача, работа с файлами или вопрос…"></textarea>
+   <button id="send" class="pri">➤</button>
+   <button id="stop" class="pri" style="display:none;background:var(--bad);border-color:var(--bad)">■</button>
+  </div>
+ </div>
+</div>
+
+<!-- Боковая панель чатов -->
+<div id="drawer"><div id="dside">
+ <div style="display:flex;gap:6px"><button class="pri" id="dnew" style="flex:1">＋ Новый чат</button><button id="dclose">✕</button></div>
+ <input id="search" placeholder="🔍 Поиск по чатам и сообщениям…" style="margin-top:8px">
+ <div id="list"></div>
+ <div style="display:flex;gap:6px;margin-top:6px">
+  <button id="clearall" class="x" style="flex:1">🗑 Очистить чаты</button>
+ </div>
+</div></div>
+
+<!-- Модальное окно: Файловый менеджер, Редактор кода и Shell-терминал -->
+<div class="modal" id="filesm"><div class="sheet">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+  <b style="font-size:16px">📁 Рабочая папка и файлы</b>
+  <button class="x" onclick="$('filesm').classList.remove('on')">✕</button>
+ </div>
+ <div class="hint" id="ws_path_hint">Локальное хранилище проекта на телефоне</div>
+ <div style="display:flex;gap:6px;align-items:center">
+  <select id="ws_sel" style="flex:1"></select>
+  <button id="ws_new">＋ Проект</button>
+  <button id="f_new" class="pri">＋ Файл</button>
+  <button id="f_imp">📥</button>
+  <input type="file" id="f_imp_in" style="display:none" multiple>
+ </div>
+ <div id="flist" style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto"></div>
+ <div id="feditor_box" style="display:none;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px">
+  <div style="display:flex;align-items:center;gap:6px">
+   <input id="fed_path" placeholder="путь/к/файлу.py" style="flex:1;font-family:monospace;font-size:13px">
+   <button id="fed_run" title="Запустить / Превью без Termux">▶ Превью</button>
+   <button id="fed_save" class="pri">💾 Сохранить</button>
+   <button id="fed_share" title="Поделиться">📤</button>
+  </div>
+  <textarea id="fed_content" rows="9" style="font-family:monospace;font-size:12.5px;white-space:pre;overflow-x:auto" placeholder="Содержимое файла…"></textarea>
+ </div>
+ <div style="border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px">
+  <label>💻 Автономный Shell + встроенный Git (работает даже без Termux)</label>
+  <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:2px">
+   <button onclick="runQuickSh('git status')" style="font-size:11.5px;padding:3px 8px">git status</button>
+   <button onclick="runQuickSh('git log --oneline')" style="font-size:11.5px;padding:3px 8px">git log</button>
+   <button onclick="runQuickSh('git commit -am \"checkpoint\"')" style="font-size:11.5px;padding:3px 8px">git commit</button>
+   <button onclick="runQuickSh('tree')" style="font-size:11.5px;padding:3px 8px">tree</button>
+   <button onclick="runQuickSh('ls -la')" style="font-size:11.5px;padding:3px 8px">ls -la</button>
+  </div>
+  <div style="display:flex;gap:6px">
+   <input id="sh_cmd" placeholder="git status, tree, ls -la, python3 -m json.tool…" style="flex:1;font-family:monospace;font-size:13px">
+   <button id="sh_run" class="pri">▶ Run</button>
+  </div>
+  <pre id="sh_out" style="display:none;background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;max-height:150px;overflow:auto;margin:0"></pre>
+ </div>
+</div></div>
+
+<!-- Модальное окно: Live Sandbox / Превью без Termux -->
+<div class="modal" id="prevm"><div class="sheet" style="height:88%;max-height:92%">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+  <b style="font-size:15px" id="prev_title">▶ Live Sandbox (без Termux)</b>
+  <button class="x" onclick="$('prevm').classList.remove('on')">✕</button>
+ </div>
+ <iframe id="prev_frame" style="display:none;flex:1;width:100%;min-height:380px;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>
+ <pre id="prev_out" style="display:none;flex:1;background:var(--code);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px;overflow:auto;margin:0;white-space:pre-wrap"></pre>
+</div></div>
+
+<!-- Модальное окно: OpenCode Серверы -->
+<div class="modal" id="srvm"><div class="sheet">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+  <b style="font-size:16px">🖥 OpenCode Серверы</b>
+  <button class="x" onclick="$('srvm').classList.remove('on')">✕</button>
+ </div>
+ <div class="hint">В приложение уже встроен локальный автономный <b>OpenCode Server</b> на телефоне (`127.0.0.1:4096`) со встроенным Git, файловой системой и прокси к бесплатным моделям OpenCode и Kilo AI Gateway (работает полностью без Termux!).</div>
+ <div id="srv_builtin" class="frow" style="border-color:var(--ok)">
+  <span style="color:var(--ok)">●</span>
+  <span class="fn" id="srv_builtin_lbl">Встроенный Android OpenCode (127.0.0.1:4096)</span>
+  <span class="sz" id="srv_builtin_st">активен</span>
+ </div>
+ <label>Внешние серверы `opencode serve` / `openswarm web` (по одному URL на строке)</label>
+ <textarea id="srv_urls" rows="3" placeholder="http://127.0.0.1:4096&#10;http://192.168.1.50:4096"></textarea>
+ <label>Пароль сервера OPENCODE_SERVER_PASSWORD (если задан)</label>
+ <input id="srv_pwd" type="password" placeholder="необязательно">
+ <div style="display:flex;gap:6px">
+  <button id="srv_ping" style="flex:1">🔍 Проверить серверы</button>
+  <button id="srv_save" class="pri" style="flex:1">Сохранить</button>
+ </div>
+ <div id="srv_msg" class="hint"></div>
+</div></div>
+
+<!-- Модальное окно: Настройки и провайдеры -->
+<div class="modal" id="setm"><div class="sheet">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+  <b style="font-size:16px">⚙ Модель, провайдер и интеграции</b>
+  <button class="x" onclick="$('setm').classList.remove('on')">✕</button>
+ </div>
+ <div class="hint">Работает полностью автономно на Android (с локальными файлами, встроенным Git и OpenCode сервером) без ПК и без Termux.</div>
+ <label>Провайдер ИИ</label>
+ <select id="prov">
+  <option value="oc_local">🟢 OpenCode + Kilo Free Server (Без ключей, встроено)</option>
+  <option value="kilo">🟣 Kilo AI Gateway (FREE — без ключей, до 200 запр./час)</option>
+  <option value="dsh">🦈 DeepSeek Harness (DeepSeek-V4.1-Flash, 1M контекст)</option>
+  <option value="oc_remote">🖥 Внешний сервер opencode serve (Termux / LAN / VPN)</option>
+  <option value="or">🌐 OpenRouter (:free и платные модели)</option>
+  <option value="oa">🔌 Свой OpenAI-совместимый (DeepSeek / Groq / Ollama / vLLM)</option>
+ </select>
+ <div id="p_oc_local">
+  <label>Бесплатная модель OpenCode / Kilo / Harness</label>
+  <select id="oc_model">
+   <option value="opencode/deepseek-v4.1-flash-free">opencode/deepseek-v4.1-flash-free (DeepSeek V4.1 Flash)</option>
+   <option value="kilo/poolside/laguna-s-2.1:free">kilo/poolside/laguna-s-2.1:free (Laguna S 2.1 Coding)</option>
+   <option value="kilo/cohere/north-mini-code:free">kilo/cohere/north-mini-code:free (Cohere North Code)</option>
+   <option value="kilo/kilo-auto/free">kilo/kilo-auto/free (Kilo Auto Free Router)</option>
+   <option value="deepseek-harness/deepseek-flash">deepseek-harness/deepseek-flash (1M context fallback)</option>
+   <option value="opencode/beam-free">opencode/beam-free (Beam Coding Agent)</option>
+   <option value="opencode/nemotron-3.5-super-vl-free">opencode/nemotron-3.5-super-vl-free (Nemotron 3.5 Super)</option>
+   <option value="opencode/big-pickle">opencode/big-pickle (Big Pickle / MAI)</option>
+  </select>
+ </div>
+ <div id="p_kilo" style="display:none">
+  <label>Бесплатная модель Kilo AI Gateway</label>
+  <select id="kilo_model">
+   <option value="poolside/laguna-s-2.1:free">poolside/laguna-s-2.1:free (Laguna S 2.1 — Кодинг)</option>
+   <option value="cohere/north-mini-code:free">cohere/north-mini-code:free (Cohere North Mini Code)</option>
+   <option value="kilo-auto/free">kilo-auto/free (Авто-роутер бесплатных моделей Kilo)</option>
+   <option value="nvidia/nemotron-3.5-super-vl:free">nvidia/nemotron-3.5-super-vl:free (Nemotron 3.5 Super)</option>
+   <option value="nvidia/nemotron-3.5-lightning:free">nvidia/nemotron-3.5-lightning:free (Nemotron 3.5 Lightning)</option>
+   <option value="reflection/beam-free">reflection/beam-free (Reflection Beam Free)</option>
+   <option value="recursive/flint-v1.0:free">recursive/flint-v1.0:free (Recursive Flint v1.0)</option>
+  </select>
+  <label>KILO_API_KEY (необязательно — оставьте пустым для бесплатного Bearer anonymous)</label>
+  <input id="kilo_key" type="password" placeholder="необязательно (работает бесплатно без ключа)">
+ </div>
+ <div id="p_dsh" style="display:none">
+  <label>Токен DeepSeek Harness (x-dsh-auth-token) или ключ sk-… (оставьте пустым для бесплатного OpenCode-режима)</label>
+  <input id="dsh_tok" type="password" placeholder="необязательно: токен из ~/.dsh/.credentials.yaml">
+  <label>Модель</label>
+  <select id="dsh_model"><option value="deepseek-flash">deepseek-flash (1M контекст)</option><option value="deepseek-reasoner">deepseek-reasoner (Thinking)</option></select>
+ </div>
+ <div id="p_oc_remote" style="display:none">
+  <div class="hint">Запросы и работа с файлами будут выполняться через указанный в 🖥 «OpenCode Серверы» адрес `opencode serve`.</div>
+ </div>
+ <div id="p_or" style="display:none">
+  <label>OpenRouter API key</label>
+  <input id="or_key" type="password" placeholder="sk-or-v1-…">
+  <label>Модель</label>
+  <input id="or_model" placeholder="deepseek/deepseek-chat-v3.1:free">
+ </div>
+ <div id="p_oa" style="display:none">
+  <label>Base URL</label>
+  <input id="oa_url" placeholder="https://api.deepseek.com/v1 или http://192.168.1.10:11434/v1">
+  <label>API key (если нужен)</label>
+  <input id="oa_key" type="password">
+  <label>Модель</label>
+  <input id="oa_model" placeholder="deepseek-chat / qwen2.5-coder:7b">
+ </div>
+ <label>Telegram-уведомление о завершении (необязательно)</label>
+ <div style="display:flex;gap:6px">
+  <input id="tg_tok" placeholder="токен бота" style="flex:1">
+  <input id="tg_chat" placeholder="chat id" style="width:120px">
+ </div>
+ <div style="display:flex;gap:6px">
+  <button id="tg_test" style="flex:1">Тест Telegram</button>
+  <button id="check" style="flex:1">Проверить ИИ</button>
+ </div>
+ <div style="display:flex;gap:6px">
+  <button id="exp" style="flex:1">⬇ Экспорт чата</button>
+  <button class="pri" id="setsave" style="flex:1">Сохранить</button>
+ </div>
+ <div id="setmsg" class="hint"></div>
+</div></div>
+
+<!-- Модальное окно: Отложенные действия и фоновые задачи -->
+<div class="modal" id="schedm"><div class="sheet">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+  <b style="font-size:16px">⏰ Отложенные задачи и авто-запуск</b>
+  <button class="x" onclick="$('schedm').classList.remove('on')">✕</button>
+ </div>
+ <div class="hint">Запланируйте задачу на будущее (через несколько минут или на ночь). OpenSwarm выполнит её автономно и уведомит вас при готовности.</div>
+ <label>Промпт / задача</label>
+ <textarea id="msch_prompt" rows="2" placeholder="Например: Проведи полный аудит кода app.py, найди баги и исправь…"></textarea>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+  <div>
+   <label>Запустить через</label>
+   <select id="msch_delay" style="width:100%">
+    <option value="60">1 минуту (быстрый тест)</option>
+    <option value="300">5 минут</option>
+    <option value="900">15 минут</option>
+    <option value="1800">30 минут</option>
+    <option value="3600" selected>1 час</option>
+    <option value="7200">2 часа</option>
+    <option value="28800">8 часов (на ночь)</option>
+   </select>
+  </div>
+  <div>
+   <label>Режим исполнения</label>
+   <select id="msch_mode" style="width:100%">
+    <option value="auto">✨ Авто</option>
+    <option value="chat">💬 Чат</option>
+    <option value="swarm">🚀 Рой</option>
+    <option value="cowork">🤝 Cowork</option>
+    <option value="heal">🩺 Heal</option>
+    <option value="debate">⚖️ Дебаты</option>
+   </select>
+  </div>
+ </div>
+ <button id="msch_add" class="pri" style="margin-top:6px">⏰ Запланировать задачу</button>
+ <label style="margin-top:10px">Очередь отложенных действий</label>
+ <div id="msch_list" style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto"></div>
+</div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const LS={
+  get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const NATIVE=typeof Native!=="undefined";
+const THEMES=["claude","oled","nord","light"];
+let CFG=Object.assign({
+  prov:"oc_local",
+  oc_model:"opencode/deepseek-v4.1-flash-free",
+  kilo_model:"poolside/laguna-s-2.1:free",
+  kilo_key:"",
+  dsh_tok:"",
+  dsh_model:"deepseek-flash",
+  or_key:"",
+  or_model:"deepseek/deepseek-chat-v3.1:free",
+  oa_url:"",
+  oa_key:"",
+  oa_model:"",
+  srv_urls:"",
+  srv_pwd:"",
+  tg_tok:"",
+  tg_chat:"",
+  theme:"claude"
+},LS.get("cfg",{}));
+// Если сохранён старый провайдер dsh без ключа — переключаем на встроенный бесплатный oc_local
+if(CFG.prov==="dsh"&&!CFG.dsh_tok)CFG.prov="oc_local";
+document.documentElement.setAttribute("data-theme",CFG.theme||"claude");
+
+let CHATS=LS.get("chats",[]),CUR=null,BUSY=false,ABORT=false,seq=0;
+const save=()=>LS.set("chats",CHATS);
+const uid=()=>Math.random().toString(36).slice(2,10);
+
+/* ==================== ВИРТУАЛЬНАЯ ФС (ДЛЯ ТЕСТОВ В БРАУЗЕРЕ) + NATIVE ANDROID FS ==================== */
+let VFS=LS.get("vfs",{"README.md":"# OpenSwarm Workspace\nЛокальные файлы проекта.\n"});
+const saveVfs=()=>LS.set("vfs",VFS);
+
+const FS={
+  workspacePath:()=>NATIVE&&Native.getWorkspacePath?Native.getWorkspacePath():"/workspace/main",
+  workspaceName:()=>NATIVE&&Native.getWorkspaceName?Native.getWorkspaceName():"main",
+  listWorkspaces:()=>{
+    if(NATIVE&&Native.listWorkspaces){try{return JSON.parse(Native.listWorkspaces())}catch(e){}}
+    return ["main"];
+  },
+  setWorkspace:(name)=>{
+    if(NATIVE&&Native.setWorkspace)return Native.setWorkspace(name);
+    return "/workspace/"+name;
+  },
+  list:(dir="")=>{
+    if(NATIVE&&Native.listFiles){try{return JSON.parse(Native.listFiles(dir||""))}catch(e){return []}}
+    return Object.keys(VFS).sort().map(p=>({path:p,name:p.split("/").pop(),dir:false,size:(VFS[p]||"").length,mtime:Date.now()}));
+  },
+  read:(path)=>{
+    const p=String(path||"").replace(/^\/+/,"");
+    if(NATIVE&&Native.readFile)return Native.readFile(p);
+    return Object.prototype.hasOwnProperty.call(VFS,p)?VFS[p]:("ERROR: File not found: "+p);
+  },
+  write:(path,content)=>{
+    const p=String(path||"").replace(/^\/+/,"");
+    if(!p)return "ERROR: Empty path";
+    if(NATIVE&&Native.writeFile)return Native.writeFile(p,String(content==null?"":content));
+    VFS[p]=String(content==null?"":content);saveVfs();
+    return "OK: Wrote "+VFS[p].length+" chars to "+p;
+  },
+  edit:(path,oldStr,newStr,all=false)=>{
+    const p=String(path||"").replace(/^\/+/,"");
+    if(NATIVE&&Native.editFile)return Native.editFile(p,String(oldStr||""),String(newStr||""),!!all);
+    if(!Object.prototype.hasOwnProperty.call(VFS,p))return "ERROR: File not found: "+p;
+    const cur=VFS[p];
+    if(!oldStr){VFS[p]=String(newStr||"");saveVfs();return "OK: Updated "+p}
+    if(!cur.includes(oldStr))return "ERROR: oldString not found in "+p;
+    VFS[p]=all?cur.split(oldStr).join(String(newStr||"")):cur.replace(oldStr,String(newStr||""));
+    saveVfs();return "OK: Edited "+p;
+  },
+  del:(path)=>{
+    const p=String(path||"").replace(/^\/+/,"");
+    if(NATIVE&&Native.deleteFile)return Native.deleteFile(p);
+    delete VFS[p];saveVfs();return "OK: Deleted "+p;
+  },
+  grep:(pattern,glob="")=>{
+    if(NATIVE&&Native.grepFiles)return Native.grepFiles(String(pattern||""),String(glob||""));
+    const out=[];
+    for(const [k,v] of Object.entries(VFS)){
+      String(v).split("\n").forEach((line,i)=>{if(line.toLowerCase().includes(String(pattern||"").toLowerCase()))out.push(k+":"+(i+1)+": "+line)});
+    }
+    return out.length?out.join("\n"):"No matches found.";
+  },
+  glob:(pattern)=>{
+    if(NATIVE&&Native.globFiles)return Native.globFiles(String(pattern||""));
+    return Object.keys(VFS).join("\n")||"No matching files.";
+  },
+  shell:(cmd)=>{
+    if(NATIVE&&Native.runShell){try{return JSON.parse(Native.runShell(String(cmd||"")))}catch(e){return {exitCode:1,output:String(e)}}}
+    return {exitCode:0,output:"(Browser simulation) $ "+cmd+"\nFiles: "+Object.keys(VFS).join(", ")};
+  }
+};
+
+function updateSubstatus(){
+  const srv=NATIVE&&Native.getLocalServerUrl?Native.getLocalServerUrl():"http://127.0.0.1:4096";
+  const ws=FS.workspaceName();
+  const filesCount=FS.list("").filter(f=>!f.dir).length;
+  $("substatus").textContent="● OpenCode ("+srv.replace("http://","")+") · 📁 "+ws+" ("+filesCount+" ф.)";
+  if($("srv_builtin_lbl"))$("srv_builtin_lbl").textContent="Встроенный Android OpenCode ("+srv+")";
+  if($("ws_path_hint"))$("ws_path_hint").textContent="Папка на устройстве: "+FS.workspacePath();
+}
+
+/* ==================== NATIVE HTTP STREAMING BRIDGE ==================== */
+const PEND={};
+window.__nat=(id,kind,data)=>{const p=PEND[id];if(p)p(kind,data)};
+function httpReq(method,url,headers,body,onLine){
+  return new Promise((res,rej)=>{
+    const id="r"+(++seq);
+    PEND[id]=(k,d)=>{if(k==="chunk"){onLine&&onLine(d)}else{delete PEND[id];k==="done"?res(+d):rej(new Error(d))}};
+    if(NATIVE)Native.http(id,method,url,JSON.stringify(headers||{}),body||"");
+    else fetch(url,{method,headers:headers||{},body:method==="GET"?undefined:body}).then(async r=>{const t=await r.text();if(onLine)t.split("\n").forEach(onLine);res(r.status)}).catch(rej);
+  });
+}
+function httpStream(url,headers,body,onLine){return httpReq("POST",url,headers,body,onLine)}
+
+function anonId(){
+  let v=LS.get("anon",null);
+  if(!v){v=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^Math.random()*16>>c/4).toString(16));LS.set("anon",v)}
+  return v;
+}
+
+/* ==================== OPENCODE SERVERS & LLM PROVIDERS ==================== */
+function getRemoteServers(){
+  return (CFG.srv_urls||"").split("\n").map(s=>s.trim().replace(/\/+$/,"")).filter(Boolean);
+}
+function localServerUrl(){
+  return NATIVE&&Native.getLocalServerUrl?Native.getLocalServerUrl():"http://127.0.0.1:4096";
+}
+
+function provider(){
+  const c=CFG;
+  if(c.prov==="kilo"){
+    const kKey=(c.kilo_key||"").trim()||"anonymous";
+    return {
+      kind:"kilo",
+      url:"https://api.kilo.ai/api/gateway/chat/completions",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+kKey,
+        "User-Agent":"Kilo-Code/5.0.0"
+      },
+      model:c.kilo_model||"poolside/laguna-s-2.1:free"
+    };
+  }
+  if(c.prov==="oc_local"||(c.prov==="dsh"&&!c.dsh_tok)){
+    const model=c.prov==="dsh"?("deepseek-harness/"+c.dsh_model):(c.oc_model||"opencode/deepseek-v4.1-flash-free");
+    return {
+      kind:"opencode_local",
+      url:localServerUrl()+"/v1/chat/completions",
+      headers:{"Content-Type":"application/json"},
+      model
+    };
+  }
+  if(c.prov==="oc_remote"){
+    const srvs=getRemoteServers();
+    const base=srvs[0]||localServerUrl();
+    const h={"Content-Type":"application/json"};
+    if(c.srv_pwd)h["Authorization"]="Basic "+btoa("opencode:"+c.srv_pwd);
+    return {kind:"opencode_remote",base,url:base+"/v1/chat/completions",headers:h,model:c.oc_model||"opencode/deepseek-v4.1-flash-free"};
+  }
+  if(c.prov==="dsh"){
+    const h={
+      "Content-Type":"application/json",
+      "anthropic-version":"2023-06-01",
+      "User-Agent":"deepseek-harness/0.2.1-rc.2 (+https://github.com/deepseek-ai/deepseek-harness)",
+      "x-deepseek-harness-user-id":anonId()
+    };
+    if(c.dsh_tok.startsWith("sk-")&&c.dsh_tok.length<=64)h["x-api-key"]=c.dsh_tok;else h["x-dsh-auth-token"]=c.dsh_tok;
+    return {kind:"anthropic",url:"https://api.deepseek.com/anthropic/v1/messages",headers:h,model:c.dsh_model};
+  }
+  if(c.prov==="or"){
+    if(!c.or_key)throw new Error("Укажите OpenRouter API key в ⚙ настройках или выберите 🟢 OpenCode Server (Без ключей)");
+    return {kind:"openai",url:"https://openrouter.ai/api/v1/chat/completions",headers:{"Content-Type":"application/json","Authorization":"Bearer "+c.or_key,"X-Title":"OpenSwarm Mobile"},model:c.or_model||"deepseek/deepseek-chat-v3.1:free"};
+  }
+  if(!c.oa_url||!c.oa_model)throw new Error("Укажите Base URL и модель в ⚙ настройках");
+  const h={"Content-Type":"application/json"};if(c.oa_key)h.Authorization="Bearer "+c.oa_key;
+  return {kind:"openai",url:c.oa_url.replace(/\/+$/,"")+"/chat/completions",headers:h,model:c.oa_model};
+}
+
+const OC_TITLE_SYS=`You are a title generator. You output ONLY a thread title. Nothing else.
+
+<task>
+Generate a brief title that would help the user find this conversation later.
+
+Follow all rules in <rules>
+Use the <examples> so you know what a good title looks like.
+Your output must be:
+- A single line
+- <=50 characters
+- No explanations
+</task>
+
+<rules>
+- you MUST use the same language as the user message you are summarizing
+- Title must be grammatically correct and read naturally - no word salad
+- Never include tool names in the title (e.g. "read tool", "bash tool", "edit tool")
+- Focus on the main topic or question the user needs to retrieve
+- Vary your phrasing - avoid repetitive patterns like always starting with "Analyzing"
+- When a file is mentioned, focus on WHAT the user wants to do WITH the file, not just that they shared it
+- Keep exact: technical terms, numbers, filenames, HTTP codes
+- Remove: the, this, my, a, an
+- Never assume tech stack
+- Never use tools
+- NEVER respond to questions, just generate a title for the conversation
+- The title should NEVER include "summarizing" or "generating" when generating a title
+- DO NOT SAY YOU CANNOT GENERATE A TITLE OR COMPLAIN ABOUT THE INPUT
+- Always output something meaningful, even if the input is minimal.
+- If the user message is short or conversational (e.g. "hello", "lol", "what's up", "hey"):
+  -> create a title that reflects the user's tone or intent (such as Greeting, Quick check-in, Light chat, Intro message, etc.)
+</rules>
+
+<examples>
+"debug 500 errors in production" -> Debugging production 500 errors
+"refactor user service" -> Refactoring user service
+"why is app.js failing" -> app.js failure investigation
+"implement rate limiting" -> Rate limiting implementation
+"how do I connect postgres to my API" -> Postgres API connection
+"best practices for React hooks" -> React hooks best practices
+"@src/credential.ts can you add refresh token support" -> Credential refresh token support
+"@utils/parser.ts this is broken" -> Parser bug fix
+"look at @config.json" -> Config review
+"@App.tsx add dark mode toggle" -> Dark mode toggle in App
+</examples>`;
+
+async function callRemoteOpenCodeSession(base,headers,model,messages,sys,onDelta){
+  // Пробуем нативный OpenCode REST API (/session -> /session/:id/message) или /v1/chat/completions
+  const raw=[];
+  const st=await httpReq("POST",base+"/session",headers,JSON.stringify({title:"OpenSwarm Mobile"}),l=>raw.push(l));
+  if(st===200){
+    try{
+      const ses=JSON.parse(raw.join(""));
+      if(ses&&ses.id){
+        const lastMsg=messages[messages.length-1]?.content||"";
+        const [provId,modId]=(model.includes("/")?model.split("/"):["opencode",model]);
+        const msgRaw=[];
+        const st2=await httpReq("POST",base+"/session/"+ses.id+"/message",headers,JSON.stringify({
+          model:{providerID:provId,modelID:modId},
+          system:sys||undefined,
+          parts:[{type:"text",text:lastMsg}]
+        }),l=>msgRaw.push(l));
+        if(st2===200){
+          const j=JSON.parse(msgRaw.join(""));
+          const txt=(j.parts||[]).map(p=>p.text||"").join("")||j.text||"";
+          if(txt){onDelta&&onDelta(txt);return txt}
+        }
+      }
+    }catch(e){}
+  }
+  return null;
+}
+
+function createStreamParser(kind,onDelta){
+  let text="",reasoning="",raw=[];
+  const tcalls={};
+  const onLine=line=>{
+    raw.push(line);
+    if(!line.startsWith("data:"))return;
+    const d=line.slice(5).trim();
+    if(!d||d==="[DONE]")return;
+    try{
+      const j=JSON.parse(d);
+      if(kind==="anthropic"){
+        const t=(j.type==="content_block_delta"&&j.delta&&j.delta.type==="text_delta")?j.delta.text:"";
+        if(t){text+=t;onDelta&&onDelta(text)}
+        return;
+      }
+      const ch=j.choices&&j.choices[0];
+      if(!ch)return;
+      const delta=ch.delta||ch.message||{};
+      if(typeof delta.content==="string"&&delta.content.length>0){
+        text+=delta.content;
+        onDelta&&onDelta(text);
+      }
+      const rChunk=delta.reasoning||delta.reasoning_content||"";
+      if(typeof rChunk==="string"&&rChunk.length>0){
+        reasoning+=rChunk;
+        if(!text&&onDelta){
+          onDelta("💭 *Размышление модели…*\n\n"+reasoning.slice(-360));
+        }
+      }
+      if(Array.isArray(delta.tool_calls)){
+        delta.tool_calls.forEach(tc=>{
+          const idx=tc.index!=null?tc.index:0;
+          if(!tcalls[idx])tcalls[idx]={name:"",args:""};
+          if(tc.function){
+            if(tc.function.name)tcalls[idx].name+=tc.function.name;
+            if(tc.function.arguments)tcalls[idx].args+=tc.function.arguments;
+          }
+        });
+      }
+    }catch(e){}
+  };
+  const finish=()=>{
+    const tcKeys=Object.keys(tcalls).sort((a,b)=>(+a)-(+b));
+    let toolXml="";
+    for(const k of tcKeys){
+      const tc=tcalls[k];
+      if(tc.name){
+        toolXml+=`\n<tool name="${tc.name}">${tc.args||"{}"}</tool>`;
+      }
+    }
+    if(toolXml)text=(text?text+"\n":"")+toolXml.trim();
+    if(!text&&raw.length){
+      try{
+        const joined=raw.join("").trim();
+        if(joined.startsWith("{")){
+          const j=JSON.parse(joined);
+          if(kind==="anthropic"){
+            text=(j.content||[]).map(x=>x.text||"").join("");
+          }else if(j.choices&&j.choices[0]&&j.choices[0].message){
+            const msg=j.choices[0].message;
+            text=msg.content||msg.reasoning||msg.reasoning_content||"";
+            if(Array.isArray(msg.tool_calls)){
+              msg.tool_calls.forEach(tc=>{
+                if(tc.function&&tc.function.name){
+                  text+=`\n<tool name="${tc.function.name}">${tc.function.arguments||"{}"}</tool>`;
+                }
+              });
+            }
+          }
+        }
+      }catch(e){}
+    }
+    if(!text&&reasoning)text=reasoning;
+    if(text&&onDelta)onDelta(text);
+    return {text:text.trim(),raw};
+  };
+  return {onLine,finish};
+}
+
+let LOCAL_SLOT_CHAIN=Promise.resolve();
+function withLocalSlot(fn,onStart){
+  const run=async()=>{
+    if(onStart)try{onStart()}catch(e){}
+    try{
+      return await fn();
+    }finally{
+      await new Promise(r=>setTimeout(r,300));
+    }
+  };
+  const next=LOCAL_SLOT_CHAIN.then(run,run);
+  LOCAL_SLOT_CHAIN=next.catch(()=>{});
+  return next;
+}
+
+async function llmOnce(P,messages,fullMsgs,onDelta,sys){
+  if(P.kind==="opencode_local"&&!NATIVE){
+    const sp=createStreamParser("openai",onDelta);
+    const r=await fetch("https://text.pollinations.ai/openai",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"openai",messages:fullMsgs,stream:true})
+    });
+    const t=await r.text();
+    t.split("\n").forEach(sp.onLine);
+    const res=sp.finish();
+    if(res.text)return res.text;
+  }
+
+  const body=P.kind==="anthropic"
+    ?{model:P.model,max_tokens:8192,stream:true,system:sys||undefined,messages}
+    :{model:P.model,stream:true,messages:fullMsgs};
+
+  const sp1=createStreamParser(P.kind,onDelta);
+  let status=await httpStream(P.url,P.headers,JSON.stringify(body),sp1.onLine);
+  let res1=sp1.finish();
+
+  if((status>=400||!res1.text)&&(P.kind==="opencode_local"||P.kind==="kilo")){
+    await new Promise(r=>setTimeout(r,450));
+    const spK=createStreamParser("openai",onDelta);
+    status=await httpStream("https://api.kilo.ai/api/gateway/chat/completions",{"Content-Type":"application/json","Authorization":"Bearer anonymous","User-Agent":"Kilo-Code/5.0.0"},JSON.stringify({model:"poolside/laguna-s-2.1:free",messages:fullMsgs,stream:true}),spK.onLine);
+    res1=spK.finish();
+    if(status>=400||!res1.text){
+      await new Promise(r=>setTimeout(r,500));
+      const sp2=createStreamParser("openai",onDelta);
+      status=await httpStream("https://text.pollinations.ai/openai",{"Content-Type":"application/json"},JSON.stringify({model:"openai",messages:fullMsgs,stream:true}),sp2.onLine);
+      res1=sp2.finish();
+    }
+  }
+
+  if(!res1.text){
+    let m=res1.raw.join("\n").slice(0,260);
+    try{const j=JSON.parse(res1.raw.join(""));m=(j.error&&(j.error.message||j.error))||m}catch(e){}
+    throw new Error("HTTP "+status+": "+(m||"пустой ответ от модели"));
+  }
+  return res1.text;
+}
+
+async function llm(messages,onDelta,sys,onSlotStart){
+  const P=provider();
+  if(P.kind==="opencode_remote"){
+    const r=await callRemoteOpenCodeSession(P.base,P.headers,P.model,messages,sys,onDelta);
+    if(r)return r;
+  }
+  const fullMsgs=sys?[{role:"system",content:sys},...messages]:messages;
+
+  const execWithRetry=async()=>{
+    let lastErr=null;
+    for(let attempt=0;attempt<3;attempt++){
+      if(ABORT)break;
+      try{
+        return await llmOnce(P,messages,fullMsgs,onDelta,sys);
+      }catch(e){
+        lastErr=e;
+        const msg=String(e&&e.message||e);
+        if(attempt<2&&(/429|RATE_LIMITED|previous request|50[0234]|пустой ответ/i.test(msg))){
+          await new Promise(r=>setTimeout(r,1200*(attempt+1)));
+          continue;
+        }
+        throw e;
+      }
+    }
+    throw lastErr||new Error("Ошибка запроса к модели");
+  };
+
+  if(P.kind==="opencode_local"){
+    return withLocalSlot(execWithRetry,onSlotStart);
+  }
+  if(onSlotStart)try{onSlotStart()}catch(e){}
+  return execWithRetry();
+}
+
+/* ==================== AGENTIC FILE & SHELL TOOL LOOP ==================== */
+const TOOL_PROMPT=`
+У тебя есть прямой доступ к локальной файловой системе рабочего пространства (папка проекта на Android) и встроенному OpenCode-окружению.
+Когда нужно прочитать, создать, изменить, найти файлы или выполнить shell-команду, используй XML-вызовы инструментов (можно вызывать несколько за шаг):
+
+<tool name="list_files">{"path":""}</tool>
+<tool name="read_file">{"path":"README.md"}</tool>
+<tool name="write_file">{"path":"src/main.py","content":"print('hello')\\n"}</tool>
+<tool name="edit_file">{"path":"src/main.py","old":"hello","new":"OpenSwarm"}</tool>
+<tool name="grep_files">{"pattern":"TODO"}</tool>
+<tool name="run_shell">{"command":"ls -la"}</tool>
+
+Правила работы с инструментами:
+- Если пользователь просит создать, написать, сохранить или изменить файл/код проекта — ОБЯЗАТЕЛЬНО вызови <tool name="write_file"> или <tool name="edit_file">, чтобы файл реально появился на устройстве.
+- После вызова <tool ...> остановись и дождись <tool_result>, затем продолжи ответ.
+- В финальном ответе не оставляй сырые теги <tool>.`;
+
+function parseToolCalls(text){
+  const calls=[];
+  const re=/<tool\s+name=["']([a-zA-Z0-9_]+)["']\s*>([\s\S]*?)<\/tool>/gi;
+  let m;
+  while((m=re.exec(text))!==null){
+    const name=m[1].trim();
+    const raw=m[2].trim();
+    let args={};
+    try{args=JSON.parse(raw)}catch(e){args={path:raw,command:raw,pattern:raw}}
+    calls.push({name,args,rawMatch:m[0]});
+  }
+  return calls;
+}
+
+function stripToolXml(text){
+  return String(text||"").replace(/<tool\s+name=["'][^"']+["']\s*>[\s\S]*?<\/tool>/gi,"").trim();
+}
+
+function execOneTool(call){
+  const n=call.name.toLowerCase();
+  const a=call.args||{};
+  if(n==="list_files"||n==="glob"){
+    const list=FS.list(a.path||"");
+    return {
+      label:"📂 list_files · "+(a.path||"/"),
+      file:null,
+      output:list.length?list.map(f=>(f.dir?"[DIR] ":"")+f.path+" ("+f.size+"b)").join("\n"):"(папка пуста)"
+    };
+  }
+  if(n==="read_file"||n==="read"){
+    const p=a.path||a.filePath||"";
+    const out=FS.read(p);
+    return {label:"📖 read_file · "+p,file:p,output:out.slice(0,12000)};
+  }
+  if(n==="write_file"||n==="write"){
+    const p=a.path||a.filePath||"output.txt";
+    const out=FS.write(p,a.content||"");
+    updateSubstatus();
+    return {label:"✨ write_file · "+p,file:p,output:out};
+  }
+  if(n==="edit_file"||n==="edit"){
+    const p=a.path||a.filePath||"";
+    const out=FS.edit(p,a.old||a.oldString||"",a.new||a.newString||"",!!a.replaceAll);
+    updateSubstatus();
+    return {label:"✏️ edit_file · "+p,file:p,output:out};
+  }
+  if(n==="delete_file"||n==="delete"){
+    const p=a.path||"";
+    const out=FS.del(p);
+    updateSubstatus();
+    return {label:"🗑 delete_file · "+p,file:null,output:out};
+  }
+  if(n==="grep_files"||n==="grep"){
+    const pat=a.pattern||a.query||"";
+    return {label:"🔍 grep · "+pat,file:null,output:FS.grep(pat,a.include||"")};
+  }
+  if(n==="run_shell"||n==="shell"||n==="bash"){
+    const cmd=a.command||a.cmd||"";
+    const res=FS.shell(cmd);
+    updateSubstatus();
+    return {label:"💻 shell · "+cmd.slice(0,32),file:null,output:"exit="+res.exitCode+"\n"+(res.output||"")};
+  }
+  return {label:"🔧 "+n,file:null,output:"Unknown tool: "+n};
+}
+
+async function agentLoop(messages,onDelta,sys,toolsBar,onSlotStart){
+  const wsFiles=FS.list("").filter(f=>!f.dir).map(f=>f.path).slice(0,40).join(", ")||"README.md";
+  const fullSys=sys+"\n\nТекущая папка проекта: "+FS.workspacePath()+"\nФайлы в проекте: "+wsFiles+"\n"+TOOL_PROMPT;
+  const conv=[...messages];
+  let finalClean="";
+
+  for(let step=0;step<6;step++){
+    if(ABORT)break;
+    const out=await llm(conv,t=>{
+      const clean=stripToolXml(t);
+      if(clean&&onDelta)onDelta(clean);
+    },fullSys,step===0?onSlotStart:null);
+
+    const calls=parseToolCalls(out);
+    const cleaned=stripToolXml(out);
+    if(cleaned)finalClean=cleaned;
+
+    if(!calls.length)return finalClean||out;
+
+    const results=[];
+    for(const c of calls){
+      const r=execOneTool(c);
+      results.push(`<tool_result name="${c.name}">\n${r.output}\n</tool_result>`);
+      if(toolsBar){
+        const chip=document.createElement("span");
+        chip.className="tchip";
+        chip.innerHTML="<b>"+esc(r.label)+"</b>";
+        chip.onclick=()=>openFilesModal(r.file);
+        toolsBar.appendChild(chip);
+      }
+    }
+    conv.push({role:"assistant",content:out});
+    conv.push({role:"user",content:results.join("\n\n")+"\n\nПродолжи выполнение задачи и дай итоговый ответ пользователю без тегов <tool>."});
+  }
+  return finalClean||"Готово (инструменты выполнены).";
+}
+
+/* ==================== MARKDOWN FORMATTING ==================== */
+function md(src){
+  const blocks=[];
+  let s=esc(src).replace(/```(\w*)\n?([\s\S]*?)```/g,(m,l,c)=>{
+    blocks.push({lang:l,code:c});
+    return "\u0000"+(blocks.length-1)+"\u0000";
+  });
+  s=s.replace(/^### (.*)$/gm,"<h3>$1</h3>")
+     .replace(/^## (.*)$/gm,"<h2>$1</h2>")
+     .replace(/^# (.*)$/gm,"<h1>$1</h1>")
+     .replace(/^> (.*)$/gm,"<blockquote>$1</blockquote>")
+     .replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>")
+     .replace(/`([^`\n]+)`/g,"<code>$1</code>")
+     .replace(/(?:^|\n)((?:[-*] .*(?:\n|$))+)/g,(m,l)=>"<ul>"+l.trim().split("\n").map(x=>"<li>"+x.replace(/^[-*] /,"")+"</li>").join("")+"</ul>")
+     .replace(/\n/g,"<br>")
+     .replace(/(<\/(?:h\d|ul|blockquote)>)<br>/g,"$1");
+  return s.replace(/\u0000(\d+)\u0000/g,(m,i)=>"<pre><code>"+blocks[i].code+"</code></pre>");
+}
+
+/* ==================== CHATS & UI ==================== */
+const STY={
+  concise:"Отвечай максимально кратко и по сути.",
+  code:"Выдавай преимущественно рабочий код и сразу сохраняй его в файлы через write_file.",
+  detailed:"Дай развёрнутый ответ с объяснениями, архитектурой и примерами.",
+  steps:"Структурируй ответ по шагам: План → Работа с файлами/Реализация → Проверка."
+};
+const BASE_SYS="Ты OpenSwarm — автономный мультиагентный ИИ-помощник и среда разработки на Android со встроенным OpenCode сервером и доступом к файлам проекта. Отвечай на языке пользователя, аккуратно форматируй ответ в Markdown.";
+
+function newChat(){
+  const c={id:uid(),title:"Новый чат",msgs:[],t:Date.now()};
+  CHATS.unshift(c);CUR=c;save();render();return c;
+}
+function openChat(id){CUR=CHATS.find(c=>c.id===id)||null;render();closeDrawer()}
+
+function render(){
+  updateSubstatus();
+  $("title").textContent=CUR?CUR.title:"OpenSwarm";
+  const box=$("conv");box.innerHTML="";
+  if(!CUR||!CUR.msgs.length){
+    box.innerHTML=`<div class="sys" style="margin-top:22px">
+      <div style="font-size:28px;color:var(--acc)">✻</div>
+      <h2 style="margin:6px 0">OpenSwarm Android</h2>
+      Автономный рой агентов + встроенный <b>OpenCode Server</b> + работа с локальными файлами без ПК.
+      <div class="pill-grid">
+        <span class="pill" onclick="quickPrompt('Создай файл app.py с генератором паролей и проверь его в списке файлов')">📁 Создать файл в проекте</span>
+        <span class="pill" onclick="quickPrompt('Покажи все файлы в текущей папке проекта и прочитай README.md')">🔍 Проверить файлы проекта</span>
+        <span class="pill" onclick="setModeAndPrompt('swarm','Спроектируй и создай веб-приложение трекера задач в файле todo.html')">🚀 Запустить рой агентов</span>
+        <span class="pill" onclick="openSchedModal()">⏰ Отложенные задачи</span>
+        <span class="pill" onclick="openFilesModal()">💻 Менеджер файлов и Shell</span>
+      </div>
+    </div>`;
+  }else{
+    CUR.msgs.forEach(m=>{
+      const wrap=addBubble(m.role==="user"?"u":"a",m.content,m.tools);
+    });
+  }
+  box.scrollTop=box.scrollHeight;
+  drawList();
+}
+
+window.quickPrompt=t=>{$("prompt").value=t;$("prompt").dispatchEvent(new Event("input"));send()};
+window.setModeAndPrompt=(m,t)=>{$("mode").value=m;window.quickPrompt(t)};
+
+function addBubble(role,text,savedTools){
+  const d=document.createElement("div");d.className="msg "+role;
+  let toolsBar=null;
+  if(role==="a"){
+    toolsBar=document.createElement("div");
+    toolsBar.className="tools-bar";
+    if(Array.isArray(savedTools)){
+      savedTools.forEach(tb=>{
+        const chip=document.createElement("span");
+        chip.className="tchip";
+        chip.innerHTML="<b>"+esc(tb.label)+"</b>";
+        chip.onclick=()=>openFilesModal(tb.file);
+        toolsBar.appendChild(chip);
+      });
+    }
+    d.appendChild(toolsBar);
+  }
+  const b=document.createElement("div");b.className="bub";
+  b.innerHTML=role==="u"?esc(text):md(text);
+  d.appendChild(b);
+  $("conv").appendChild(d);
+  return {bub:b,toolsBar};
+}
+
+function drawList(){
+  const q=$("search").value.trim().toLowerCase();
+  const box=$("list");box.innerHTML="";
+  CHATS.filter(c=>!q||c.title.toLowerCase().includes(q)||c.msgs.some(m=>m.content.toLowerCase().includes(q))).forEach(c=>{
+    const d=document.createElement("div");
+    d.className="s"+(CUR&&CUR.id===c.id?" on":"");
+    d.innerHTML="<span>"+esc(c.title)+"</span><button class='x'>✕</button>";
+    d.querySelector("span").onclick=()=>openChat(c.id);
+    d.querySelector("button").onclick=()=>{
+      CHATS=CHATS.filter(x=>x.id!==c.id);
+      if(CUR&&CUR.id===c.id)CUR=CHATS[0]||null;
+      save();render();
+    };
+    box.appendChild(d);
+  });
+}
+function closeDrawer(){$("drawer").classList.remove("on")}
+
+/* ==================== SWARM / COWORK / HEAL / DEBATE ENGINE ==================== */
+function autoMode(t){
+  const steps=(t.match(/(^|\n)\s*(\d+[.)]|[-*])\s/g)||[]).length;
+  if(/(исправь ошибку|почини|баг|traceback|exception|heal|fix)/i.test(t)&&t.length>60)return "heal";
+  if(/(сравни|дебаты|за и против|versus|vs\b)/i.test(t)&&t.length>80)return "debate";
+  if(t.length>300||steps>=3||/(рефактор|реализуй|разработай|исследуй|спроектируй|создай проект|build|implement|refactor)/i.test(t)&&t.length>110)return "swarm";
+  return "chat";
+}
+function parseJson(t){
+  const m=String(t||"").match(/\[[\s\S]*\]/);
+  if(!m)return null;
+  try{const a=JSON.parse(m[0]);return Array.isArray(a)?a:null}catch(e){return null}
+}
+
+let LAST_FAIL=null;
+
+function makeBoard(){
+  const board=document.createElement("div");board.className="agents";$("conv").appendChild(board);
+  const mk=(name,queued)=>{
+    const d=document.createElement("div");d.className="ag";
+    d.innerHTML="<b>"+esc(name)+"</b><span class='st-run'>"+(queued?"⏳ в очереди":"● работает")+"</span>";
+    board.appendChild(d);
+    return {
+      el:d,
+      active:()=>d.lastChild.outerHTML="<span class='st-run'>● работает</span>",
+      run:()=>d.lastChild.outerHTML="<span class='st-run'>● перезапуск…</span>",
+      ok:(s)=>d.lastChild.outerHTML="<span class='st-ok'>✔ "+(esc(s||"готово"))+"</span>",
+      bad:(e,onRetry)=>{
+        d.lastChild.outerHTML="<span class='st-bad'>✘ "+esc(String(e).slice(0,44))+"</span>";
+        if(onRetry){
+          const rb=document.createElement("button");
+          rb.textContent="↻";
+          rb.title="Перезапустить эту модель";
+          rb.style.cssText="margin-left:5px;padding:1px 6px;font-size:11px";
+          rb.onclick=ev=>{ev.stopPropagation();onRetry()};
+          d.lastChild.appendChild(rb);
+        }
+      }
+    };
+  };
+  return {board,mk};
+}
+
+function appendContinueButton(label,onClick){
+  const wrap=document.createElement("div");
+  wrap.className="sys";
+  wrap.style.cssText="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0";
+  const btn=document.createElement("button");
+  btn.className="pri";
+  btn.textContent=label||"▶ Продолжить ответ (перезапустить fail)";
+  btn.onclick=onClick;
+  wrap.appendChild(btn);
+  $("conv").appendChild(wrap);
+  $("conv").scrollTop=1e9;
+  return wrap;
+}
+
+async function runSwarm(task,n,sys,history){
+  const {mk}=makeBoard();
+  const pl=mk("Планировщик роя");
+  let plan;
+  try{
+    const out=await llm([...history,{role:"user",content:"Раздели задачу на "+n+" подзадач для параллельных агентов-исполнителей (с возможностью чтения/записи файлов проекта). Верни ТОЛЬКО JSON-массив объектов [{\"title\":\"...\",\"prompt\":\"...\"}] без пояснений.\n\nЗадача: "+task}],null,"Ты планировщик роя OpenSwarm.");
+    plan=(parseJson(out)||[]).filter(x=>x&&x.prompt).slice(0,n);
+    pl.ok(plan.length+" задач");
+  }catch(e){pl.bad(e);throw e}
+  if(!plan.length)plan=Array.from({length:n},(_,i)=>({title:"Агент #"+(i+1),prompt:task+" (фокус подзадачи #"+(i+1)+")"}));
+
+  const toolsHolder=document.createElement("div");toolsHolder.className="tools-bar";$("conv").appendChild(toolsHolder);
+  const cards=[];
+  const failedSet=new Set();
+  const parts=await Promise.all(plan.map(async(p,i)=>{
+    const a=mk((i+1)+". "+(p.title||"Агент"),i>0);
+    cards[i]=a;
+    try{
+      const r=await agentLoop([{role:"user",content:"Общая задача: "+task+"\n\nТвоя подзадача: "+p.prompt}],null,sys,toolsHolder,()=>a.active());
+      a.ok();return {title:p.title,text:r,ok:true};
+    }catch(e){
+      failedSet.add(i);
+      a.bad(e,()=>retrySwarmFailed([i]));
+      return {title:p.title,text:"(ошибка агента: "+e.message+")",ok:false};
+    }
+  }));
+
+  const sy=mk("Синтезатор");
+  const {bub,toolsBar}=addBubble("a","…");
+
+  async function retrySwarmFailed(indices){
+    if(BUSY)return;
+    setBusy(true);ABORT=false;
+    const toRun=indices&&indices.length?indices:[...failedSet];
+    try{
+      await Promise.all(toRun.map(async idx=>{
+        const p=plan[idx];
+        const a=cards[idx];
+        if(a)a.run();
+        try{
+          const r=await agentLoop([{role:"user",content:"Общая задача: "+task+"\n\nТвоя подзадача: "+p.prompt}],null,sys,toolsHolder);
+          parts[idx]={title:p.title,text:r,ok:true};
+          failedSet.delete(idx);
+          if(a)a.ok("перезапущен");
+        }catch(e){
+          failedSet.add(idx);
+          if(a)a.bad(e,()=>retrySwarmFailed([idx]));
+        }
+      }));
+      sy.run();
+      const updated=await agentLoop([{role:"user",content:"Задача: "+task+"\n\nРезультаты работы "+parts.length+" агентов роя:\n\n"+parts.map((p,i)=>"### "+(p.title||"Агент "+(i+1))+"\n"+p.text).join("\n\n")+"\n\nСведи всё в единый качественный итоговый ответ. Если нужно записать итоговый файл — используй write_file."}],t=>{bub.innerHTML=md(t);$("conv").scrollTop=1e9},sys,toolsBar);
+      sy.ok("обновлено");
+      if(CUR&&CUR.msgs.length&&CUR.msgs[CUR.msgs.length-1].role==="assistant"){
+        CUR.msgs[CUR.msgs.length-1].content=updated;
+      }else if(CUR){
+        CUR.msgs.push({role:"assistant",content:updated});
+      }
+      save();
+    }catch(e){
+      sy.bad(e);
+    }
+    setBusy(false);
+  }
+
+  try{
+    const final=await agentLoop([{role:"user",content:"Задача: "+task+"\n\nРезультаты работы "+parts.length+" агентов роя:\n\n"+parts.map((p,i)=>"### "+(p.title||"Агент "+(i+1))+"\n"+p.text).join("\n\n")+"\n\nСведи всё в единый качественный итоговый ответ. Если нужно записать итоговый файл — используй write_file."}],t=>{bub.innerHTML=md(t);$("conv").scrollTop=1e9},sys,toolsBar);
+    sy.ok();
+    if(failedSet.size>0){
+      LAST_FAIL={kind:"swarm",retry:()=>retrySwarmFailed([...failedSet]),count:failedSet.size};
+    }
+    return final;
+  }catch(e){
+    sy.bad(e,()=>retrySwarmFailed([...failedSet]));
+    LAST_FAIL={kind:"swarm",retry:()=>retrySwarmFailed([...failedSet]),count:failedSet.size||1};
+    throw e;
+  }
+}
+
+async function runCowork(task,sys,history){
+  const {mk}=makeBoard();
+  const toolsHolder=document.createElement("div");toolsHolder.className="tools-bar";$("conv").appendChild(toolsHolder);
+  const a1=mk("1. Архитектор");
+  const spec=await agentLoop([...history,{role:"user",content:"Изучи файлы проекта и составь чёткий план реализации задачи: "+task}],null,sys,toolsHolder);
+  a1.ok("план готов");
+
+  const a2=mk("2. Кодер (OpenCode)");
+  const impl=await agentLoop([{role:"user",content:"Задача: "+task+"\n\nАрхитектурный план:\n"+spec+"\n\nРеализуй решение в файлах проекта с помощью write_file / edit_file / run_shell."}],null,sys,toolsHolder);
+  a2.ok("код записан");
+
+  const a3=mk("3. Ревьюер");
+  const {bub,toolsBar}=addBubble("a","…");
+  const rev=await agentLoop([{role:"user",content:"Задача: "+task+"\n\nПлан:\n"+spec+"\n\nРеализация:\n"+impl+"\n\nПроверь созданные/изменённые файлы через read_file, при необходимости исправь недочёты и дай финальный отчёт пользователю."}],t=>{bub.innerHTML=md(t);$("conv").scrollTop=1e9},sys,toolsBar);
+  a3.ok("проверено");
+  return rev;
+}
+
+async function runHeal(task,sys,history){
+  const {mk}=makeBoard();
+  const d1=mk("1. Диагностика");
+  const {bub,toolsBar}=addBubble("a","…");
+  const diag=await agentLoop([...history,{role:"user",content:"Проанализируй проблему/ошибку, проверь файлы в проекте (list_files / read_file / grep_files), исправь проблему через edit_file / write_file и проверь через run_shell:\n\n"+task}],t=>{bub.innerHTML=md(t);$("conv").scrollTop=1e9},sys,toolsBar);
+  d1.ok("исправлено");
+  return diag;
+}
+
+async function runDebate(task,n,sys,history){
+  const {mk}=makeBoard();
+  const cnt=Math.max(2,Math.min(6,n||3));
+  const roles=["Сторонник подхода А (Прагматик)","Критик / Альтернативный подход Б","Системный архитектор","Эксперт по безопасности","Оптимизатор производительности","Продуктовый аналитик"];
+  const failedSet=new Set();
+  const cards=[];
+  const args=await Promise.all(Array.from({length:cnt},async(_,i)=>{
+    const ag=mk((i+1)+". "+roles[i],i>0);
+    cards[i]=ag;
+    try{
+      const r=await llm([...history,{role:"user",content:"Тема дебатов: "+task+"\nТвоя роль: "+roles[i]+". Приведи сильные аргументы и конкретные предложения."}],null,sys,()=>ag.active());
+      ag.ok();return "### "+roles[i]+"\n"+r;
+    }catch(e){
+      failedSet.add(i);
+      ag.bad(e);
+      return "### "+roles[i]+"\n(участник не ответил: "+e.message+")";
+    }
+  }));
+  const judge=mk("Судья-синтезатор");
+  const {bub}=addBubble("a","…");
+  const final=await llm([{role:"user",content:"Тема: "+task+"\n\nПозиции участников:\n\n"+args.join("\n\n")+"\n\nВынеси взвешенный вердикт и лучшее практическое решение."}],t=>{bub.innerHTML=md(t);$("conv").scrollTop=1e9},sys);
+  judge.ok();
+  if(failedSet.size>0){
+    LAST_FAIL={kind:"debate",count:failedSet.size,retry:async()=>{
+      if(BUSY)return;setBusy(true);
+      for(const idx of [...failedSet]){
+        cards[idx].run();
+        try{
+          const r=await llm([...history,{role:"user",content:"Тема дебатов: "+task+"\nТвоя роль: "+roles[idx]+". Приведи сильные аргументы и конкретные предложения."}],null,sys);
+          args[idx]="### "+roles[idx]+"\n"+r;
+          failedSet.delete(idx);cards[idx].ok("перезапущен");
+        }catch(e){cards[idx].bad(e)}
+      }
+      judge.run();
+      const upd=await llm([{role:"user",content:"Тема: "+task+"\n\nПозиции участников:\n\n"+args.join("\n\n")+"\n\nВынеси взвешенный вердикт и лучшее практическое решение."}],t=>{bub.innerHTML=md(t);$("conv").scrollTop=1e9},sys);
+      judge.ok("обновлено");
+      if(CUR&&CUR.msgs.length&&CUR.msgs[CUR.msgs.length-1].role==="assistant")CUR.msgs[CUR.msgs.length-1].content=upd;
+      save();setBusy(false);
+    }};
+  }
+  return final;
+}
+
+async function executeTurn(enrichedText,mode,n,sys,history){
+  LAST_FAIL=null;
+  let answer="";
+  try{
+    if(mode==="swarm"){
+      const s=document.createElement("div");s.className="sys";s.textContent="🚀 Рой из "+n+" агентов + доступ к файлам";$("conv").appendChild(s);
+      answer=await runSwarm(enrichedText,n,sys,history);
+    }else if(mode==="cowork"){
+      const s=document.createElement("div");s.className="sys";s.textContent="🤝 Cowork: Архитектор → Кодер → Ревьюер";$("conv").appendChild(s);
+      answer=await runCowork(enrichedText,sys,history);
+    }else if(mode==="heal"){
+      const s=document.createElement("div");s.className="sys";s.textContent="🩺 Heal: Авто-диагностика и починка файлов";$("conv").appendChild(s);
+      answer=await runHeal(enrichedText,sys,history);
+    }else if(mode==="debate"){
+      const s=document.createElement("div");s.className="sys";s.textContent="⚖️ Дебаты ("+Math.max(2,Math.min(6,n))+" экспертов)";$("conv").appendChild(s);
+      answer=await runDebate(enrichedText,n,sys,history);
+    }else{
+      const {bub,toolsBar}=addBubble("a","…");
+      answer=await agentLoop([...history,{role:"user",content:enrichedText}],t=>{bub.innerHTML=md(t);$("conv").scrollTop=1e9},sys,toolsBar);
+    }
+    CUR.msgs.push({role:"assistant",content:answer});
+    save();render();
+    if(LAST_FAIL&&LAST_FAIL.retry){
+      appendContinueButton("▶ Продолжить ответ (перезапустить fail: "+LAST_FAIL.count+")",LAST_FAIL.retry);
+    }
+    notifyTg("✅ OpenSwarm: готово\n\n"+answer.slice(0,500));
+  }catch(e){
+    const s=document.createElement("div");s.className="sys";s.style.color="var(--bad)";
+    s.textContent="Ошибка: "+e.message;$("conv").appendChild(s);
+    const retryFn=(LAST_FAIL&&LAST_FAIL.retry)?LAST_FAIL.retry:async()=>{
+      if(BUSY)return;
+      setBusy(true);ABORT=false;
+      await executeTurn(enrichedText,mode,n,sys,history);
+      setBusy(false);
+    };
+    appendContinueButton("▶ Продолжить ответ (перезапустить упавшую модель)",retryFn);
+  }
+}
+
+async function send(){
+  const ta=$("prompt");
+  const text=ta.value.trim();
+  if(!text||BUSY)return;
+  try{provider()}catch(e){$("setm").classList.add("on");$("setmsg").textContent=e.message;return}
+  if(!CUR)newChat();
+  ta.value="";ta.style.height="auto";
+  CUR.msgs.push({role:"user",content:text});
+  if(CUR.title==="Новый чат")CUR.title=text.slice(0,42);
+  save();render();setBusy(true);ABORT=false;
+
+  let enrichedText=text;
+  const mentions=(text.match(/@([a-zA-Z0-9._\/-]+)/g)||[]).map(x=>x.slice(1));
+  if(mentions.length){
+    const attached=mentions.map(fn=>`\n\n--- Файл ${fn} ---\n`+FS.read(fn)).join("");
+    enrichedText+=attached;
+  }
+
+  const history=CUR.msgs.slice(0,-1).slice(-16).map(m=>({role:m.role,content:m.content}));
+  let mode=$("mode").value;
+  if(mode==="auto")mode=autoMode(text);
+  let sys=BASE_SYS+(STY[$("style").value]?" "+STY[$("style").value]:"");
+  if($("askq").checked){
+    sys+=" Если в задаче есть развилки или неоднозначности, в конце ответа предложи 1-2 коротких уточняющих вопроса пользователю.";
+  }
+
+  const n=Math.max(1,Math.min(16,+$("nag").value||4));
+  await executeTurn(enrichedText,mode,n,sys,history);
+  setBusy(false);
+}
+
+function setBusy(b){BUSY=b;$("send").style.display=b?"none":"";$("stop").style.display=b?"":"none"}
+$("stop").onclick=()=>{ABORT=true;if(NATIVE)Native.toast("Остановка после текущего шага")};
+
+/* ==================== FILE MANAGER & SHELL UI ==================== */
+function renderWorkspaces(){
+  const sel=$("ws_sel");sel.innerHTML="";
+  const cur=FS.workspaceName();
+  FS.listWorkspaces().forEach(w=>{
+    const o=document.createElement("option");o.value=w;o.textContent="📁 Проект: "+w;
+    if(w===cur)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function renderFilesList(){
+  updateSubstatus();
+  const box=$("flist");box.innerHTML="";
+  const files=FS.list("").filter(f=>!f.dir);
+  if(!files.length){
+    box.innerHTML='<div class="hint">В рабочей папке пока нет файлов. Нажмите «＋ Файл» или попросите агента создать код.</div>';
+    return;
+  }
+  files.forEach(f=>{
+    const row=document.createElement("div");row.className="frow";
+    row.innerHTML=`<span class="fn">📄 ${esc(f.path)}</span><span class="sz">${f.size||0}b</span>
+      <button title="Запустить / Превью без Termux">▶</button>
+      <button title="Вставить @файл в запрос">@</button>
+      <button title="Редактировать">✏️</button>
+      <button class="x" title="Удалить">🗑</button>`;
+    const [bRun,bAt,bEd,bDel]=row.querySelectorAll("button");
+    bRun.onclick=()=>previewOrRunFile(f.path);
+    bAt.onclick=()=>{
+      const ta=$("prompt");
+      ta.value=(ta.value?ta.value+" ":"")+"@"+f.path+" ";
+      $("filesm").classList.remove("on");
+      ta.focus();
+    };
+    bEd.onclick=()=>openFileInEditor(f.path);
+    bDel.onclick=()=>{
+      if(confirm("Удалить "+f.path+"?")){FS.del(f.path);renderFilesList()}
+    };
+    row.querySelector(".fn").onclick=()=>openFileInEditor(f.path);
+    box.appendChild(row);
+  });
+}
+
+function previewOrRunFile(path,overrideContent){
+  const p=String(path||"").trim();
+  const content=overrideContent!=null?overrideContent:FS.read(p);
+  const low=p.toLowerCase();
+  const frame=$("prev_frame");
+  const out=$("prev_out");
+  $("prev_title").textContent="▶ "+p;
+  if(low.endsWith(".html")||low.endsWith(".htm")||low.endsWith(".svg")){
+    out.style.display="none";
+    frame.style.display="block";
+    if(NATIVE&&overrideContent==null){
+      frame.removeAttribute("srcdoc");
+      frame.src=localServerUrl()+"/workspace/"+encodeURIComponent(p);
+    }else{
+      frame.srcdoc=content;
+    }
+    $("prevm").classList.add("on");
+    return;
+  }
+  frame.style.display="none";
+  out.style.display="block";
+  if(low.endsWith(".js")||low.endsWith(".mjs")){
+    const logs=[];
+    const fakeCon={
+      log:(...a)=>logs.push(a.map(x=>typeof x==="object"?JSON.stringify(x,null,2):String(x)).join(" ")),
+      error:(...a)=>logs.push("[ERROR] "+a.join(" ")),
+      warn:(...a)=>logs.push("[WARN] "+a.join(" "))
+    };
+    try{
+      const fn=new Function("console","FS",content);
+      const ret=fn(fakeCon,FS);
+      if(ret!==undefined)logs.push("=> "+(typeof ret==="object"?JSON.stringify(ret,null,2):String(ret)));
+      out.textContent=logs.length?logs.join("\n"):"✔ JS выполнен без ошибок (вывод пуст)";
+    }catch(e){
+      out.textContent=(logs.length?logs.join("\n")+"\n":"")+"✘ JS Error: "+e.message;
+    }
+    $("prevm").classList.add("on");
+    return;
+  }
+  if(low.endsWith(".json")){
+    try{
+      const parsed=JSON.parse(content);
+      out.textContent="✔ JSON валиден:\n\n"+JSON.stringify(parsed,null,2);
+    }catch(e){
+      out.textContent="✘ Ошибка синтаксиса JSON:\n"+e.message+"\n\n---\n"+content;
+    }
+    $("prevm").classList.add("on");
+    return;
+  }
+  const cmd=low.endsWith(".py")?("python3 "+p):(low.endsWith(".sh")?("sh "+p):("cat "+p));
+  const res=FS.shell(cmd);
+  out.textContent="$ "+cmd+"\n\n"+(res.output||content)+"\n\n[exit "+res.exitCode+"]";
+  $("prevm").classList.add("on");
+}
+
+window.runQuickSh=cmd=>{
+  $("sh_cmd").value=cmd;
+  $("sh_run").click();
+};
+
+function openFileInEditor(path){
+  $("feditor_box").style.display="flex";
+  $("fed_path").value=path||"new_file.py";
+  $("fed_content").value=path?FS.read(path):"";
+}
+
+function openFilesModal(targetFile){
+  renderWorkspaces();
+  renderFilesList();
+  if(targetFile)openFileInEditor(targetFile);
+  $("filesm").classList.add("on");
+}
+
+$("filesb").onclick=()=>openFilesModal();
+$("atfile").onclick=()=>openFilesModal();
+$("ws_sel").onchange=e=>{FS.setWorkspace(e.target.value);renderFilesList();$("feditor_box").style.display="none"};
+$("ws_new").onclick=()=>{
+  const name=prompt("Имя нового проекта (латиницей):","project-2");
+  if(name){FS.setWorkspace(name);renderWorkspaces();renderFilesList()}
+};
+$("f_new").onclick=()=>openFileInEditor("index.html");
+$("f_imp").onclick=()=>$("f_imp_in").click();
+$("f_imp_in").onchange=async e=>{
+  for(const file of Array.from(e.target.files||[])){
+    const txt=await file.text();
+    FS.write(file.name,txt);
+  }
+  renderFilesList();
+  if(NATIVE)Native.toast("Файлы импортированы в проект");
+};
+$("fed_run").onclick=()=>{
+  const p=$("fed_path").value.trim()||"index.html";
+  FS.write(p,$("fed_content").value);
+  renderFilesList();
+  previewOrRunFile(p,$("fed_content").value);
+};
+$("fed_save").onclick=()=>{
+  const p=$("fed_path").value.trim();
+  if(!p)return;
+  const res=FS.write(p,$("fed_content").value);
+  renderFilesList();
+  if(NATIVE)Native.toast(res);
+};
+$("fed_share").onclick=()=>{
+  const p=$("fed_path").value.trim();
+  const c=$("fed_content").value;
+  if(NATIVE)Native.share(p||"file.txt",c);
+  else navigator.clipboard.writeText(c);
+};
+$("sh_run").onclick=()=>{
+  const cmd=$("sh_cmd").value.trim();
+  if(!cmd)return;
+  const res=FS.shell(cmd);
+  const pre=$("sh_out");
+  pre.style.display="block";
+  pre.textContent="$ "+cmd+"\n"+(res.output||"(пусто)")+"\n[exit "+res.exitCode+"]";
+  renderFilesList();
+};
+
+/* ==================== OPENCODE SERVERS MODAL ==================== */
+$("srvb").onclick=()=>{
+  $("srv_urls").value=CFG.srv_urls||"";
+  $("srv_pwd").value=CFG.srv_pwd||"";
+  updateSubstatus();
+  $("srvm").classList.add("on");
+};
+$("srv_save").onclick=()=>{
+  CFG.srv_urls=$("srv_urls").value.trim();
+  CFG.srv_pwd=$("srv_pwd").value.trim();
+  LS.set("cfg",CFG);
+  $("srvm").classList.remove("on");
+};
+$("srv_ping").onclick=async()=>{
+  CFG.srv_urls=$("srv_urls").value.trim();
+  CFG.srv_pwd=$("srv_pwd").value.trim();
+  LS.set("cfg",CFG);
+  const urls=[localServerUrl(),...getRemoteServers()];
+  const rep=[];
+  for(const u of urls){
+    const raw=[];
+    try{
+      const st=await httpReq("GET",u+"/global/health",{},null,l=>raw.push(l));
+      rep.push((st===200?"🟢 ":"🟠 ")+u+" (HTTP "+st+")");
+    }catch(e){
+      rep.push("🔴 "+u+" ("+e.message+")");
+    }
+  }
+  $("srv_msg").textContent=rep.join(" | ");
+};
+
+/* ==================== SETTINGS & INTEGRATIONS ==================== */
+async function notifyTg(text){
+  if(!CFG.tg_tok||!CFG.tg_chat)return;
+  try{await httpStream("https://api.telegram.org/bot"+CFG.tg_tok+"/sendMessage",{"Content-Type":"application/json"},JSON.stringify({chat_id:CFG.tg_chat,text}),()=>{})}catch(e){}
+}
+function fillSettings(){
+  for(const k of Object.keys(CFG)){const el=$(k);if(el)el.value=CFG[k]}
+  showProv();
+}
+function showProv(){
+  ["oc_local","kilo","dsh","oc_remote","or","oa"].forEach(p=>{
+    const el=$("p_"+p);
+    if(el)el.style.display=$("prov").value===p?"":"none";
+  });
+}
+function readSettings(){
+  for(const k of Object.keys(CFG)){const el=$(k);if(el)CFG[k]=el.value.trim()}
+  LS.set("cfg",CFG);
+  updateSubstatus();
+}
+$("prov").onchange=showProv;
+$("setb").onclick=()=>{fillSettings();$("setm").classList.add("on")};
+$("setsave").onclick=()=>{readSettings();$("setm").classList.remove("on")};
+$("check").onclick=async()=>{
+  readSettings();
+  $("setmsg").textContent="Проверяю соединение с моделью…";
+  try{
+    const r=await llm([{role:"user",content:"Ответь одним словом: OK"}]);
+    $("setmsg").textContent="✔ Работает: "+r.slice(0,80);
+  }catch(e){$("setmsg").textContent="✘ "+e.message}
+};
+$("tg_test").onclick=async()=>{readSettings();await notifyTg("🔔 OpenSwarm Mobile: Telegram подключён");$("setmsg").textContent="Тестовое сообщение отправлено"};
+$("exp").onclick=()=>{
+  if(!CUR)return;
+  const t="# "+CUR.title+"\n\n"+CUR.msgs.map(m=>(m.role==="user"?"## 🧑 Вы\n":"## 🤖 OpenSwarm\n")+m.content).join("\n\n");
+  NATIVE?Native.share(CUR.title,t):navigator.clipboard.writeText(t);
+};
+
+/* ==================== DELAYED ACTIONS & SCHEDULED TASKS ==================== */
+let MSCHED=LS.get("msched",[]);
+function saveSched(){
+  LS.set("msched",MSCHED);
+  updateSchedBadge();
+  renderSchedList();
+}
+function updateSchedBadge(){
+  const pending=MSCHED.filter(t=>t.status==="pending").length;
+  const b=$("schedb");
+  if(b){
+    b.textContent=pending?`⏰ (${pending})`:"⏰";
+    b.style.color=pending?"var(--acc)":"";
+  }
+}
+function renderSchedList(){
+  const box=$("msch_list");
+  if(!box)return;
+  box.innerHTML="";
+  if(!MSCHED.length){
+    box.innerHTML='<div class="hint">Очередь отложенных задач пуста. Добавьте задачу выше.</div>';
+    return;
+  }
+  const now=Date.now();
+  MSCHED.slice().reverse().forEach(t=>{
+    const row=document.createElement("div");
+    row.className="frow";
+    let diffSec=Math.round((t.runAt-now)/1000);
+    let timeLabel="";
+    if(t.status==="pending"){
+      timeLabel=diffSec<=0?"сейчас":diffSec>60?`через ${Math.round(diffSec/60)} мин`:`через ${diffSec} с`;
+    }else if(t.status==="completed"){
+      timeLabel="✔ готово";
+    }else if(t.status==="running"){
+      timeLabel="● выполняется";
+    }else{
+      timeLabel="отменено";
+    }
+    row.innerHTML=`<span class="fn"><b>[${esc(t.mode||"auto")}]</b> ${esc(t.prompt)}</span>
+      <span class="sz" style="color:${t.status==="pending"?"var(--acc)":"var(--dim)"}">${timeLabel}</span>
+      ${t.status==="pending"?`<button onclick="runSchedNow('${t.id}')" title="Запустить сейчас">▶</button>`:""}
+      <button class="x" onclick="cancelSched('${t.id}')" title="Удалить / Отменить">✕</button>`;
+    box.appendChild(row);
+  });
+}
+window.openSchedModal=()=>{renderSchedList();$("schedm").classList.add("on");};
+$("schedb").onclick=openSchedModal;
+$("msch_add").onclick=()=>{
+  const p=$("msch_prompt").value.trim();
+  if(!p)return;
+  const delaySec=+($("msch_delay").value)||60;
+  const mode=$("msch_mode").value||"auto";
+  const task={
+    id:"sch_"+Date.now()+"_"+Math.random().toString(36).slice(2,6),
+    prompt:p,
+    mode:mode,
+    runAt:Date.now()+(delaySec*1000),
+    status:"pending",
+    createdAt:Date.now()
+  };
+  MSCHED.push(task);
+  $("msch_prompt").value="";
+  saveSched();
+  if(NATIVE)Native.toast("⏰ Задача запланирована ("+(delaySec>=60?Math.round(delaySec/60)+" мин":delaySec+" с")+")");
+};
+window.runSchedNow=async(id)=>{
+  const t=MSCHED.find(x=>x.id===id);
+  if(!t||t.status!=="pending"||BUSY)return;
+  t.status="running";
+  saveSched();
+  $("schedm").classList.remove("on");
+  await executeScheduledTask(t);
+};
+window.cancelSched=(id)=>{
+  MSCHED=MSCHED.filter(x=>x.id!==id);
+  saveSched();
+};
+async function executeScheduledTask(t){
+  if(!CUR)newChat();
+  CUR.msgs.push({role:"user",content:t.prompt});
+  save();render();setBusy(true);ABORT=false;
+  const history=CUR.msgs.slice(0,-1).slice(-12).map(m=>({role:m.role,content:m.content}));
+  let mode=t.mode;
+  if(mode==="auto")mode=autoMode(t.prompt);
+  let sys=BASE_SYS+(STY[$("style").value]?" "+STY[$("style").value]:"");
+  try{
+    await executeTurn(t.prompt,mode,4,sys,history);
+    t.status="completed";
+    saveSched();
+    if(NATIVE)Native.toast("⏰ Отложенная задача выполнена: "+t.prompt.slice(0,35));
+    notifyTg("⏰ OpenSwarm: Отложенная задача выполнена!\n\n"+t.prompt);
+  }catch(e){
+    t.status="failed";
+    saveSched();
+    if(NATIVE)Native.toast("⏰ Ошибка отложенной задачи: "+e.message);
+  }finally{
+    setBusy(false);
+  }
+}
+let SCHED_TICK=setInterval(async()=>{
+  if(BUSY)return;
+  const now=Date.now();
+  const due=MSCHED.find(t=>t.status==="pending"&&now>=t.runAt);
+  if(due){
+    due.status="running";
+    saveSched();
+    await executeScheduledTask(due);
+  }
+},2500);
+
+/* ==================== WIRING & SHORTCUTS ==================== */
+$("themeb").onclick=()=>{
+  const idx=(THEMES.indexOf(CFG.theme)+1)%THEMES.length;
+  CFG.theme=THEMES[idx];
+  document.documentElement.setAttribute("data-theme",CFG.theme);
+  LS.set("cfg",CFG);
+  if(NATIVE)Native.toast("Тема: "+CFG.theme);
+};
+$("send").onclick=send;
+$("prompt").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,130)+"px"});
+$("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&window.innerWidth>700){e.preventDefault();send()}});
+$("menu").onclick=()=>{$("drawer").classList.add("on");drawList()};
+$("dclose").onclick=closeDrawer;
+$("drawer").onclick=e=>{if(e.target===$("drawer"))closeDrawer()};
+$("newb").onclick=$("dnew").onclick=()=>{newChat();closeDrawer()};
+$("search").oninput=drawList;
+$("clearall").onclick=()=>{if(confirm("Удалить все чаты?")){CHATS=[];CUR=null;save();render()}};
+$("mic").onclick=()=>NATIVE?Native.voice("ru-RU"):alert("Голосовой ввод доступен в Android-приложении");
+window.__voice=t=>{const ta=$("prompt");ta.value=(ta.value?ta.value+" ":"")+t;ta.dispatchEvent(new Event("input"))};
+window.__back=()=>{
+  for(const m of ["schedm","prevm","filesm","srvm","setm"]){if($(m)&&$(m).classList.contains("on")){$(m).classList.remove("on");return}}
+  if($("drawer").classList.contains("on")){closeDrawer();return}
+  if(NATIVE)Native.exit();
+};
+CUR=CHATS[0]||null;
+updateSchedBadge();
+render();
+</script></body></html>

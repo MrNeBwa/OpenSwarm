@@ -1,0 +1,70 @@
+Screen {
+    layout: vertical;
+    background: #191815;
+    color: #ECE8DE;
+}
+
+#body {
+    height: 1fr;
+}
+
+#sidebar {
+    width: 44;
+    padding: 0 1;
+    background: #21201C;
+    border-right: tall #33302A;
+}
+
+#sidebar .section {
+    margin-top: 1;
+    text-style: bold;
+    color: #D97757;
+}
+
+#sidebar Select {
+    width: 100%;
+}
+
+#skills {
+    height: auto;
+    max-height: 12;
+    border: round #33302A;
+    background: #191815;
+}
+
+#agents {
+    height: 1fr;
+    min-height: 8;
+    border: round #33302A;
+    background: #191815;
+}
+
+#main {
+    width: 1fr;
+    background: #191815;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+RichLog {
+    background: #191815;
+    padding: 0 1;
+    scrollbar-gutter: stable;
+}
+
+#launchbar {
+    height: auto;
+    padding: 0 1;
+    background: #21201C;
+    border-top: solid #33302A;
+}
+
+#prompt {
+    width: 1fr;
+}
+
+#launchbar Button {
+    margin-left: 1;
+}

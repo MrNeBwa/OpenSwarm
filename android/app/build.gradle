@@ -1,0 +1,22 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'ai.openswarm.mobile'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "ai.openswarm.mobile"
+        minSdk 24
+        targetSdk 34
+        versionCode 100
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
