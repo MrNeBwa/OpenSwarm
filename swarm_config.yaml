@@ -42,6 +42,7 @@ security:
   sandbox_hide: [.ssh, .gnupg, .aws, .config/gcloud, .netrc, .kube]
   sandbox_network: true
   allowed_roots: []         # e.g. ["~/projects", "~/Documents"]; empty = any directory
+  confine_agents: true      # every agent is told its working directory and must ask before touching anything outside it
   audit: true               # ~/.local/state/openswarm/audit.log
   snapshots: true           # tar snapshot before in-place runs outside git -> "Undo this run"
   snapshot_limit_mb: 200

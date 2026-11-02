@@ -231,6 +231,7 @@ class SecuritySettings(BaseModel):
     sandbox_extra_rw: list[str] = Field(default_factory=list)
     sandbox_network: bool = True
     allowed_roots: list[str] = Field(default_factory=list)  # empty = any directory
+    confine_agents: bool = True  # tell every agent which directory it works in and not to wander outside it without asking
     audit: bool = True
     snapshots: bool = True  # tar snapshot before in-place runs outside git (enables "Undo")
     snapshot_limit_mb: int = 200

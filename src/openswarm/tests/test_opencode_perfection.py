@@ -50,7 +50,7 @@ class OpenCodePerfectionTests(unittest.TestCase):
             cwd = Path(tmp)
             runner = OpenCodeRunner(
                 cfg, cwd, agent_id="agent1", role="coder", model="opencode/beam-free",
-                effort="max", thinking=True
+                effort="max", thinking=True, variant_flag="--variant"
             )
             cmd = runner.build_command("write a test")
             self.assertIn("--variant", cmd)

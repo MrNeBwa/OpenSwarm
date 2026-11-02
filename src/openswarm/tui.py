@@ -12,6 +12,7 @@ from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.suggester import Suggester
 from textual.widgets import (
     Button,
     Footer,
@@ -71,6 +72,29 @@ class Chat:
         return f"Chat {self.n} · {self.workdir.name or '/'}"
 
 
+class PathSuggester(Suggester):
+    """Ghost-text path completion for the working-directory field (press → or End to accept)."""
+
+    def __init__(self) -> None:
+        super().__init__(use_cache=False, case_sensitive=True)
+
+    async def get_suggestion(self, value: str) -> str | None:
+        if not value:
+            return None
+        try:
+            p = Path(value).expanduser()
+            base, prefix = (p, "") if value.endswith("/") else (p.parent, p.name)
+            if not base.is_dir():
+                return None
+            names = sorted(e.name for e in base.iterdir() if e.is_dir() and e.name.startswith(prefix) and (prefix.startswith(".") or not e.name.startswith(".")))
+        except OSError:
+            return None
+        if not names:
+            return None
+        head = value[: len(value) - len(prefix)] if prefix else value
+        return head + names[0] + "/"
+
+
 class SwarmApp(App):
     CSS_PATH = "styles.tcss"
     TITLE = "OpenSwarm"
@@ -114,7 +138,7 @@ class SwarmApp(App):
         with Horizontal(id="body"):
             with VerticalScroll(id="sidebar"):
                 yield Label("Working directory (any dir)", classes="section")
-                yield Input(value=str(self.repo_dir), id="workdir")
+                yield Input(value=str(self.repo_dir), id="workdir", suggester=PathSuggester(), placeholder="/path/to/project  (→ accepts suggestion)")
                 yield Label("Mode", classes="section")
                 yield Select(MODES + [(f"Workflow: {w.label}", f"wf:{w.id}") for w in self.cfg.workflows], value=self.swarm_mode, allow_blank=False, id="mode")
                 yield Label("Planner / Architect model", classes="section")

@@ -579,41 +579,49 @@ function createStreamParser(kind,onDelta){
   const tcalls={};
   const onLine=line=>{
     raw.push(line);
-    if(!line.startsWith("data:"))return;
-    const d=line.slice(5).trim();
-    if(!d||d==="[DONE]")return;
-    try{
-      const j=JSON.parse(d);
-      if(kind==="anthropic"){
-        const t=(j.type==="content_block_delta"&&j.delta&&j.delta.type==="text_delta")?j.delta.text:"";
-        if(t){text+=t;onDelta&&onDelta(text)}
-        return;
-      }
-      const ch=j.choices&&j.choices[0];
-      if(!ch)return;
-      const delta=ch.delta||ch.message||{};
-      if(typeof delta.content==="string"&&delta.content.length>0){
-        text+=delta.content;
-        onDelta&&onDelta(text);
-      }
-      const rChunk=delta.reasoning||delta.reasoning_content||"";
-      if(typeof rChunk==="string"&&rChunk.length>0){
-        reasoning+=rChunk;
-        if(!text&&onDelta){
-          onDelta("💭 *Размышление модели…*\n\n"+reasoning.slice(-360));
-        }
-      }
-      if(Array.isArray(delta.tool_calls)){
-        delta.tool_calls.forEach(tc=>{
-          const idx=tc.index!=null?tc.index:0;
-          if(!tcalls[idx])tcalls[idx]={name:"",args:""};
-          if(tc.function){
-            if(tc.function.name)tcalls[idx].name+=tc.function.name;
-            if(tc.function.arguments)tcalls[idx].args+=tc.function.arguments;
+    if(!line)return;
+    const subLines=String(line).split(/\r?\n/);
+    for(const sl of subLines){
+      const trimmed=sl.trim();
+      if(!trimmed)continue;
+      const blocks=trimmed.split(/(?:^|\s+)data:\s*/);
+      for(const b of blocks){
+        const d=b.trim();
+        if(!d||d==="[DONE]")continue;
+        try{
+          const j=JSON.parse(d);
+          if(kind==="anthropic"){
+            const t=(j.type==="content_block_delta"&&j.delta&&j.delta.type==="text_delta")?j.delta.text:"";
+            if(t){text+=t;onDelta&&onDelta(text)}
+            continue;
           }
-        });
+          const ch=j.choices&&j.choices[0];
+          if(!ch)continue;
+          const delta=ch.delta||ch.message||{};
+          if(typeof delta.content==="string"&&delta.content.length>0){
+            text+=delta.content;
+            onDelta&&onDelta(text);
+          }
+          const rChunk=delta.reasoning||delta.reasoning_content||"";
+          if(typeof rChunk==="string"&&rChunk.length>0){
+            reasoning+=rChunk;
+            if(!text&&onDelta){
+              onDelta("💭 *Размышление модели…*\n\n"+reasoning.slice(-360));
+            }
+          }
+          if(Array.isArray(delta.tool_calls)){
+            delta.tool_calls.forEach(tc=>{
+              const idx=tc.index!=null?tc.index:0;
+              if(!tcalls[idx])tcalls[idx]={name:"",args:""};
+              if(tc.function){
+                if(tc.function.name)tcalls[idx].name+=tc.function.name;
+                if(tc.function.arguments)tcalls[idx].args+=tc.function.arguments;
+              }
+            });
+          }
+        }catch(e){}
       }
-    }catch(e){}
+    }
   };
   const finish=()=>{
     const tcKeys=Object.keys(tcalls).sort((a,b)=>(+a)-(+b));
@@ -738,7 +746,7 @@ async function llm(messages,onDelta,sys,onSlotStart){
     throw lastErr||new Error("Ошибка запроса к модели");
   };
 
-  if(P.kind==="opencode_local"){
+  if(P.kind==="opencode_local"||P.kind==="kilo"||P.kind==="dsh"){
     return withLocalSlot(execWithRetry,onSlotStart);
   }
   if(onSlotStart)try{onSlotStart()}catch(e){}

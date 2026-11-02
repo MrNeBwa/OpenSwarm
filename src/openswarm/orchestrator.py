@@ -273,7 +273,33 @@ class Orchestrator:
             return self.sel.reviewer_model or self.cfg.roles.reviewer
         return self.sel.coder_model or self.cfg.roles.coder
 
-    def _compose(self, role: str, body: str, extra_hints: list[str] | None = None, override: str = "") -> str:
+    def _boundary_block(self, cwd: Path | None) -> str:
+        """Tells every model where it works so it does not roam through other folders without permission."""
+        if cwd is None or not self.cfg.security.confine_agents:
+            return ""
+        try:
+            wd = Path(cwd).resolve()
+            root = Path(self.git.root).resolve()
+        except (OSError, RuntimeError):
+            return ""
+        lines = [
+            "\n## Working directory boundary (IMPORTANT)\n",
+            f"- Your working directory is: {wd}\n",
+        ]
+        if root != wd:
+            lines.append(f"- It is an isolated copy of the project at: {root} (do not touch the original directly; OpenSwarm merges your work).\n")
+        lines += [
+            "- Work ONLY inside this directory. Do not read, list, search, edit, create or delete files outside it: "
+            "no `cd ..`, no absolute paths into other folders, no `find /`, no scanning of the home directory or other projects.\n",
+            "- If you truly need something outside (another project, a dotfile, a system config), STOP and ask the user for permission first, "
+            "naming the exact path and why you need it. Continue only after the user agrees.\n",
+            "- Running installed tools (python, git, npm, compilers) is fine; just don't browse their install locations.\n",
+        ]
+        return "".join(lines)
+
+    def _compose(self, role: str, body: str, extra_hints: list[str] | None = None, override: str = "", cwd: Path | None = None) -> str:
+        from .optimizer import optimize_prompt_for_model
+
         bus_txt = self.broker.chat_transcript(self._run_id) if self._run_id else ""
         bus_block = f"\n## Swarm Room Messages (live team & user feed)\n{bus_txt}\n" if bus_txt else ""
         proactive_guidance = (
@@ -281,15 +307,28 @@ class Orchestrator:
             "- Proactively ask the user questions: If specifications or architecture choices are ambiguous, DO NOT guess silently. State your current assumptions and ask clarifying questions.\n"
             "- Subagent delegation: Decompose complex subtasks and spawn targeted subagents when appropriate.\n"
         )
+        proactive_guidance += self._boundary_block(cwd)
+
+        output_guide = (
+            "\n## Правила оформления ответа (Clean Presentation):\n"
+            "- **Структура**: Начинай с краткого, емкого резюме (1-3 предложения), затем приводи структурированное решение.\n"
+            "- **Оформление**: Используй понятные заголовки (H2/H3), маркированные списки, акценты жирным шрифтом и таблицы там, где это уместно.\n"
+            "- **Блоки кода**: Любой программный код или команды оформляй в блоки с указанием языка (```python, ```bash, ```json и т.д.).\n"
+            "- **Чистота вывода**: Не дублируй в финальном ответе сырые логи и промежуточные вызовы инструментов — давай готовый, чистый результат для пользователя.\n"
+            "- **Итог**: Завершай ответ блоком ключевых выводов или рекомендацией следующих шагов (Key Takeaways / Next Steps).\n"
+        )
+
         if role == "chat":  # plain conversation: leave opencode's own system prompt in charge
             hints = [s.prompt_hint for s in self.skills if s.prompt_hint]
-            return body + bus_block + proactive_guidance + ("\n\n[OpenSwarm guidance: " + " ".join(hints) + "]" if hints else "")
+            raw = body + bus_block + proactive_guidance + output_guide + ("\n\n[OpenSwarm guidance: " + " ".join(hints) + "]" if hints else "")
+            return optimize_prompt_for_model(raw, role="chat")
         hints = [s.prompt_hint for s in self.skills if s.prompt_hint]
         if extra_hints:
             hints.append("Planner-recommended skills/tools for this task: " + ", ".join(extra_hints))
         hint_block = ("\n## Tooling guidance\n" + "\n".join(f"- {h}" for h in hints) + "\n") if hints else ""
         head = override or getattr(self.cfg.prompts, role, "")
-        return f"{head}\n{hint_block}{bus_block}{proactive_guidance}\n## Task\n{body}" if head else f"{hint_block}{bus_block}{proactive_guidance}\n{body}".strip()
+        raw = f"{head}\n{hint_block}{bus_block}{proactive_guidance}{output_guide}\n## Task\n{body}" if head else f"{hint_block}{bus_block}{proactive_guidance}{output_guide}\n{body}".strip()
+        return optimize_prompt_for_model(raw, role=role)
 
     def _sandbox_on(self) -> bool:
         return self.sel.sandbox if self.sel.sandbox is not None else self.cfg.security.sandbox == "bwrap"
@@ -386,7 +425,7 @@ class Orchestrator:
         from .kilo import KILO_FALLBACK_FREE_MODEL, is_kilo_model, normalize_kilo_model
         from .runner import is_soft_success
         oc = self.cfg.opencode
-        message = self._compose(role, body, hints, prompt_override)
+        message = self._compose(role, body, hints, prompt_override, cwd)
         sandbox = self._sandbox_on()
         mdl = normalize_kilo_model(resolve_dsh_model(model or self._model_for(role)))
         audit(self.cfg, "agent", agent=agent_id, role=role, model=mdl, cwd=str(cwd), sandbox=sandbox)

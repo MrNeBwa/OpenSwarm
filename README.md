@@ -68,6 +68,20 @@ and **± Show changes** after runs. **Many sessions run at the same time.**
 | **Review** | One parallel reviewer per lens → prioritized report | no |
 | **Workflows** | Built-in (`article`, `deep_dive`, `security_audit`, `bug_hunt`, `spec_to_pr`) + your own pipelines from `workflows:` in the config | no |
 
+## Personal AI Assistant & Advanced Features
+
+- **Personal AI Assistant Experience & Clean Presentation:** Минималистичный и чистый интерфейс с компактными карточками агентов. Моделям передаются четкие правила форматирования (Executive Summary, структурированные разделы H2/H3, блоки кода с языками, чистый результат без сырых логов).
+- **Deep Model Inspector Modal:** При клике на карточку любого агента или кнопку в сообщении открывается модальное окно инспектора с 4 вкладками: *📋 Результат ответа*, *🧠 Мысли / Рассуждения*, *🔧 Инструменты* и *📜 Консольный лог*, с возможностью скопировать ответ или перезапустить шаг.
+- **Personal Telegram Account Integration (Telethon Userbot):** Подключение личного аккаунта Telegram (через официальный протокол Telethon). OpenSwarm загружает диалоги, читает входящие сообщения собеседников, генерирует 3 умных варианта ответа с помощью ИИ и позволяет отправлять сообщения в один клик.
+- **Token Saver & Context Optimizer:** Автоматическое сжатие огромных логов и выводов терминала, интеллектуальное суммирование старых сообщений истории (`prune_history_context`), кэширование частых запросов и аналитика экономии токенов (`/tokens`).
+- **Curated Free AI Models Catalog:** Интегрированный каталог 100% бесплатных моделей:
+  - *OpenCode Built-in Free:* DeepSeek-V4.1-Flash, Beam Free (1M), Nemotron 3.5 Super VL, GLM-5.3-Flash.
+  - *Kilo AI Gateway Free:* Laguna S 2.1 Free, North Mini Code Free, Kilo Auto Router (без ключа, ~200 запросов/час на IP).
+  - *External Free Tiers:* DeepSeek Harness 1M, Google Gemini 2.0 Flash (15 RPM), Groq Llama 3.3 70B (300+ tok/s).
+  - *Local Offline:* Ollama (qwen2.5-coder, deepseek-r1).
+  - Быстрое переключение рабочих моделей в 1 клик через модальное окно или команду `/free`.
+- **Mobile App Fixes:** В Android-приложении исправлен разбор склеенных SSE-чанков `HTTP 200: data: ...`, добавлена очередь выполнения запросов при параллельной работе агентов и кнопка «▶ Продолжить ответ».
+
 `Parallel` = agents running at once (default 8, **0 = all simultaneously**). Rate-limited agents are retried with backoff;
 `max_agents_per_run` and `run_timeout_minutes` cap runaway runs.
 
@@ -98,6 +112,7 @@ multi-agent mode. Keys are never written to logs (only `#2 (…abcd)`). Each key
 - **Undo:** outside git a tar snapshot is taken before in-place runs (≤ 200 MB) → **Undo this run**. In git use **Show changes**
   or normal git tools. `openswarm snapshots list|restore ID`.
 - **Audit log:** runs, agents (model/sandbox), permission decisions, undo → `~/.local/state/openswarm/audit.log`.
+- **confine_agents:** (default on) every model gets its working directory in the prompt and is told not to read/edit anything outside it without asking you first. This is an instruction, not a lock - for a hard guarantee also turn on `sandbox: bwrap`.
 - **allowed_roots:** limit which directories sessions may use. Warm servers are password-protected; the web app needs its token.
 
 ## Scripting

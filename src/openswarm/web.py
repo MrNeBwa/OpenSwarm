@@ -268,6 +268,7 @@ class WebApp:
         from .dsh import dsh_status
         from .kilo import kilo_status
         from .router import get_router, priority_list
+        from .optimizer import get_optimizer_stats
 
         c = self.cfg
         router = get_router()
@@ -280,8 +281,10 @@ class WebApp:
             "recommended_roles": router.recommend_roles(c, c.priority),
             "dsh": dsh_status(),
             "kilo": kilo_status(),
+            "optimizer": get_optimizer_stats(),
             "sandbox": c.security.sandbox == "bwrap", "bwrap": bool(shutil.which("bwrap")),
             "allowed_roots": c.security.allowed_roots,
+            "native_picker": bool(self.native_picker_cmd()),
             "automation": {"schedules": [x.id for x in c.schedules], "triggers": [x.id for x in c.triggers]},
             "integrations": self.integrations.to_dict(),
             "scheduled_count": len([t for t in self.scheduler.tasks.values() if t.status == "pending"]),
@@ -503,21 +506,133 @@ class WebApp:
                 lines += ["", f"*Run finished: {st}{u_str}*", ""]
         return "\n".join(lines).strip() + "\n"
 
-    def list_dirs(self, path: str) -> dict[str, Any]:
-        p = Path(path or Path.home()).expanduser().resolve()
+    def _shortcuts(self) -> list[dict[str, str]]:
+        """Quick places for the folder picker (only ones that exist and are allowed)."""
+        home = Path.home()
+        cands: list[tuple[str, Path]] = [("Домашняя", home), ("Рабочий стол", home / "Desktop"), ("Документы", home / "Documents"),
+                                         ("Загрузки", home / "Downloads")]
+        for n in ("Projects", "projects", "dev", "code", "src", "work", "repos", "git"):
+            cands.append((f"~/{n}", home / n))
+        cands += [("Текущая папка OpenSwarm", self.workdir), ("Корень /", Path("/")), ("/mnt", Path("/mnt")), ("/tmp", Path("/tmp"))]
+        media = Path("/run/media") / (os.environ.get("USER") or "")
+        if os.environ.get("USER") and media.is_dir():
+            cands.append(("Диски", media))
+        out, seen = [], set()
+        for name, p in cands:
+            try:
+                rp = p.resolve()
+                if str(rp) in seen or not rp.is_dir() or not path_allowed(self.cfg, rp):
+                    continue
+            except OSError:
+                continue
+            seen.add(str(rp))
+            out.append({"name": name, "path": str(rp)})
+        return out
+
+    def _recent_dirs(self, limit: int = 8) -> list[str]:
+        seen: list[str] = []
+        for s in sorted(self.sessions.values(), key=lambda x: -x.meta().get("updated", 0)):
+            w = str(s.workdir)
+            if w not in seen and Path(w).is_dir() and path_allowed(self.cfg, Path(w)):
+                seen.append(w)
+            if len(seen) >= limit:
+                break
+        return seen
+
+    def list_dirs(self, path: str, hidden: bool = False) -> dict[str, Any]:
+        raw = (path or "").strip()
+        try:
+            p = Path(raw or Path.home()).expanduser().resolve()
+        except (OSError, RuntimeError):
+            p = Path.home()
+        prefix = ""
+        if not p.is_dir():  # typed half-way ("/home/me/pro"): show the nearest existing folder, filtered by the rest
+            if p.parent.is_dir():
+                prefix, p = p.name, p.parent
+            else:
+                while not p.is_dir() and p != p.parent:
+                    p = p.parent
         if not path_allowed(self.cfg, p):
             roots = self.cfg.security.allowed_roots
             p = Path(roots[0]).expanduser().resolve()
+            prefix = ""
         if not p.is_dir():
             raise HttpError(404, "not a directory")
-        subs = []
+        subs: list[dict[str, Any]] = []
+        denied = False
         try:
             for e in sorted(p.iterdir(), key=lambda x: x.name.lower()):
-                if e.is_dir() and not e.name.startswith("."):
-                    subs.append(e.name)
+                try:
+                    if not e.is_dir():
+                        continue
+                except OSError:
+                    continue
+                if e.name.startswith(".") and not hidden:
+                    continue
+                subs.append({"name": e.name, "git": (e / ".git").exists(), "hidden": e.name.startswith(".")})
+        except PermissionError:
+            denied = True
         except OSError:
             pass
-        return {"path": str(p), "parent": str(p.parent) if p.parent != p else "", "dirs": subs[:400]}
+        crumbs, cur = [], p
+        while True:
+            crumbs.append({"name": cur.name or "/", "path": str(cur)})
+            if cur.parent == cur:
+                break
+            cur = cur.parent
+        crumbs.reverse()
+        return {
+            "path": str(p), "parent": str(p.parent) if p.parent != p and path_allowed(self.cfg, p.parent) else "",
+            "dirs": [d["name"] for d in subs[:800]], "items": subs[:800], "prefix": prefix, "crumbs": crumbs,
+            "is_git": (p / ".git").exists(), "writable": os.access(p, os.W_OK), "denied": denied,
+            "shortcuts": self._shortcuts(), "recent": self._recent_dirs(), "home": str(Path.home()),
+        }
+
+    def make_dir(self, parent: str, name: str) -> dict[str, Any]:
+        name = (name or "").strip()
+        if not name or name in (".", "..") or "/" in name or "\\" in name or "\0" in name:
+            raise HttpError(400, "некорректное имя папки")
+        base = Path(parent or Path.home()).expanduser().resolve()
+        if not base.is_dir():
+            raise HttpError(404, "not a directory")
+        target = base / name
+        if not path_allowed(self.cfg, target):
+            raise HttpError(403, f"{target} is outside security.allowed_roots")
+        try:
+            target.mkdir(parents=False, exist_ok=False)
+        except FileExistsError:
+            raise HttpError(409, "папка с таким именем уже существует") from None
+        except OSError as exc:
+            raise HttpError(400, f"не удалось создать папку: {exc.strerror or exc}") from None
+        audit(self.cfg, "mkdir", path=str(target))
+        return self.list_dirs(str(target))
+
+    @staticmethod
+    def native_picker_cmd() -> str:
+        return "zenity" if shutil.which("zenity") else ("kdialog" if shutil.which("kdialog") else "")
+
+    def pick_dir_native(self, start: str) -> dict[str, Any]:
+        """System folder dialog (zenity / kdialog) - the server runs on the same machine as the window."""
+        tool = self.native_picker_cmd()
+        if not tool:
+            raise HttpError(400, "нет zenity/kdialog: sudo pacman -S zenity")
+        try:
+            base = Path(start or Path.home()).expanduser()
+            while not base.is_dir() and base != base.parent:
+                base = base.parent
+        except (OSError, RuntimeError):
+            base = Path.home()
+        start_s = str(base).rstrip("/") + "/"
+        cmd = (["zenity", "--file-selection", "--directory", "--title=Выберите рабочую папку", f"--filename={start_s}"]
+               if tool == "zenity" else ["kdialog", "--title", "Выберите рабочую папку", "--getexistingdirectory", start_s])
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise HttpError(500, f"диалог не открылся: {exc}") from None
+        chosen = r.stdout.strip() if r.returncode == 0 else ""
+        if chosen and not path_allowed(self.cfg, Path(chosen)):
+            raise HttpError(403, f"{chosen} is outside security.allowed_roots")
+        return {"path": chosen}
 
     # ------------------------------------------------------------------- http
     def _check(self, method: str, headers: dict[str, str], q: dict[str, list[str]], path: str) -> None:
@@ -597,12 +712,22 @@ class WebApp:
             return await self.plugins_route(method, parts[1:], q, js, writer)
         if parts and parts[0] == "integrations":
             return await self.integrations_route(method, parts[1:], js, writer)
+        if parts and parts[0] == "telegram":
+            return await self.telegram_user_route(method, parts[1:], q, js, writer)
+        if parts and parts[0] == "optimizer":
+            return await self.optimizer_route(method, parts[1:], js, writer)
+        if parts and parts[0] == "free-models":
+            return await _json(writer, self.free_models_catalog())
         if parts and parts[0] == "scheduled":
             return await self.scheduled_route(method, parts[1:], js, writer)
         if parts and parts[0] == "mobile":
             return await self.mobile_route(method, parts[1:], writer)
         if parts == ["dirs"] and method == "GET":
-            return await _json(writer, self.list_dirs((q.get("path") or [""])[0]))
+            return await _json(writer, self.list_dirs((q.get("path") or [""])[0], (q.get("hidden") or ["0"])[0] == "1"))
+        if parts == ["mkdir"] and method == "POST":
+            return await _json(writer, self.make_dir(str(js.get("parent", "")), str(js.get("name", ""))))
+        if parts == ["pick-dir"] and method == "POST":
+            return await _json(writer, await asyncio.to_thread(self.pick_dir_native, str(js.get("start", ""))))
         if parts == ["sessions"] and method == "POST":
             wd = Path(str(js.get("workdir") or self.workdir)).expanduser().resolve()
             if not wd.is_dir():
@@ -1168,6 +1293,143 @@ class WebApp:
             await writer.drain()
             return
         raise HttpError(404, "unknown endpoint")
+
+    async def optimizer_route(self, method: str, rest: list[str], js: dict[str, Any], writer: asyncio.StreamWriter) -> None:
+        from .optimizer import get_optimizer_stats
+        if (not rest or rest == ["stats"]) and method == "GET":
+            return await _json(writer, get_optimizer_stats())
+        raise HttpError(404, "unknown endpoint in optimizer api")
+
+    def free_models_catalog(self) -> dict[str, Any]:
+        return {
+            "categories": [
+                {
+                    "title": "OpenCode Встроенные (100% бесплатно, без ключей)",
+                    "desc": "Работают сразу из коробки через нативный движок OpenCode",
+                    "models": [
+                        {"id": "opencode/deepseek-v4.1-flash-free", "name": "DeepSeek V4.1 Flash", "role": "Кодер / Чат", "badge": "Рекомендуется для кода", "speed": "Быстро", "context": "128k"},
+                        {"id": "opencode/beam-free", "name": "Beam Free (1M)", "role": "Архитектор / План", "badge": "Глубокие рассуждения", "speed": "Средне", "context": "1M"},
+                        {"id": "opencode/nemotron-3.5-lightning-free", "name": "Nemotron 3.5 Lightning", "role": "Быстрый ассистент", "badge": "Ультра-скорость", "speed": "Мгновенно", "context": "1M"},
+                        {"id": "opencode/nemotron-3.5-super-vl-free", "name": "Nemotron 3.5 Super VL", "role": "Ревьюер / Зрение", "badge": "Мультимодальный", "speed": "Быстро", "context": "1M"},
+                        {"id": "opencode/glm-5.3-flash-free", "name": "GLM 5.3 Flash", "role": "Общий ассистент", "badge": "Быстрый ответ", "speed": "Быстро", "context": "128k"},
+                    ]
+                },
+                {
+                    "title": "Kilo AI Gateway (Бесплатно, без API ключей)",
+                    "desc": "Анонимный доступ к пулу моделей через Kilo Gateway (~200 запросов/час на IP)",
+                    "models": [
+                        {"id": "kilo/poolside/laguna-s-2.1:free", "name": "Laguna S 2.1 Free", "role": "Кодер / Аналитик", "badge": "Kilo Free", "speed": "Быстро", "context": "64k"},
+                        {"id": "kilo/cohere/north-mini-code:free", "name": "North Mini Code Free", "role": "Кодинг / Скрипты", "badge": "Kilo Free", "speed": "Очень быстро", "context": "32k"},
+                        {"id": "kilo/kilo-auto/free", "name": "Kilo Auto Router", "role": "Авто-маршрутизация", "badge": "Умный выбор", "speed": "Быстро", "context": "64k"},
+                    ]
+                },
+                {
+                    "title": "Внешние бесплатные провайдеры (Нужен бесплатный ключ)",
+                    "desc": "Провайдеры с щедрыми бесплатными тарифами без привязки карты",
+                    "models": [
+                        {"id": "deepseek-harness/deepseek-flash", "name": "DeepSeek Harness Flash", "provider": "DeepSeek Harness", "badge": "1M контекст", "info": "Встроенный безлимитный режим"},
+                        {"id": "google/gemini-2.0-flash-exp:free", "name": "Google Gemini 2.0 Flash", "provider": "Google AI Studio", "badge": "15 RPM бесплатно", "info": "Получить ключ бесплатно на aistudio.google.com"},
+                        {"id": "groq/llama-3.3-70b-versatile", "name": "Groq Llama 3.3 70B", "provider": "Groq Cloud", "badge": "300+ токенов/сек", "info": "Бесплатный ключ на console.groq.com"},
+                    ]
+                },
+                {
+                    "title": "Локальные нейросети (100% оффлайн, без интернета)",
+                    "desc": "Запуск прямо на вашем компьютере через Ollama или LM Studio",
+                    "models": [
+                        {"id": "ollama/qwen2.5-coder:7b", "name": "Qwen 2.5 Coder 7B", "role": "Оффлайн-кодер", "badge": "Ollama", "info": "Команда: ollama run qwen2.5-coder:7b"},
+                        {"id": "ollama/deepseek-r1:8b", "name": "DeepSeek R1 8B", "role": "Оффлайн-рассуждения", "badge": "Ollama", "info": "Команда: ollama run deepseek-r1:8b"},
+                    ]
+                }
+            ]
+        }
+
+    async def telegram_user_route(self, method: str, rest: list[str], q: dict[str, list[str]], js: dict[str, Any], writer: asyncio.StreamWriter) -> None:
+        from .telegram_user import get_telegram_user_manager
+        mgr = get_telegram_user_manager()
+
+        if rest == ["user", "status"] and method == "GET":
+            return await _json(writer, await mgr.get_status())
+
+        if (rest == ["user", "auth", "send_code"] or rest == ["user", "code"]) and method == "POST":
+            phone = str(js.get("phone", "")).strip()
+            api_id = int(js.get("api_id", 0)) if js.get("api_id") else None
+            api_hash = str(js.get("api_hash", "")).strip() or None
+            if not phone:
+                raise HttpError(400, "Укажите номер телефона")
+            try:
+                res = await mgr.send_code(phone, api_id, api_hash)
+                return await _json(writer, res)
+            except Exception as exc:
+                raise HttpError(400, f"Ошибка отправки кода: {exc}")
+
+        if (rest == ["user", "auth", "sign_in"] or rest == ["user", "signin"]) and method == "POST":
+            code = str(js.get("code", "")).strip()
+            password = str(js.get("password", "")).strip() or None
+            phone_code_hash = str(js.get("phone_code_hash", "")).strip() or None
+            if not code:
+                raise HttpError(400, "Укажите код подтверждения")
+            try:
+                res = await mgr.sign_in(code, password, phone_code_hash)
+                return await _json(writer, res)
+            except Exception as exc:
+                raise HttpError(400, f"Ошибка авторизации: {exc}")
+
+        if rest == ["user", "dialogs"] and method == "GET":
+            limit = int((q.get("limit") or ["20"])[0])
+            try:
+                res = await mgr.get_dialogs(limit=min(50, max(1, limit)))
+                return await _json(writer, {"dialogs": res})
+            except Exception as exc:
+                raise HttpError(400, f"Ошибка загрузки чатов: {exc}")
+
+        if rest == ["user", "messages"] and method == "GET":
+            chat_id = (q.get("chat_id") or [""])[0]
+            if not chat_id:
+                raise HttpError(400, "Укажите chat_id")
+            limit = int((q.get("limit") or ["15"])[0])
+            try:
+                res = await mgr.get_messages(chat_id, limit=min(50, max(1, limit)))
+                return await _json(writer, {"messages": res})
+            except Exception as exc:
+                raise HttpError(400, f"Ошибка загрузки сообщений: {exc}")
+
+        if rest == ["user", "suggest"] and method == "POST":
+            chat_id = js.get("chat_id")
+            if not chat_id:
+                raise HttpError(400, "Укажите chat_id")
+            hint = str(js.get("hint", "")).strip()
+
+            async def _run_llm(p: str) -> str:
+                try:
+                    from .runner import OpenCodeRunner
+                    runner = OpenCodeRunner(self.cfg, self.workdir, "tg_suggest", "chat", self.cfg.roles.coder)
+                    res = await runner.run(p)
+                    return res.clean_output
+                except Exception:
+                    return ""
+
+            try:
+                replies = await mgr.suggest_reply(chat_id, hint, runner_fn=_run_llm)
+                return await _json(writer, {"suggestions": replies})
+            except Exception as exc:
+                raise HttpError(400, f"Ошибка генерации ответов: {exc}")
+
+        if rest == ["user", "send"] and method == "POST":
+            chat_id = js.get("chat_id")
+            text = str(js.get("text", "")).strip()
+            if not chat_id or not text:
+                raise HttpError(400, "chat_id и text обязательны")
+            try:
+                res = await mgr.send_message(chat_id, text)
+                return await _json(writer, res)
+            except Exception as exc:
+                raise HttpError(400, f"Ошибка отправки сообщения: {exc}")
+
+        if rest == ["user", "logout"] and method == "POST":
+            ok = await mgr.logout()
+            return await _json(writer, {"ok": ok})
+
+        raise HttpError(404, "unknown endpoint in telegram user api")
 
     async def _sse(self, writer: asyncio.StreamWriter, s: Session, after: int) -> None:
         writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\nConnection: keep-alive\r\nX-Accel-Buffering: no\r\n\r\n")

@@ -93,7 +93,20 @@ pre.code{background:var(--code);padding:12px 14px;border-radius:12px;overflow:au
 .preset{border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;background:color-mix(in srgb,var(--panel2) 75%,var(--panel));text-align:left;transition:border-color .15s,transform .12s,background .15s}.preset:hover,.preset.on{border-color:var(--accent);background:var(--panel2);transform:translateY(-1px)}
 .preset b{display:block;font-family:var(--serif);font-size:15px;margin-bottom:4px}.preset span{color:var(--dim);font-size:12.5px;line-height:1.45;display:block}
 .row{display:flex;gap:8px;align-items:center;margin:8px 0}.row input{flex:1}
-.dirs{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin:6px 0}.dirs div{padding:4px 10px;cursor:pointer}.dirs div:hover{background:var(--panel2)}
+.picker{display:flex;border:1px solid var(--line);border-radius:12px;margin:6px 0 10px;overflow:hidden;height:300px;background:color-mix(in srgb,var(--panel2) 40%,var(--panel))}
+.pk-side{width:176px;flex:none;overflow:auto;border-right:1px solid var(--line);padding:6px;font-size:12.5px}
+.pk-side h6{margin:8px 6px 3px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);font-weight:600}
+.pk-side div{padding:4px 8px;border-radius:7px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pk-side div:hover{background:var(--panel2)}.pk-side div.on{background:color-mix(in srgb,var(--accent) 22%,var(--panel2))}
+.pk-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.pk-crumbs{display:flex;flex-wrap:wrap;gap:2px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--line);font-size:12.5px}
+.pk-crumbs span{cursor:pointer;padding:1px 6px;border-radius:6px}.pk-crumbs span:hover{background:var(--panel2)}.pk-crumbs i{color:var(--dim);font-style:normal}.pk-crumbs span:last-child{font-weight:600;color:var(--accent)}
+.pk-tools{display:flex;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--line);font-size:12.5px}.pk-tools input[type=text]{flex:1;padding:3px 9px}.pk-tools label{color:var(--dim);display:flex;gap:4px;align-items:center;white-space:nowrap;cursor:pointer}.pk-tools button{padding:3px 10px;font-size:12px}
+.pk-list{flex:1;overflow:auto;padding:4px}
+.pk-list div.d{padding:5px 10px;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:center}.pk-list div.d:hover,.pk-list div.d.sel{background:var(--panel2)}.pk-list div.d .g{margin-left:auto;font-size:10.5px;color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 45%,transparent);border-radius:99px;padding:0 7px}
+.pk-list div.d.up{color:var(--dim)}.pk-list div.d.hid{opacity:.62}.pk-list .empty{padding:18px;text-align:center;color:var(--dim);font-size:12.5px}
+.pk-list div.mk{padding:4px 8px;display:flex;gap:6px}.pk-list div.mk input{flex:1;padding:3px 9px}
+.pk-info{padding:5px 10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pk-info b{color:var(--warn);font-weight:600}
+@media(max-width:700px){.pk-side{display:none}}
 #skillpop{position:absolute;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;width:440px;max-height:72vh;overflow:auto;display:none;box-shadow:0 16px 48px rgba(0,0,0,.55)}
 #skillpop.on{display:block}#skillpop h6{margin:12px 0 4px;color:var(--accent);text-transform:uppercase;font-size:11px;letter-spacing:.06em}
 #skillpop label{display:flex;gap:8px;align-items:flex-start;padding:3px 0;font-size:13px}#skillpop label small{color:var(--dim)}
@@ -219,6 +232,41 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
 #nskills{font-size:11px;color:var(--dim);text-align:center;margin-top:4px;opacity:.75}
 .mphead{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);padding:4px 8px 2px;font-weight:600}
 
+/* Personal AI, Model Inspector & Telegram Styles */
+.asst-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12.5px;color:var(--dim)}
+.asst-avatar{width:24px;height:24px;border-radius:50%;background:color-mix(in srgb,var(--accent) 22%,var(--panel2));border:1px solid var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+.asst-title{font-weight:600;color:var(--text);font-family:var(--serif)}
+.asst-model{font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:1px 8px;font-family:ui-monospace,monospace}
+.agent-card{background:color-mix(in srgb,var(--panel) 94%,var(--panel2));border:1px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;margin-bottom:8px;transition:all .15s}
+.agent-card:hover{border-color:var(--accent);background:var(--panel2);transform:translateY(-1px);box-shadow:0 4px 14px -4px rgba(0,0,0,.35)}
+.agent-card-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.agent-card-head .role-badge{font-size:11px;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--accent) 15%,var(--panel2));color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+.agent-card-head .open-btn{margin-left:auto;font-size:11.5px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;display:flex;align-items:center;gap:3px}
+.agent-card-snippet{color:var(--dim);font-size:12px;margin-top:6px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modaltabs{display:flex;gap:6px;border-bottom:1px solid var(--line);padding-bottom:8px;margin:12px 0 14px;overflow-x:auto}
+.modaltab{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:5px 12px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.modaltab.on{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.free-cat{margin-bottom:14px;border:1px solid var(--line);border-radius:14px;padding:14px;background:color-mix(in srgb,var(--panel2) 60%,var(--panel))}
+.free-cat-title{font-size:14.5px;font-weight:600;font-family:var(--serif);margin-bottom:4px;color:var(--accent)}
+.free-cat-desc{font-size:12px;color:var(--dim);margin-bottom:10px}
+.free-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.free-item{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel);display:flex;flex-direction:column;gap:5px}
+.free-item:hover{border-color:var(--accent)}
+.free-name{font-weight:600;font-size:13px}
+.free-meta{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--dim);flex-wrap:wrap}
+.free-pick-btn{margin-top:6px;padding:3px 9px;font-size:11.5px;border-radius:6px}
+.tg-chat-item{padding:8px 10px;border-radius:8px;cursor:pointer;margin-bottom:4px;display:flex;flex-direction:column;gap:2px}
+.tg-chat-item:hover,.tg-chat-item.on{background:color-mix(in srgb,var(--accent) 18%,var(--panel))}
+.tg-chat-top{display:flex;align-items:center;gap:6px}
+.tg-chat-name{font-weight:600;font-size:12.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tg-badge{background:var(--accent);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px;margin-left:auto}
+.tg-last{font-size:11.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tg-msg{padding:6px 10px;border-radius:10px;max-width:85%;font-size:12.5px;margin-bottom:4px}
+.tg-msg.out{align-self:flex-end;background:color-mix(in srgb,var(--accent2) 30%,var(--panel2));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+.tg-msg.in{align-self:flex-start;background:var(--panel2);border:1px solid var(--line)}
+.tg-sug-item{padding:6px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;font-size:12px;transition:all .12s}
+.tg-sug-item:hover{border-color:var(--accent);background:var(--panel2)}
+
 /* Mobile & Minimalist Layout */
 .iconbtn{background:none;border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:15px;cursor:pointer;display:none;align-items:center;justify-content:center}
 #side-backdrop{display:none}
@@ -281,9 +329,18 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
 <section id="main">
   <div id="top">
     <button id="menubtn" class="iconbtn" title="Toggle Sessions Menu" onclick="toggleSidebar()">☰</button>
-    <span id="title" title="Click to rename session" style="cursor:pointer">OpenSwarm</span><span id="wd"></span><span style="flex:1"></span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="title" title="Click to rename session" style="cursor:pointer;font-weight:600;font-size:16px;font-family:var(--serif)">OpenSwarm</span>
+      <span class="badge ready" style="font-size:11px" title="Личный ИИ ассистент онлайн">● Онлайн</span>
+      <span id="wd"></span>
+    </div>
+    <span style="flex:1"></span>
     <span id="usage" class="lbl"></span><span id="runstate" class="lbl"></span>
     <input type="text" id="msgsearch" placeholder="Поиск в чате" title="Фильтр сообщений в текущем диалоге">
+    <button id="tgtopbtn" class="tbtn" title="Подключить личный Telegram аккаунт и отвечать на сообщения">📱<span class="tl"> Telegram</span></button>
+    <button id="freetopbtn" class="tbtn" title="Каталог бесплатных нейросетей">🎁<span class="tl"> Модели</span></button>
+    <button id="opttopbtn" class="tbtn" title="Оптимизация и экономия токенов">⚡<span class="tl"> Токены</span> <span id="optbadge" class="badge ready">0%</span></button>
+    <button id="schedtopbtn" class="tbtn" title="Отложенные задачи">⏰<span class="tl"> Задачи</span></button>
     <button id="busbtn" class="tbtn" title="Swarm Room — live inter-agent chat &amp; non-blocking questions">💬<span class="tl"> Команда</span> <span id="buscount" class="lbl"></span></button>
     <button id="filesbtn" class="tbtn" title="Workspace Files">📁<span class="tl"> Файлы</span></button>
     <div class="morewrap">
@@ -391,8 +448,16 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
 <div class="modal" id="newmodal"><div class="sheet">
   <h3 style="margin:0">New session</h3><div class="lbl">Pick a preset (mode + skills) and a working directory — any directory, git repo or not.</div>
   <div class="presets" id="presetgrid"></div>
-  <div class="row"><span class="lbl">Directory</span><input type="text" id="nwd"><button id="browse">Browse</button></div>
-  <div class="dirs" id="dirs" style="display:none"></div>
+  <div class="row"><span class="lbl">Папка</span><input type="text" id="nwd" autocomplete="off" spellcheck="false" placeholder="/home/you/project — Tab дополняет путь, Enter открывает"><button id="pkpick" title="Системный диалог выбора папки" style="display:none">🗂 Системный…</button><button id="browse" title="Показать/скрыть обзор папок">📂 Обзор</button></div>
+  <div class="picker" id="picker">
+    <div class="pk-side" id="pkside"></div>
+    <div class="pk-main">
+      <div class="pk-crumbs" id="pkcrumbs"></div>
+      <div class="pk-tools"><input type="text" id="pkfilter" placeholder="Фильтр папок…" autocomplete="off"><label><input type="checkbox" id="pkhidden"> скрытые</label><button id="pkmk" title="Создать папку здесь">＋ Папка</button></div>
+      <div class="pk-list" id="pklist"></div>
+      <div class="pk-info" id="pkinfo"></div>
+    </div>
+  </div>
   <div class="row" style="justify-content:flex-end"><button id="cancelnew">Cancel</button><button class="primary" id="createnew">Create</button></div>
 </div></div>
 <div class="modal" id="viewmodal"><div class="sheet"><div class="row"><b id="vname" style="flex:1"></b><button id="vinsert">Insert @path</button><button id="vclose">Close</button></div><div id="vbody" class="pre"></div></div></div>
@@ -738,6 +803,124 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
     </div>
   </div>
 </div></div>
+
+<!-- Model Inspector Modal -->
+<div class="modal" id="modelinspectormodal"><div class="sheet" style="max-width:920px">
+  <div class="row" style="align-items:flex-start">
+    <div style="flex:1">
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="mi_icon" style="font-size:22px">🤖</span>
+        <b id="mi_title" style="font-size:17px;font-family:var(--serif)">Инспектор модели</b>
+        <span id="mi_role" class="badge ready"></span>
+        <span id="mi_status" class="badge"></span>
+      </div>
+      <div id="mi_model" class="lbl" style="margin-top:4px;font-family:ui-monospace,monospace"></div>
+    </div>
+    <button id="miclose">✕</button>
+  </div>
+  <div class="modaltabs">
+    <button class="modaltab on" id="mitab_res">📋 Результат ответа</button>
+    <button class="modaltab" id="mitab_think">🧠 Мысли / Рассуждения</button>
+    <button class="modaltab" id="mitab_tools">🔧 Инструменты (<span id="mitoolscount">0</span>)</button>
+    <button class="modaltab" id="mitab_log">📜 Консольный лог</button>
+  </div>
+  <div id="mipane_res" class="bubble" style="max-height:60vh;overflow:auto;margin:8px 0;background:var(--panel2)"></div>
+  <div id="mipane_think" style="display:none;max-height:60vh;overflow:auto;padding:12px;background:var(--code);border-radius:10px;font:13px/1.5 ui-monospace,monospace;white-space:pre-wrap;color:#cfc9be"></div>
+  <div id="mipane_tools" style="display:none;max-height:60vh;overflow:auto;padding:8px"></div>
+  <div id="mipane_log" style="display:none;max-height:60vh;overflow:auto;background:var(--code);padding:12px;border-radius:10px;font:12.5px/1.5 ui-monospace,monospace;white-space:pre-wrap;word-break:break-word"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:14px;gap:8px">
+    <button id="micopy" class="primary">📋 Скопировать ответ</button>
+    <button id="miretry">↻ Повторить этот шаг</button>
+  </div>
+</div></div>
+
+<!-- Telegram Userbot Modal -->
+<div class="modal" id="telegrammodal"><div class="sheet" style="max-width:880px">
+  <div class="row"><b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>📱</span> Личный Telegram ассистент</b><button id="tgclose">✕</button></div>
+  <div class="lbl">Подключите личный аккаунт Telegram. OpenSwarm сможет читать входящие сообщения ваших собеседников и предлагать умные варианты ответов с помощью ИИ.</div>
+  
+  <div id="tg_auth_box" style="margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)">
+    <div id="tg_status_banner" class="row" style="margin-bottom:12px">
+      <span class="dot" id="tg_status_dot"></span>
+      <span id="tg_status_text" style="font-weight:600">Проверка подключения…</span>
+      <button id="tg_logout_btn" class="danger mini" style="display:none;margin-left:auto">Выйти из аккаунта</button>
+    </div>
+    
+    <div id="tg_login_form" style="display:none">
+      <div class="row">
+        <span class="lbl" style="width:110px">Номер телефона:</span>
+        <input type="text" id="tg_phone" placeholder="+7 999 123-45-67" style="flex:1">
+        <button id="tg_send_code_btn" class="primary">Получить код</button>
+      </div>
+      <div id="tg_code_row" class="row" style="display:none;margin-top:8px">
+        <span class="lbl" style="width:110px">Код Telegram:</span>
+        <input type="text" id="tg_code" placeholder="12345" style="width:110px">
+        <input type="password" id="tg_2fa" placeholder="2FA пароль (если включён)" style="flex:1">
+        <button id="tg_signin_btn" class="primary">Войти</button>
+      </div>
+      <div id="tg_auth_msg" class="lbl" style="margin-top:8px;color:var(--accent)"></div>
+    </div>
+  </div>
+
+  <div id="tg_dialogs_box" style="display:none;margin-top:16px">
+    <div class="row" style="justify-content:space-between">
+      <b style="font-size:14px">Недавние диалоги</b>
+      <button id="tg_refresh_dialogs_btn">↻ Обновить чаты</button>
+    </div>
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:12px;margin-top:10px;height:420px;border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <div id="tg_dialogs_list" style="overflow:auto;border-right:1px solid var(--line);padding:6px;background:var(--panel2)"></div>
+      <div id="tg_chat_view" style="display:flex;flex-direction:column;height:100%;padding:10px;background:var(--panel)">
+        <div id="tg_chat_hdr" style="font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:13.5px">Выберите диалог слева</div>
+        <div id="tg_messages_stream" style="flex:1;overflow:auto;padding:8px 0;display:flex;flex-direction:column;gap:6px"></div>
+        <div id="tg_suggestions_box" style="display:none;padding:8px;background:var(--panel2);border:1px solid var(--accent);border-radius:10px;margin-bottom:8px">
+          <div style="font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px">🤖 Предложенные ответы ИИ (кликните, чтобы выбрать):</div>
+          <div id="tg_suggestions_list" style="display:flex;flex-direction:column;gap:4px"></div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button id="tg_suggest_btn" class="primary" title="ИИ проанализирует сообщения и предложит 3 варианта ответа">🤖 Предложить ответ</button>
+          <input type="text" id="tg_reply_input" placeholder="Текст сообщения в Telegram…" style="flex:1">
+          <button id="tg_send_btn" class="primary" title="Отправить в Telegram">✈</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- Free Models Modal -->
+<div class="modal" id="freemodal"><div class="sheet" style="max-width:860px">
+  <div class="row"><b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>🎁</span> Бесплатные нейросети и модели для OpenSwarm</b><button id="freeclose">✕</button></div>
+  <div class="lbl">OpenSwarm полностью поддерживает бесплатные модели без обязательной оплаты подписок. Выберите любую модель ниже в один клик.</div>
+  <div id="free_catalog_content" style="margin-top:14px;display:flex;flex-direction:column;gap:14px"></div>
+</div></div>
+
+<!-- Token Optimizer Modal -->
+<div class="modal" id="optimizermodal"><div class="sheet" style="max-width:680px">
+  <div class="row"><b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>⚡</span> Оптимизация и экономия токенов</b><button id="optclose">✕</button></div>
+  <div class="lbl">OpenSwarm использует интеллектуальное сжатие запросов, чтобы не тратить лимиты и ускорять генерацию ответов.</div>
+  <div class="row" style="margin:16px 0;gap:12px;flex-wrap:wrap">
+    <div class="card" style="flex:1;min-width:180px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:var(--ok)" id="opt_saved_chars">0</div>
+      <div class="lbl">Символов сэкономлено</div>
+    </div>
+    <div class="card" style="flex:1;min-width:180px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:var(--accent)" id="opt_savings_pct">0%</div>
+      <div class="lbl">Экономия контекста</div>
+    </div>
+    <div class="card" style="flex:1;min-width:180px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:var(--warn)" id="opt_cache_hits">0</div>
+      <div class="lbl">Попаданий в кэш</div>
+    </div>
+  </div>
+  <div style="font-size:13px;line-height:1.6;color:var(--dim);border-top:1px solid var(--line);padding-top:12px">
+    <b>Как это работает:</b>
+    <ul style="margin:6px 0;padding-left:20px">
+      <li><b>Сжатие огромных логов</b>: вывод терминалов и git diffs аккуратно усекается, скрывая тысячи лишних строк.</li>
+      <li><b>Умное суммирование истории</b>: старые сообщения диалога заменяются кратким резюме, сохраняя суть без перегрузки контекста.</li>
+      <li><b>Чистый вывод моделей</b>: фильтрация дубликатов и системных служебных инструкций.</li>
+      <li><b>Кэш частых запросов</b>: мгновенный ответ на повторяющиеся проверки.</li>
+    </ul>
+  </div>
+</div></div>
 <script>
 const TOKEN="__TOKEN__";
 const DEFAULT_MODES=[
@@ -872,6 +1055,7 @@ let ST={
   sandbox:false,bwrap:false,models:[],roles:{planner:"",coder:"",reviewer:""},skills:[],presets:[],native_skills:[],sessions:[]
 };
 let CUR=null, ES=null, lastId=0, cards={}, board=null, busy=false, busCount=0, curThread="all", sel={mode:"auto",priority:"balanced",effort:"medium",models:{},skills:new Set(),parallel:8,sandbox:false}, chosenPreset=null, viewPath="", usageBy={}, snap=null;
+let AGENT_DATA={}, CURRENT_INSPECT_AGENT=null;
 function toast(t){const d=document.createElement("div");d.className="sys";d.textContent="⚠ "+t;$("stream").appendChild(d);scrollDown();}
 function scrollDown(force){const c=$("conv");if(force||c.scrollHeight-c.scrollTop-c.clientHeight<160)c.scrollTop=c.scrollHeight;}
 async function loadState(){
@@ -892,7 +1076,7 @@ async function loadState(){
   sel.parallel=ST.parallel||sel.parallel||8;
   sel.skills=new Set((ST.skills||[]).filter(s=>s.default).map(s=>s.id));
   if($("nskills"))$("nskills").textContent=(ST.native_skills||[]).length+" native opencode skills detected";
-  fillModels();fillPriorities();fillEfforts();fillPar();renderModes();renderSessions();
+  fillModels();fillPriorities();fillEfforts();fillPar();renderModes();renderSessions();refreshOptimizerStats().catch(()=>{});
 }
 function fillModels(){
   const models=(ST&&Array.isArray(ST.models))?ST.models:[];
@@ -1018,10 +1202,24 @@ function connect(){if(!CUR)return;const id=CUR.id;ES=new EventSource(`/api/sessi
   ES.onmessage=m=>{const ev=JSON.parse(m.data);if(!CUR||CUR.id!==id)return;apply(ev,false);};
   ES.onerror=()=>{ES.close();setTimeout(()=>{if(CUR&&CUR.id===id)connect();},1500);};}
 function setBusy(b){busy=b;$("send").style.display=b?"none":"";$("stop").style.display=b?"":"none";$("runstate").textContent=b?"● running":"";}
-function mkCard(id,title,role){addBusTarget(id,title);addThread(id,title);if(!board){board=document.createElement("div");board.className="board";$("stream").appendChild(board);}
-  const c=document.createElement("div");c.className="card"+(role==="chat"?" span":"");
-  c.innerHTML=`<h5><span class="dot"></span><span class="n">${esc(title)}</span><span class="role">${esc(role)}</span></h5><div class="st">idle</div><pre class="log"></pre>`;
-  c.querySelector("h5").onclick=()=>c.classList.toggle("open");board.appendChild(c);cards[id]=c;return c;}
+function mkCard(id,title,role){
+  addBusTarget(id,title);addThread(id,title);
+  AGENT_DATA[id]={id,title,role,status:"idle",logs:[],tools:[],thinking:"",result:""};
+  if(!board){board=document.createElement("div");board.className="board";$("stream").appendChild(board);}
+  const c=document.createElement("div");c.className="card"+(role==="chat"?" span":"")+" agent-card";
+  c.dataset.agent=id;
+  c.innerHTML=`<div class="agent-card-head">
+    <span class="dot"></span>
+    <span class="n" style="font-family:var(--serif)">${esc(title)}</span>
+    <span class="role-badge">${esc(role)}</span>
+    <button type="button" class="open-btn" title="Подробный вывод модели">Посмотреть вывод ↗</button>
+  </div>
+  <div class="st">● idle</div>
+  <div class="agent-card-snippet">Ожидание ответа…</div>
+  <pre class="log" style="display:none"></pre>`;
+  c.onclick=()=>openModelInspector(id);
+  board.appendChild(c);cards[id]=c;return c;
+}
 $("forkbtn").onclick=async()=>{if(!CUR)return;try{const res=await api(`/api/sessions/${CUR.id}/fork`,{method:"POST"});await refreshSessions();await openSession(res.id);toast("Forked session into new thread: "+res.title);}catch(e){toast(e.message);}};
 async function sendBus(text,to,kind,reply_to){if(!CUR||!text||!text.trim())return;
   try{await api(`/api/sessions/${CUR.id}/bus`,{method:"POST",body:JSON.stringify({text:text.trim(),to:to||"all",kind:kind||"chat",reply_to:reply_to||null})});}
@@ -1081,19 +1279,32 @@ function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev)
   switch(ev.type){
   case"user":{lastUserPrompt=ev.text||lastUserPrompt;board=null;busy=true;const d=document.createElement("div");d.className="msg user";d.innerHTML='<div class="bubble"></div>';d.firstChild.textContent=ev.text;S.appendChild(d);if(!replay)setBusy(true);break;}
   case"agent":mkCard(ev.agent,ev.title,ev.role);break;
-  case"status":{const c=cards[ev.agent];if(c){const stEl=c.querySelector(".st");stEl.textContent=ev.status;if(ev.status==="Failed"){const rb=document.createElement("button");rb.textContent="↻ Повторить";rb.style.cssText="margin-left:6px;padding:1px 7px;font-size:11px";rb.onclick=e=>{e.stopPropagation();retryFailedAgents([ev.agent]);};stEl.appendChild(rb);}const d=c.querySelector(".dot");d.className="dot "+(ev.status==="Running"||ev.status==="Merging"?"run":ev.status==="Done"?"ok":ev.status==="Failed"?"bad":"");}break;}
-  case"line":{const c=cards[ev.agent];if(c){const p=c.querySelector("pre.log");const sp=document.createElement("span");if(ev.err)sp.className="e";sp.textContent=ev.text.replace(ANSI,"")+"\n";p.appendChild(sp);while(p.childNodes.length>1500)p.removeChild(p.firstChild);if(!replay)p.scrollTop=p.scrollHeight;}break;}
+  case"status":{if(ev.agent&&AGENT_DATA[ev.agent])AGENT_DATA[ev.agent].status=ev.status;const c=cards[ev.agent];if(c){const stEl=c.querySelector(".st");stEl.textContent=ev.status;const snip=c.querySelector(".agent-card-snippet");if(snip)snip.textContent=ev.status==="Done"?"✔ Ответ сформирован":ev.status==="Failed"?"✘ Ошибка выполнения":(ev.status||"Выполняется…");if(ev.status==="Failed"){const rb=document.createElement("button");rb.textContent="↻ Повторить";rb.style.cssText="margin-left:6px;padding:1px 7px;font-size:11px";rb.onclick=e=>{e.stopPropagation();retryFailedAgents([ev.agent]);};stEl.appendChild(rb);}const d=c.querySelector(".dot");d.className="dot "+(ev.status==="Running"||ev.status==="Merging"?"run":ev.status==="Done"?"ok":ev.status==="Failed"?"bad":"");}break;}
+  case"line":{const clean=ev.text.replace(ANSI,"");if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].logs.push((ev.err?"[err] ":"")+clean);if(AGENT_DATA[ev.agent].logs.length>1000)AGENT_DATA[ev.agent].logs.shift();}const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip&&clean.trim())snip.textContent=clean.trim().slice(0,90);const p=c.querySelector("pre.log");if(p){const sp=document.createElement("span");if(ev.err)sp.className="e";sp.textContent=clean+"\n";p.appendChild(sp);while(p.childNodes.length>1500)p.removeChild(p.firstChild);if(!replay)p.scrollTop=p.scrollHeight;}}break;}
   case"log":{const d=document.createElement("div");d.className="sys";d.textContent=ev.text;S.appendChild(d);break;}
   case"bus":renderBusEvent(ev,replay);break;
-  case"result":{const d=document.createElement("div");d.className="msg";const b=document.createElement("div");b.className="bubble";b.innerHTML=md(ev.text);
-    const t=document.createElement("div");t.className="tools";const cp=document.createElement("button");cp.textContent="Copy";cp.onclick=()=>navigator.clipboard.writeText(ev.text);
-    const dl=document.createElement("button");dl.textContent="Download .md";dl.onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([ev.text],{type:"text/markdown"}));a.download=(ev.kind||"result")+".md";a.click();};
-    t.append(cp,dl);b.appendChild(t);d.appendChild(b);S.appendChild(d);break;}
-  case"tool":{const c=cards[ev.agent];if(c){let box=c.querySelector(".toolrows");if(!box){box=document.createElement("div");box.className="toolrows";c.insertBefore(box,c.querySelector("pre.log"));}
+  case"result":{if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].result=ev.text;const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip)snip.textContent="Готово. Нажмите чтобы посмотреть.";}}
+    const d=document.createElement("div");d.className="msg assistant";const b=document.createElement("div");b.className="bubble";
+    const asstHdr=document.createElement("div");asstHdr.className="asst-hdr";
+    const agTitle=(ev.agent&&cards[ev.agent])?(cards[ev.agent].querySelector(".n")?cards[ev.agent].querySelector(".n").textContent:ev.agent):"Ассистент";
+    asstHdr.innerHTML=`<span>🤖 ${esc(agTitle)}</span>${ev.agent?`<button type="button" class="open-btn" style="margin-left:auto;font-size:12px;color:var(--accent);cursor:pointer;background:none;border:none">Окно инспектора ↗</button>`:""}`;
+    if(ev.agent){const btn=asstHdr.querySelector(".open-btn");if(btn)btn.onclick=()=>openModelInspector(ev.agent);}
+    b.appendChild(asstHdr);
+    const bodyDiv=document.createElement("div");bodyDiv.className="res-body";bodyDiv.innerHTML=md(ev.text);b.appendChild(bodyDiv);
+    const t=document.createElement("div");t.className="tools";
+    const cp=document.createElement("button");cp.textContent="Копировать";cp.onclick=()=>{navigator.clipboard.writeText(ev.text);toast("Скопировано в буфер");};
+    const dl=document.createElement("button");dl.textContent="Скачать .md";dl.onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([ev.text],{type:"text/markdown"}));a.download=(ev.kind||"result")+".md";a.click();};
+    const tgBtn=document.createElement("button");tgBtn.textContent="В Telegram ↗";tgBtn.title="Отправить этот ответ в Telegram диалог";
+    tgBtn.onclick=()=>{openTelegramModal();const inp=$("tg_reply_input");if(inp)inp.value=ev.text;};
+    t.append(cp,dl,tgBtn);b.appendChild(t);d.appendChild(b);S.appendChild(d);break;}
+  case"tool":{if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].tools.push({tool:ev.tool,status:ev.status,summary:ev.summary,output:ev.output,tid:ev.tid});}
+    const c=cards[ev.agent];if(c){let box=c.querySelector(".toolrows");if(!box){box=document.createElement("div");box.className="toolrows";c.insertBefore(box,c.querySelector("pre.log"));}
     let row=null;for(const r of box.children)if(r.dataset.t===ev.tid)row=r;if(!row){row=document.createElement("div");row.dataset.t=ev.tid;box.appendChild(row);}
     row.className="tool "+ev.status;row.textContent="🔧 "+ev.tool+" · "+ev.status+(ev.summary?" · "+ev.summary:"");row.title=ev.output||"";}break;}
-  case"thinking":{const c=cards[ev.agent];if(c){let th=c.querySelector(".thinking");if(!th){th=document.createElement("details");th.className="thinking";th.open=true;th.innerHTML='<summary>🧠 Thinking process</summary><div class="thinkbody"></div>';c.insertBefore(th,c.querySelector("pre.log"));}th.querySelector(".thinkbody").textContent=ev.text;}break;}
-  case"thinking_delta":{const c=cards[ev.agent];if(c){let th=c.querySelector(".thinking");if(!th){th=document.createElement("details");th.className="thinking";th.open=true;th.innerHTML='<summary>🧠 Thinking process</summary><div class="thinkbody"></div>';c.insertBefore(th,c.querySelector("pre.log"));}th.querySelector(".thinkbody").textContent+=ev.delta;}break;}
+  case"thinking":{if(ev.agent&&AGENT_DATA[ev.agent])AGENT_DATA[ev.agent].thinking=ev.text;
+    const c=cards[ev.agent];if(c){let th=c.querySelector(".thinking");if(!th){th=document.createElement("details");th.className="thinking";th.open=true;th.innerHTML='<summary>🧠 Thinking process</summary><div class="thinkbody"></div>';c.insertBefore(th,c.querySelector("pre.log"));}th.querySelector(".thinkbody").textContent=ev.text;}break;}
+  case"thinking_delta":{if(ev.agent&&AGENT_DATA[ev.agent])AGENT_DATA[ev.agent].thinking=(AGENT_DATA[ev.agent].thinking||"")+ev.delta;
+    const c=cards[ev.agent];if(c){let th=c.querySelector(".thinking");if(!th){th=document.createElement("details");th.className="thinking";th.open=true;th.innerHTML='<summary>🧠 Thinking process</summary><div class="thinkbody"></div>';c.insertBefore(th,c.querySelector("pre.log"));}th.querySelector(".thinkbody").textContent+=ev.delta;}break;}
   case"usage":{usageBy[ev.agent]=ev;showUsage();break;}
   case"snapshot":snap={id:ev.tid,dir:ev.dir};break;
   case"permission":{const r=ev.req;const d=document.createElement("div");d.className="msg";d.id="perm-"+r.id;d.innerHTML='<div class="bubble perm"><b>🔐 Permission requested</b><div></div><code></code><div class="tools"></div></div>';
@@ -1102,7 +1313,7 @@ function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev)
       b.onclick=async()=>{try{await api(`/api/sessions/${CUR.id}/permission`,{method:"POST",body:JSON.stringify({id:r.id,response:val})});}catch(e){toast(e.message);}};t.appendChild(b);}
     S.appendChild(d);break;}
   case"permission_resolved":{const d=document.getElementById("perm-"+ev.pid);if(d){d.querySelector(".tools").textContent="→ "+({once:"allowed once",always:"always allowed",reject:"denied"}[ev.decision]||ev.decision);}break;}
-  case"done":{busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);}
+  case"done":{busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);refreshOptimizerStats().catch(()=>{});}
     const d=document.createElement("div");d.className="sys";d.textContent=(ev.ok?"✔ finished":"✘ finished with problems")+(ev.failed&&ev.failed.length?" — "+ev.failed.join(", "):"")+(ev.usage&&ev.usage.tokens?` · ${ev.usage.tokens.input}→${ev.usage.tokens.output} tokens`+(ev.usage.cost?` · $${Number(ev.usage.cost).toFixed(4)}`:""):"");
     if(!ev.ok||(ev.failed&&ev.failed.length)){const rb=document.createElement("button");rb.className="primary";rb.textContent="▶ Продолжить ответ (перезапустить fail)";rb.style.marginLeft="8px";rb.onclick=()=>retryFailedAgents(ev.failed||[]);d.appendChild(rb);}
     if(ev.snapshot){const b=document.createElement("button");b.textContent="↩ Undo this run";b.style.marginLeft="8px";b.onclick=()=>undo(ev.snapshot);d.appendChild(b);}
@@ -1283,8 +1494,8 @@ $("newbtn").onclick=()=>{
   chosenPreset=presets[0]||null;
   $("nwd").value=CUR?CUR.workdir:(ST?ST.workdir:"");
   renderPresetGrid();
-  $("dirs").style.display="none";
   $("newmodal").classList.add("on");
+  openPicker();
 };
 function renderPresetGrid(){
   const g=$("presetgrid");if(!g)return;
@@ -1299,10 +1510,62 @@ function renderPresetGrid(){
 }
 $("cancelnew").onclick=()=>$("newmodal").classList.remove("on");
 $("createnew").onclick=()=>createSession(chosenPreset,$("nwd").value.trim()||(ST?ST.workdir:""));
-$("browse").onclick=()=>browse($("nwd").value.trim());
-async function browse(p){try{const d=await api("/api/dirs?path="+encodeURIComponent(p));$("nwd").value=d.path;const box=$("dirs");box.style.display="block";box.innerHTML="";
-  if(d.parent){const u=document.createElement("div");u.textContent="⬆ ..";u.onclick=()=>browse(d.parent);box.appendChild(u);}
-  for(const n of d.dirs){const r=document.createElement("div");r.textContent="📁 "+n;r.onclick=()=>browse(d.path.replace(/\/$/,"")+"/"+n);box.appendChild(r);}}catch(e){alert(e.message);}}
+// ---- folder picker (breadcrumbs, shortcuts, filter, Tab-completion, new folder, system dialog)
+let PK={d:null,hidden:false,sel:-1,t:null};
+try{PK.hidden=localStorage.getItem("pkhidden")==="1";}catch(e){}
+$("pkhidden").checked=PK.hidden;
+$("browse").onclick=()=>{const p=$("picker");if(p.style.display==="none"){p.style.display="flex";browse($("nwd").value.trim());}else p.style.display="none";};
+$("pkhidden").onchange=()=>{PK.hidden=$("pkhidden").checked;try{localStorage.setItem("pkhidden",PK.hidden?"1":"0");}catch(e){}browse(PK.d?PK.d.path:$("nwd").value.trim());};
+$("pkpick").onclick=async()=>{const b=$("pkpick");b.disabled=true;try{const r=await api("/api/pick-dir",{method:"POST",body:JSON.stringify({start:($("nwd").value.trim()||(PK.d&&PK.d.path)||"")})});
+  if(r.path){$("nwd").value=r.path;if($("picker").style.display!=="none")browse(r.path);}}catch(e){alert(e.message);}b.disabled=false;};
+$("pkfilter").oninput=()=>{PK.sel=-1;renderPickerList();};
+$("pkfilter").onkeydown=e=>{const rows=[...$("pklist").querySelectorAll("div.d:not(.up)")];
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(!rows.length)return;PK.sel=Math.max(0,Math.min(rows.length-1,PK.sel+(e.key==="ArrowDown"?1:-1)));rows.forEach((r,i)=>r.classList.toggle("sel",i===PK.sel));rows[PK.sel].scrollIntoView({block:"nearest"});}
+  else if(e.key==="Enter"){e.preventDefault();const r=rows[PK.sel>=0?PK.sel:0];if(r)r.click();}
+  else if(e.key==="Backspace"&&!$("pkfilter").value&&PK.d&&PK.d.parent){browse(PK.d.parent);}};
+$("nwd").oninput=()=>{clearTimeout(PK.t);if($("picker").style.display==="none")return;PK.t=setTimeout(()=>browse($("nwd").value,true),160);};
+$("nwd").onkeydown=e=>{
+  if(e.key==="Tab"&&PK.d&&PK.d.prefix!==undefined){const pre=PK.d.prefix||"",names=PK.d.dirs.filter(n=>n.toLowerCase().startsWith(pre.toLowerCase()));
+    if(names.length){e.preventDefault();let c=names[0];for(const n of names){let i=0;while(i<c.length&&i<n.length&&c[i].toLowerCase()===n[i].toLowerCase())i++;c=c.slice(0,i);}
+      const base=PK.d.path.replace(/\/$/,"");$("nwd").value=base+"/"+c+(names.length===1?"/":"");browse($("nwd").value,true);}}
+  else if(e.key==="Enter"){e.preventDefault();const v=$("nwd").value.trim();if(e.ctrlKey||e.metaKey){$("createnew").click();return;}
+    if($("picker").style.display==="none")$("createnew").click();else if(PK.d&&PK.d.prefix&&PK.d.dirs.length===1){$("nwd").value=PK.d.path.replace(/\/$/,"")+"/"+PK.d.dirs[0];browse($("nwd").value);}else browse(v);}};
+function openPicker(){$("pkpick").style.display=(ST&&ST.native_picker)?"":"none";$("picker").style.display="flex";$("pkfilter").value="";browse($("nwd").value.trim());}
+async function browse(p,soft){
+  try{const d=await api("/api/dirs?hidden="+(PK.hidden?1:0)+"&path="+encodeURIComponent(p||""));PK.d=d;PK.sel=-1;
+    if(!soft)$("nwd").value=d.path;
+    renderPicker();}
+  catch(e){$("pkinfo").textContent="⚠ "+e.message;}}
+function renderPicker(){
+  const d=PK.d;if(!d)return;
+  const side=$("pkside");side.innerHTML="";
+  const addGroup=(title,items)=>{if(!items.length)return;const h=document.createElement("h6");h.textContent=title;side.appendChild(h);
+    for(const it of items){const r=document.createElement("div");r.textContent=it.name;r.title=it.path;if(it.path===d.path)r.className="on";r.onclick=()=>{$("pkfilter").value="";browse(it.path);};side.appendChild(r);}};
+  addGroup("Места",d.shortcuts||[]);
+  addGroup("Недавние",(d.recent||[]).map(x=>({name:x.split("/").filter(Boolean).slice(-2).join("/")||"/",path:x})));
+  const cr=$("pkcrumbs");cr.innerHTML="";
+  (d.crumbs||[]).forEach((c,i)=>{
+    if(i>0){const sep=document.createElement("i");sep.textContent="›";cr.appendChild(sep);}
+    const sp=document.createElement("span");sp.textContent=c.path===d.home?"🏠 ~":c.name;sp.title=c.path;sp.onclick=()=>{$("pkfilter").value="";browse(c.path);};cr.appendChild(sp);});
+  renderPickerList();
+}
+function renderPickerList(){
+  const d=PK.d;if(!d)return;const box=$("pklist");box.innerHTML="";
+  const q=($("pkfilter").value||"").toLowerCase(),pre=(d.prefix||"").toLowerCase();
+  if(d.parent){const u=document.createElement("div");u.className="d up";u.innerHTML="<span>⬆</span><span>На уровень выше</span>";u.onclick=()=>{$("pkfilter").value="";browse(d.parent);};box.appendChild(u);}
+  const items=(d.items||d.dirs.map(n=>({name:n}))).filter(it=>(!q||it.name.toLowerCase().includes(q))&&(!pre||it.name.toLowerCase().startsWith(pre)));
+  for(const it of items){const r=document.createElement("div");r.className="d"+(it.hidden?" hid":"");
+    r.innerHTML=`<span>📁</span><span>${esc(it.name)}</span>${it.git?'<span class="g">git</span>':""}`;
+    r.onclick=()=>{$("pkfilter").value="";browse(d.path.replace(/\/$/,"")+"/"+it.name);};box.appendChild(r);}
+  if(!items.length){const e=document.createElement("div");e.className="empty";e.textContent=d.denied?"🔒 Нет доступа к этой папке":(q||pre)?"Ничего не найдено":"Вложенных папок нет";box.appendChild(e);}
+  const info=[];if(d.is_git)info.push("git-репозиторий");info.push(items.length+" папок");
+  $("pkinfo").innerHTML=esc(d.path)+" · "+esc(info.join(" · "))+(d.writable?"":" · <b>только чтение</b>");
+}
+$("pkmk").onclick=()=>{const d=PK.d;if(!d)return;const box=$("pklist");if(box.querySelector(".mk"))return;
+  const row=document.createElement("div");row.className="mk";row.innerHTML='<input type="text" placeholder="Имя новой папки" spellcheck="false"><button class="primary">Создать</button><button>✕</button>';
+  box.prepend(row);const inp=row.querySelector("input"),[ok,no]=row.querySelectorAll("button");inp.focus();
+  const go=async()=>{const name=inp.value.trim();if(!name)return;try{const r=await api("/api/mkdir",{method:"POST",body:JSON.stringify({parent:d.path,name})});PK.d=r;$("nwd").value=r.path;$("pkfilter").value="";renderPicker();}catch(e){$("pkinfo").textContent="⚠ "+e.message;}};
+  ok.onclick=go;no.onclick=()=>row.remove();inp.onkeydown=e=>{if(e.key==="Enter")go();else if(e.key==="Escape")row.remove();};};
 function showUsage(){let i=0,o=0,c=0;for(const u of Object.values(usageBy)){const t=(u.tokens||{});i+=t.input||0;o+=t.output||0;c+=u.cost||0;}
   $("usage").textContent=(i||o)?`${i}→${o} tok`+(c?` · $${c.toFixed(4)}`:""):"";}
 function showText(title,text,html){$("vname").textContent=title;const b=$("vbody");if(html)b.innerHTML=html;else b.textContent=text;$("vinsert").style.display="none";$("viewmodal").classList.add("on");}
@@ -2093,9 +2356,314 @@ $("sched_create").onclick=async()=>{
   }catch(e){toast("Error scheduling task: "+e.message);}
 };
 
+// Model Inspector Modal
+function openModelInspector(id){
+  CURRENT_INSPECT_AGENT=id;
+  const data=AGENT_DATA[id]||{id:id,title:id,role:"agent",status:"idle",logs:[],tools:[],thinking:"",result:""};
+  $("mi_title").textContent=data.title||id;
+  $("mi_role").textContent=data.role||"worker";
+  $("mi_status").textContent=data.status||"ready";
+  $("mi_status").className="badge "+(data.status==="Done"?"ready":data.status==="Failed"?"bad":"cooling");
+  const modelName=(sel.models&&sel.models[data.role])?sel.models[data.role]:((ST&&ST.default_model)||"default");
+  $("mi_model").textContent="Модель: "+modelName;
+
+  $("mipane_res").innerHTML=data.result?md(data.result):'<div class="lbl" style="padding:16px;text-align:center">Ответ ещё формируется или модель выполняет шаги…</div>';
+  $("mipane_think").textContent=data.thinking||"Мыслительный процесс модели не записан.";
+  $("mitoolscount").textContent=data.tools.length;
+  $("mipane_tools").innerHTML=data.tools.length?data.tools.map(t=>`<div class="tool ${esc(t.status)}" style="margin-bottom:6px"><b>🔧 ${esc(t.tool)}</b> · <span>${esc(t.status)}</span>${t.summary?`<div class="lbl">${esc(t.summary)}</div>`:''}${t.output?`<pre style="font-size:11px;max-height:120px;overflow:auto;margin-top:4px">${esc(t.output)}</pre>`:''}</div>`).join(""):'<div class="lbl" style="padding:16px;text-align:center">Инструменты не вызывались</div>';
+  $("mipane_log").textContent=data.logs.join("")||"Консольный лог пуст.";
+
+  switchMiTab("res");
+  $("modelinspectormodal").classList.add("on");
+}
+function switchMiTab(tab){
+  ["res","think","tools","log"].forEach(t=>{
+    const btn=$("mitab_"+t),pane=$("mipane_"+t);
+    if(btn)btn.classList.toggle("on",t===tab);
+    if(pane)pane.style.display=(t===tab)?"block":"none";
+  });
+}
+$("mitab_res").onclick=()=>switchMiTab("res");
+$("mitab_think").onclick=()=>switchMiTab("think");
+$("mitab_tools").onclick=()=>switchMiTab("tools");
+$("mitab_log").onclick=()=>switchMiTab("log");
+$("miclose").onclick=()=>$("modelinspectormodal").classList.remove("on");
+$("micopy").onclick=()=>{
+  if(CURRENT_INSPECT_AGENT&&AGENT_DATA[CURRENT_INSPECT_AGENT]&&AGENT_DATA[CURRENT_INSPECT_AGENT].result){
+    navigator.clipboard.writeText(AGENT_DATA[CURRENT_INSPECT_AGENT].result);
+    toast("Ответ скопирован в буфер");
+  }else{
+    toast("Ответ модели пока пуст");
+  }
+};
+$("miretry").onclick=()=>{
+  if(CURRENT_INSPECT_AGENT){
+    retryFailedAgents([CURRENT_INSPECT_AGENT]);
+    $("modelinspectormodal").classList.remove("on");
+  }
+};
+
+// Telegram Userbot Assistant
+let TG_PHONE_HASH="",TG_CURRENT_CHAT=null;
+async function openTelegramModal(){
+  $("telegrammodal").classList.add("on");
+  await refreshTgStatus();
+}
+if($("tgtopbtn"))$("tgtopbtn").onclick=openTelegramModal;
+$("tgclose").onclick=()=>$("telegrammodal").classList.remove("on");
+
+async function refreshTgStatus(){
+  try{
+    const d=await api("/api/telegram/user/status");
+    const dot=$("tg_status_dot"),txt=$("tg_status_text"),logoutBtn=$("tg_logout_btn"),loginForm=$("tg_login_form"),dialogsBox=$("tg_dialogs_box");
+    if(d.active){
+      dot.className="dot ok";
+      const uName=(d.user&&(d.user.first_name||d.user.username))?`${d.user.first_name||""} ${d.user.last_name||""} ${d.user.username?"(@"+d.user.username+")":""}`.trim():(d.phone||"Пользователь");
+      txt.textContent=`Подключён: ${uName}`;
+      logoutBtn.style.display="";
+      loginForm.style.display="none";
+      dialogsBox.style.display="";
+      await tgLoadDialogs();
+    }else{
+      dot.className="dot bad";
+      txt.textContent="Аккаунт Telegram не подключён";
+      logoutBtn.style.display="none";
+      loginForm.style.display="";
+      dialogsBox.style.display="none";
+      if(d.phone&&$("tg_phone"))$("tg_phone").value=d.phone;
+    }
+  }catch(e){
+    if($("tg_status_text"))$("tg_status_text").textContent="Ошибка связи с Telegram: "+e.message;
+  }
+}
+
+$("tg_send_code_btn").onclick=async()=>{
+  const phone=($("tg_phone").value||"").trim();
+  if(!phone){toast("Введите номер телефона в формате +7999...");return;}
+  $("tg_auth_msg").textContent="Отправка кода в приложение Telegram…";
+  try{
+    const res=await api("/api/telegram/user/code",{method:"POST",body:JSON.stringify({phone})});
+    if(res.ok){
+      TG_PHONE_HASH=res.phone_code_hash||"";
+      $("tg_code_row").style.display="flex";
+      $("tg_auth_msg").textContent="✔ Код отправлен в Telegram. Введите его ниже:";
+      $("tg_code").focus();
+    }else{
+      $("tg_auth_msg").textContent="✘ Ошибка: "+(res.error||"Не удалось отправить код");
+    }
+  }catch(e){$("tg_auth_msg").textContent="✘ "+e.message;}
+};
+
+$("tg_signin_btn").onclick=async()=>{
+  const phone=($("tg_phone").value||"").trim();
+  const code=($("tg_code").value||"").trim();
+  const pass=($("tg_2fa").value||"").trim();
+  if(!code){toast("Введите код из Telegram");return;}
+  $("tg_auth_msg").textContent="Вход в аккаунт…";
+  try{
+    const res=await api("/api/telegram/user/signin",{method:"POST",body:JSON.stringify({
+      phone,code,password:pass,phone_code_hash:TG_PHONE_HASH
+    })});
+    if(res.ok){
+      $("tg_auth_msg").textContent="✔ Успешный вход!";
+      $("tg_code").value="";
+      $("tg_2fa").value="";
+      await refreshTgStatus();
+    }else{
+      $("tg_auth_msg").textContent="✘ Ошибка входа: "+(res.error||"Неверный код или пароль");
+    }
+  }catch(e){$("tg_auth_msg").textContent="✘ "+e.message;}
+};
+
+$("tg_logout_btn").onclick=async()=>{
+  if(!confirm("Выйти из подключенного аккаунта Telegram?"))return;
+  try{
+    await api("/api/telegram/user/logout",{method:"POST"});
+    toast("Вы вышли из Telegram");
+    await refreshTgStatus();
+  }catch(e){toast(e.message);}
+};
+
+async function tgLoadDialogs(){
+  const listEl=$("tg_dialogs_list");
+  listEl.innerHTML='<div class="lbl" style="padding:10px;text-align:center">Загрузка диалогов…</div>';
+  try{
+    const r=await api("/api/telegram/user/dialogs?limit=30");
+    if(!r.ok||!r.dialogs||!r.dialogs.length){
+      listEl.innerHTML='<div class="lbl" style="padding:10px;text-align:center">Нет активных диалогов</div>';
+      return;
+    }
+    listEl.innerHTML="";
+    for(const d of r.dialogs){
+      const it=document.createElement("div");
+      it.className="tg-chat-item"+(TG_CURRENT_CHAT&&TG_CURRENT_CHAT.id===d.id?" on":"");
+      it.innerHTML=`<div class="tg-chat-top"><span class="tg-chat-name">${esc(d.title||"Без названия")}</span>${d.unread?`<span class="tg-badge">${d.unread}</span>`:''}</div><div class="tg-last">${esc(d.last_message||"")}</div>`;
+      it.onclick=()=>selectTgChat(d);
+      listEl.appendChild(it);
+    }
+    if(!TG_CURRENT_CHAT&&r.dialogs.length){
+      selectTgChat(r.dialogs[0]);
+    }
+  }catch(e){
+    listEl.innerHTML=`<div class="lbl" style="color:var(--danger)">Ошибка: ${esc(e.message)}</div>`;
+  }
+}
+$("tg_refresh_dialogs_btn").onclick=tgLoadDialogs;
+
+async function selectTgChat(d){
+  TG_CURRENT_CHAT=d;
+  document.querySelectorAll(".tg-chat-item").forEach(el=>{
+    const nameEl=el.querySelector(".tg-chat-name");
+    el.classList.toggle("on",nameEl&&nameEl.textContent===d.title);
+  });
+  $("tg_chat_hdr").textContent=`💬 ${d.title||"Диалог"}`;
+  $("tg_suggestions_box").style.display="none";
+  await tgLoadMessages(d.id);
+}
+
+async function tgLoadMessages(chatId){
+  const stream=$("tg_messages_stream");
+  stream.innerHTML='<div class="lbl" style="text-align:center;padding:12px">Загрузка сообщений…</div>';
+  try{
+    const r=await api(`/api/telegram/user/messages?chat_id=${encodeURIComponent(chatId)}&limit=25`);
+    if(!r.ok||!r.messages||!r.messages.length){
+      stream.innerHTML='<div class="lbl" style="text-align:center;padding:12px">В этом чате пока нет сообщений</div>';
+      return;
+    }
+    stream.innerHTML="";
+    for(const m of r.messages){
+      const el=document.createElement("div");
+      el.className="tg-msg "+(m.out?"out":"in");
+      el.innerHTML=`<div style="font-weight:600;font-size:11px;opacity:0.75;margin-bottom:2px">${esc(m.sender||(m.out?"Вы":"Собеседник"))}</div><div>${esc(m.text||"")}</div><div style="font-size:10px;text-align:right;opacity:0.6;margin-top:2px">${esc((m.date||"").slice(11,16))}</div>`;
+      stream.appendChild(el);
+    }
+    stream.scrollTop=stream.scrollHeight;
+  }catch(e){
+    stream.innerHTML=`<div class="lbl" style="color:var(--danger)">Ошибка: ${esc(e.message)}</div>`;
+  }
+}
+
+$("tg_suggest_btn").onclick=async()=>{
+  if(!TG_CURRENT_CHAT){toast("Выберите диалог");return;}
+  const box=$("tg_suggestions_box"),list=$("tg_suggestions_list");
+  box.style.display="block";
+  list.innerHTML='<div class="lbl">Генерирую 3 варианта ответа с помощью ИИ…</div>';
+  try{
+    const r=await api("/api/telegram/user/suggest",{method:"POST",body:JSON.stringify({chat_id:TG_CURRENT_CHAT.id})});
+    if(!r.ok||!r.suggestions||!r.suggestions.length){
+      list.innerHTML='<div class="lbl">Не удалось сформулировать ответы. Попробуйте написать вручную.</div>';
+      return;
+    }
+    list.innerHTML="";
+    for(const s of r.suggestions){
+      const opt=document.createElement("div");
+      opt.className="tg-sug-item";
+      opt.textContent=s;
+      opt.onclick=()=>{
+        $("tg_reply_input").value=s;
+        $("tg_reply_input").focus();
+      };
+      list.appendChild(opt);
+    }
+  }catch(e){
+    list.innerHTML=`<div class="lbl" style="color:var(--danger)">Ошибка: ${esc(e.message)}</div>`;
+  }
+};
+
+$("tg_send_btn").onclick=async()=>{
+  if(!TG_CURRENT_CHAT){toast("Выберите диалог");return;}
+  const text=($("tg_reply_input").value||"").trim();
+  if(!text)return;
+  try{
+    await api("/api/telegram/user/send",{method:"POST",body:JSON.stringify({chat_id:TG_CURRENT_CHAT.id,text})});
+    $("tg_reply_input").value="";
+    toast("Сообщение отправлено в Telegram ✔");
+    await tgLoadMessages(TG_CURRENT_CHAT.id);
+  }catch(e){toast("Ошибка отправки: "+e.message);}
+};
+$("tg_reply_input").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("tg_send_btn").click();}
+});
+
+// Free Models Catalog
+async function openFreeModelsModal(){
+  $("freemodal").classList.add("on");
+  await loadFreeCatalog();
+}
+if($("freetopbtn"))$("freetopbtn").onclick=openFreeModelsModal;
+$("freeclose").onclick=()=>$("freemodal").classList.remove("on");
+
+async function loadFreeCatalog(){
+  const box=$("free_catalog_content");
+  box.innerHTML='<div class="lbl" style="text-align:center;padding:16px">Загрузка каталога бесплатных нейросетей…</div>';
+  try{
+    const d=await api("/api/free-models");
+    if(!d.categories||!d.categories.length){
+      box.innerHTML='<div class="lbl">Каталог пуст</div>';
+      return;
+    }
+    box.innerHTML="";
+    for(const cat of d.categories){
+      const sec=document.createElement("div");
+      sec.className="free-cat";
+      sec.innerHTML=`<div class="free-cat-title">${esc(cat.title)}</div><div class="free-cat-desc">${esc(cat.desc||"")}</div>`;
+      const grid=document.createElement("div");
+      grid.className="free-grid";
+      for(const m of (cat.models||[])){
+        const card=document.createElement("div");
+        card.className="free-item";
+        const isCurrent=(sel.models&&sel.models.coder===m.id);
+        card.innerHTML=`<div class="row" style="margin-bottom:2px"><span class="free-name">${esc(m.name)}</span>${m.badge?`<span class="badge ready mini">${esc(m.badge)}</span>`:''}</div>`+
+          `<div class="free-meta"><span>${esc(m.role||m.provider||"")}</span>${m.context?`<span>• ${esc(m.context)}</span>`:''}${m.speed?`<span>• ${esc(m.speed)}</span>`:''}</div>`+
+          (m.info?`<div class="lbl" style="font-size:11px;margin-top:2px">${esc(m.info)}</div>`:'')+
+          `<div class="row" style="justify-content:space-between;margin-top:auto"><code style="font-size:10.5px;color:var(--dim)">${esc(m.id)}</code><button class="primary mini free-pick-btn ${isCurrent?'ready':''}" data-id="${esc(m.id)}">${isCurrent?'✔ Активна':'Выбрать'}</button></div>`;
+        card.querySelector(".free-pick-btn").onclick=()=>{
+          applyFreeModel(m.id);
+        };
+        grid.appendChild(card);
+      }
+      sec.appendChild(grid);
+      box.appendChild(sec);
+    }
+  }catch(e){
+    box.innerHTML=`<div class="lbl" style="color:var(--danger)">Ошибка загрузки каталога: ${esc(e.message)}</div>`;
+  }
+}
+function applyFreeModel(modelId){
+  sel.models.coder=modelId;
+  sel.models.planner=modelId;
+  sel.models.reviewer=modelId;
+  fillModels();
+  toast(`Модель ${modelId} установлена для всех ролей!`);
+  loadFreeCatalog();
+}
+
+// Token Optimizer Analytics
+async function openOptimizerModal(){
+  $("optimizermodal").classList.add("on");
+  await refreshOptimizerStats();
+}
+if($("opttopbtn"))$("opttopbtn").onclick=openOptimizerModal;
+$("optclose").onclick=()=>$("optimizermodal").classList.remove("on");
+
+async function refreshOptimizerStats(){
+  try{
+    const st=await api("/api/optimizer/stats");
+    if($("opt_saved_chars"))$("opt_saved_chars").textContent=Number(st.saved_chars||0).toLocaleString();
+    if($("opt_savings_pct"))$("opt_savings_pct").textContent=(st.savings_pct||0)+"%";
+    if($("opt_cache_hits"))$("opt_cache_hits").textContent=String(st.cache_hits||0);
+    if($("optbadge"))$("optbadge").textContent=(st.savings_pct||0)+"%";
+  }catch(e){}
+}
+
+if($("schedtopbtn"))$("schedtopbtn").onclick=openScheduledModal;
+
 // Slash Command Palette (Claude Code / Antigravity style)
 const SLASH_COMMANDS=[
   {cmd:"/auto",desc:"Switch to ✨ Auto intelligent dispatch mode",run:async()=>{sel.mode="auto";renderModes();toast("Mode → ✨ Auto");return true;}},
+  {cmd:"/telegram",desc:"Open Telegram Userbot Assistant (read chats & suggest replies)",run:async()=>{await openTelegramModal();return true;}},
+  {cmd:"/free",desc:"Open Free AI Models Catalog (OpenCode, Kilo, Gemini, Groq)",run:async()=>{await openFreeModelsModal();return true;}},
+  {cmd:"/tokens",desc:"Open Token Optimization & Savings Analytics",run:async()=>{await openOptimizerModal();return true;}},
   {cmd:"/heal",desc:"Run System Self-Heal & switch to Heal & Fix mode",run:async arg=>{if(!arg){await openHealModal();return true;}sel.mode="heal";renderModes();return false;}},
   {cmd:"/architect",desc:"Switch to Architect & Blueprint mode",run:async()=>{sel.mode="architect";renderModes();toast("Mode → 📐 Architect");return true;}},
   {cmd:"/storm",desc:"Switch to ⚡ Storm parallel worktree mode",run:async()=>{sel.mode="storm";renderModes();toast("Mode → ⚡ Storm");return true;}},
