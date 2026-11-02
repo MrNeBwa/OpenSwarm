@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import copy
 import json
+import mimetypes
 import os
 import re
 import secrets
@@ -23,7 +25,7 @@ import uuid
 import webbrowser
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 from . import __version__
 from .broker import Broker
@@ -68,6 +70,7 @@ class Session:
         self.listeners: set[asyncio.Queue] = set()
         self.perms: dict[str, asyncio.Future] = {}
         self.snapshot = ""
+        self.orch: Any = None
 
     # ---------------------------------------------------------------- storage
     @property
@@ -348,6 +351,9 @@ class WebApp:
             self.cfg.effort = effort
         history_context = s.build_conversation_history()
         target_agents = int(body.get("target_agents") or body.get("agents") or parallel or 0)
+        files = [str(f) for f in (body.get("files") or []) if isinstance(f, str)]
+        images = [str(img) for img in (body.get("images") or []) if isinstance(img, str)]
+        focus = str(body.get("focus") or "auto")
         sel = Selection(
             mode=mode, planner_model=str(models.get("planner", "")), coder_model=str(models.get("coder", "")),
             reviewer_model=str(models.get("reviewer", "")), skills=skills, chat_id=f"chat-{s.id}",
@@ -359,6 +365,9 @@ class WebApp:
             effort=cfg.effort,
             history_context=history_context,
             target_agents=target_agents,
+            files=files,
+            images=images,
+            focus=focus,
         )
         try:
             git, broker = await self.workspace(s.workdir)
@@ -373,7 +382,7 @@ class WebApp:
                       sel.reviewer_model or cfg.roles.reviewer, skills, cfg.priority, cfg.effort)
         st["parallel"] = cfg.max_parallel
         save_state(st)
-        s.emit("user", text=prompt, mode=mode)
+        s.emit("user", text=prompt, mode=mode, images=images, files=files, focus=focus)
         hooks = Hooks(
             on_agent=lambda a, t, r: s.emit("agent", agent=a, title=t, role=r),
             on_status=lambda a, st_: s.emit("status", agent=a, status=st_),
@@ -384,6 +393,7 @@ class WebApp:
             ask_permission=lambda a, req: self._ask(s, a, req),
         )
         orch = Orchestrator(cfg, git, broker, sel, hooks, self.pool)
+        s.orch = orch
         s.task = asyncio.create_task(self._run(s, orch, prompt, mode))
 
     def _on_event(self, s: Session, agent: str, kind: str, payload: dict[str, Any]) -> None:
@@ -839,6 +849,49 @@ class WebApp:
                     n += 1
                 dest.write_bytes(body)
                 return await _json(writer, {"path": str(dest.relative_to(s.workdir.resolve()))})
+            if rest == ["raw"] and method == "GET":
+                rel = (q.get("path") or [""])[0]
+                p = self._inside(s.workdir, rel)
+                if not p.is_file():
+                    raise HttpError(404, "no such file")
+                mime, _ = mimetypes.guess_type(str(p))
+                mime = mime or "application/octet-stream"
+                try:
+                    content = p.read_bytes()
+                except OSError as exc:
+                    raise HttpError(500, f"cannot read file: {exc}")
+                return await _send(writer, 200, content, mime)
+            if rest == ["upload-image"] and method == "POST":
+                img_dir = s.workdir / ".openswarm_images"
+                img_dir.mkdir(parents=True, exist_ok=True)
+                if "json" in headers.get("content-type", "") and js.get("image"):
+                    raw_b64 = str(js["image"])
+                    fname = str(js.get("name") or "image.png")
+                    if "," in raw_b64:
+                        raw_b64 = raw_b64.split(",", 1)[1]
+                    data = base64.b64decode(raw_b64)
+                else:
+                    fname = (q.get("name") or ["image.png"])[0]
+                    data = body
+                fname = re.sub(r"[^\w.\-]", "_", Path(fname).name) or "image.png"
+                if not Path(fname).suffix:
+                    fname += ".png"
+                dest = img_dir / f"{int(time.time()*1000)}_{fname}"
+                dest.write_bytes(data)
+                rel = str(dest.relative_to(s.workdir.resolve()))
+                return await _json(writer, {
+                    "ok": True,
+                    "path": rel,
+                    "name": dest.name,
+                    "url": f"/api/sessions/{s.id}/raw?path={quote(rel)}",
+                })
+            if rest == ["clarify"] and method == "POST":
+                qid = str(js.get("qid") or js.get("id") or "").strip()
+                answer = str(js.get("answer") or js.get("text") or "").strip()
+                resolved = False
+                if getattr(s, "orch", None):
+                    resolved = s.orch.resolve_clarification(qid, answer)
+                return await _json(writer, {"ok": resolved, "qid": qid})
         raise HttpError(404, "unknown endpoint")
 
     async def dsh_route(self, method: str, rest: list[str], headers: dict[str, str], js: dict[str, Any], writer: asyncio.StreamWriter) -> None:

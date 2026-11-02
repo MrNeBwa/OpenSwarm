@@ -3,17 +3,14 @@
 Multi-agent TUI orchestrator around the [`opencode`](https://opencode.ai) CLI. It runs several `opencode`
 instances in isolated git worktrees, in parallel (**Storm**) or as an architect → coder → reviewer loop (**Cowork**).
 
-## Install (Arch Linux)
+## Universal Linux Installer (Ubuntu, Debian, Fedora, Arch, openSUSE, Alpine)
 
 ```bash
-./install.sh            # pacman deps, opencode (repo/npm/official script), venv, ~/.local/bin/openswarm
+./install.sh            # Auto-detects your distro (apt/dnf/pacman/zypper/apk), installs GTK4/WebKitGTK, venv, desktop entry
 opencode auth login     # once; free opencode models need no key
 cd anywhere             # any directory: git repo or not (even ~ or /etc)
 openswarm               # TUI, starts in Chat mode
-openswarm --headless --mode chat "why is my wifi dropping?"      # add -c to continue the last session
-openswarm --headless --mode cowork "add a --verbose flag to the CLI"
-openswarm --doctor      # check git / opencode / config
-openswarm --list-models # what `opencode models` reports
+openswarm gui           # Native Linux desktop application with GTK4 + WebKitGTK and microphone support
 ```
 
 Standalone use of the script: `OPENSWARM_SRC_URL=<git url> bash install.sh`. Remove with `./install.sh --uninstall`.
@@ -46,12 +43,13 @@ It honours `prefers-reduced-motion`, pauses when the window is hidden, idles at 
 openswarm web --app      # standalone window (Chromium/Chrome/Brave); closing it stops the server
 openswarm web            # or the private URL in your normal browser
 ```
-Also installed as **OpenSwarm** in your app menu. Session sidebar with persistent history, mode dropdown, models,
-parallelism (`All at once`), skills popover with one-click presets, live agent cards (tool calls, streaming logs), markdown
-answers with copy/download and **▶ Preview** for ```html / ```svg blocks (sandboxed iframe), file browser/preview,
-drag-and-drop upload, `@file` attachments (docs inlined, images sent as real attachments), 📝 **Instructions** (edits the
-project's `AGENTS.md`, which opencode reads), 🧾 **Audit** viewer, 🔒 **Sandbox** toggle, token/cost meter, **↩ Undo this run**
-and **± Show changes** after runs. **Many sessions run at the same time.**
+Also installed as **OpenSwarm** in your app menu.
+- **Claude Artifacts Analog**: Dedicated live Artifacts Canvas drawer with sandboxed live preview for HTML/SVG widgets, syntax code viewer, version history (`v1`, `v2`...), copy/download, and 1-click refinement.
+- **Skills Hub**: Categorized, searchable dialog with quick presets (Fullstack, Review & Security, Research), switch toggles, and project native skills.
+- **Multimodal Vision & Real-time Voice**: Attach screenshots (`📷` button, drag & drop, clipboard paste `Ctrl+V`) for image analysis. Real-time voice listening (`🎤` Web Speech API) in Russian and English with automatic silence detection.
+- **Adaptive Prompt Engine**: Automatic workspace stack detection (Python, TypeScript, React, Next.js, Go, Rust, .NET, Docker) and contextual task intent guidance.
+- **Inter-Agent Dialogue & Clarification**: Peer messages (`@coder`, `@architect`, `@reviewer`) on the broker message bus and interactive clarification question cards for sequential user-agent feedback.
+- Session sidebar with persistent history, models, token optimizer meter, audit log, **↩ Undo this run**, and **± Show changes**. **Many sessions run at the same time.**
 
 ## Modes
 

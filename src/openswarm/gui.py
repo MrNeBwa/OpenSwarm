@@ -172,9 +172,12 @@ def run_gtk(url: str, gpu: bool = False) -> None:
                 pass
             return False
 
-        def permission(_v, request) -> bool:  # only desktop notifications are allowed
+        def permission(_v, request) -> bool:  # desktop notifications and microphone for real-time voice
             try:
-                request.allow() if isinstance(request, WebKit.NotificationPermissionRequest) else request.deny()
+                if isinstance(request, (WebKit.NotificationPermissionRequest, WebKit.UserMediaPermissionRequest)):
+                    request.allow()
+                    return True
+                request.deny()
                 return True
             except Exception:  # noqa: BLE001
                 return False

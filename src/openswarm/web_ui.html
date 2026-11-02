@@ -267,6 +267,59 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
 .tg-sug-item{padding:6px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;font-size:12px;transition:all .12s}
 .tg-sug-item:hover{border-color:var(--accent);background:var(--panel2)}
 
+/* Image Attachments & Vision */
+.img-previews{display:flex;gap:8px;padding:4px 0 6px;overflow-x:auto;align-items:center}
+.img-chip{position:relative;display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:3px 8px;gap:6px;font-size:12px;max-width:180px}
+.img-chip img{width:28px;height:28px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.img-chip .img-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px}
+.img-chip .img-del{cursor:pointer;border:none;background:none;padding:0 2px;color:var(--dim);font-size:13px;line-height:1}
+.img-chip .img-del:hover{color:var(--bad)}
+.chat-imgs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+.chat-img-thumb{display:inline-block;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--code);max-width:240px;max-height:180px;transition:transform .15s,border-color .15s}
+.chat-img-thumb:hover{transform:scale(1.02);border-color:var(--accent)}
+.chat-img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Claude Artifacts System */
+.artifact-card{background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 90%,var(--accent)),var(--panel));border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:14px;padding:12px 16px;margin:10px 0;box-shadow:0 4px 16px -4px rgba(0,0,0,.3);cursor:pointer;transition:border-color .15s,transform .12s}
+.artifact-card:hover{border-color:var(--accent);transform:translateY(-1px);background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 85%,var(--accent)),var(--panel2))}
+.art-head{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--text)}
+.art-head .art-badge{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:99px;background:color-mix(in srgb,var(--accent) 20%,var(--panel2));color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+.art-head .art-ver{font-size:11px;color:var(--dim);margin-left:auto}
+.art-desc{font-size:12px;color:var(--dim);margin-top:4px}
+.art-btn{margin-top:8px;display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 11px;border-radius:8px;background:var(--accent2);color:#fff;border:none;cursor:pointer}
+.art-btn:hover{background:var(--accent)}
+
+#artifactscanvas{position:fixed;top:0;right:0;bottom:0;width:min(640px,100vw);background:var(--panel);border-left:1px solid var(--line);box-shadow:-8px 0 32px rgba(0,0,0,.6);z-index:25;display:none;flex-direction:column}
+#artifactscanvas.on{display:flex}
+#artifactscanvas.fullscreen{width:100vw}
+.art-drawer-head{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:var(--panel2)}
+.art-drawer-title{font-family:var(--serif);font-size:16px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.art-drawer-tabs{display:flex;gap:4px;padding:8px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+.art-tab{padding:4px 12px;border-radius:8px;border:1px solid transparent;background:none;font-size:12.5px;cursor:pointer;color:var(--dim)}
+.art-tab.on{background:var(--panel2);border-color:var(--line);color:var(--text);font-weight:600}
+.art-body{flex:1;overflow:auto;position:relative}
+#art-iframe{width:100%;height:100%;border:none;background:#fff}
+#art-code{margin:0;padding:16px;font:12.5px/1.6 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-all;color:var(--text);height:100%;overflow:auto;background:var(--code)}
+.art-actions{padding:10px 18px;border-top:1px solid var(--line);background:var(--panel2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Skills Hub Styles */
+.skills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:10px;max-height:54vh;overflow-y:auto;padding-right:4px}
+.skill-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--panel2) 65%,var(--panel));cursor:pointer;transition:border-color .15s,background .15s;display:flex;gap:10px;align-items:flex-start}
+.skill-card:hover{border-color:var(--accent);background:var(--panel2)}
+.skill-card.selected{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+.skill-toggle{position:relative;width:34px;height:20px;background:var(--line);border-radius:99px;flex:none;transition:background .2s;margin-top:2px}
+.skill-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
+.skill-card.selected .skill-toggle{background:var(--accent2)}
+.skill-card.selected .skill-toggle::after{transform:translateX(14px)}
+.skill-info{flex:1;min-width:0}
+.skill-title-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.skill-name{font-weight:600;font-size:13px;color:var(--text)}
+.skill-badge{font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:99px;border:1px solid var(--line);color:var(--dim)}
+.skill-desc{font-size:12px;color:var(--dim);line-height:1.4}
+.skill-hint{font-size:11px;color:color-mix(in srgb,var(--accent) 80%,var(--text));font-family:ui-monospace,monospace;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#focus_sel{font-size:12px;padding:3px 8px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);outline:none}
+#focus_sel:hover,#focus_sel:focus{color:var(--text);border-color:var(--accent)}
+
 /* Mobile & Minimalist Layout */
 .iconbtn{background:none;border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:15px;cursor:pointer;display:none;align-items:center;justify-content:center}
 #side-backdrop{display:none}
@@ -342,6 +395,7 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
     <button id="opttopbtn" class="tbtn" title="Оптимизация и экономия токенов">⚡<span class="tl"> Токены</span> <span id="optbadge" class="badge ready">0%</span></button>
     <button id="schedtopbtn" class="tbtn" title="Отложенные задачи">⏰<span class="tl"> Задачи</span></button>
     <button id="busbtn" class="tbtn" title="Swarm Room — live inter-agent chat &amp; non-blocking questions">💬<span class="tl"> Команда</span> <span id="buscount" class="lbl"></span></button>
+    <button id="artbtn" class="tbtn" title="Claude Artifacts — интерактивные виджеты, SVG, код и превью">🎨<span class="tl"> Артефакты</span> <span id="artcount" class="lbl">(0)</span></button>
     <button id="filesbtn" class="tbtn" title="Workspace Files">📁<span class="tl"> Файлы</span></button>
     <div class="morewrap">
       <button id="morebtn" class="tbtn" title="Ещё: тема, VPN, APK, расписание, интеграции, плагины…">⋯</button>
@@ -402,9 +456,11 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
       </span>
     </div>
     <div id="cbox">
+      <div id="imgpreviews" class="img-previews" style="display:none"></div>
       <textarea id="prompt" rows="1" placeholder="Спросите что-нибудь или опишите задачу…  ( / — команды )"></textarea>
       <div id="compbar">
         <button id="attach" class="cicon" title="Прикрепить файл в рабочую папку">📎</button><input type="file" id="file" multiple hidden>
+        <button type="button" id="imgbtn" class="cicon" title="Прикрепить изображение для анализа (или вставьте скриншот Ctrl+V)">📷</button><input type="file" id="imginput" accept="image/*" multiple hidden>
         <button type="button" id="voicebtn" class="cicon" title="Голосовой ввод (нажмите, чтобы говорить)">🎤</button>
         <button type="button" id="voicelang" class="cicon" title="Переключить язык голосового ввода (RU / EN)">RU</button>
         <span class="csep"></span>
@@ -426,6 +482,14 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
           <option value="detailed">Подробно</option>
           <option value="stepbystep">По шагам</option>
         </select>
+        <select id="focus_sel" title="Фокус внимания модели">
+          <option value="auto">🎯 Фокус: Авто</option>
+          <option value="code">💻 Код</option>
+          <option value="debug">🐛 Отладка</option>
+          <option value="architecture">📐 Архитектура</option>
+          <option value="docs">✍️ Документация</option>
+          <option value="vision">👁️ Визуал</option>
+        </select>
         <span style="flex:1"></span>
         <button type="button" id="advtoggle" class="cicon" title="Модели, приоритет, effort, навыки">⚙</button>
         <button id="send" class="primary sendbtn" title="Отправить (Enter)">➤</button><button id="stop" class="danger sendbtn" style="display:none" title="Остановить">■</button>
@@ -444,7 +508,61 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
   </div>
 </aside>
 <aside id="drawer"><header><b>Files</b><span id="crumb" class="lbl" style="flex:1;overflow:hidden;text-overflow:ellipsis"></span><button id="up">↑</button><button id="closefiles">✕</button></header><div id="files"></div></aside>
-<div id="skillpop"></div>
+<aside id="artifactscanvas">
+  <div class="art-drawer-head">
+    <span style="font-size:18px">🎨</span>
+    <b id="art-title" class="art-drawer-title">Артефакт</b>
+    <span id="art-type-badge" class="badge">HTML</span>
+    <div id="art-versions" style="display:inline-flex;gap:4px"></div>
+    <button id="art-fullscreen-btn" class="cicon" title="Во весь экран">⤢</button>
+    <button id="closeart" class="cicon" title="Закрыть">✕</button>
+  </div>
+  <div class="art-drawer-tabs">
+    <button type="button" class="art-tab on" id="art-tab-prev">▶ Предпросмотр</button>
+    <button type="button" class="art-tab" id="art-tab-code">📄 Исходный код</button>
+  </div>
+  <div class="art-body">
+    <iframe id="art-iframe" sandbox="allow-scripts allow-modals"></iframe>
+    <pre id="art-code" style="display:none"></pre>
+  </div>
+  <div class="art-actions">
+    <button type="button" id="art-copy-btn" class="primary" style="font-size:12px;padding:4px 10px">📋 Скопировать код</button>
+    <button type="button" id="art-download-btn" style="font-size:12px;padding:4px 10px">⬇ Скачать файл</button>
+    <button type="button" id="art-refine-btn" style="font-size:12px;padding:4px 10px">💬 Доработать с ИИ</button>
+  </div>
+</aside>
+<div class="modal" id="skillsmodal"><div class="sheet" style="width:min(900px,96vw)">
+  <div class="row" style="margin-top:0">
+    <b style="font-size:17px;font-family:var(--serif);flex:1">🎯 Каталог навыков (Skills Hub)</b>
+    <span id="skills-active-count" class="badge ready">Выбрано: 0</span>
+    <button id="closeskills">✕</button>
+  </div>
+  <div class="lbl" style="margin-bottom:12px">Подключайте специализированные инструменты и навыки для агентов OpenSwarm. Выбирайте готовые пресеты или настраивайте под свои задачи.</div>
+  
+  <div class="row" style="gap:8px">
+    <input type="text" id="skill-search" placeholder="🔍 Поиск навыка по названию, категории или описанию…" autocomplete="off" style="flex:1">
+    <button id="skills-select-all" class="mini">Выбрать все в категории</button>
+    <button id="skills-clear-all" class="mini">Сбросить всё</button>
+  </div>
+
+  <div class="modaltabs" id="skill-cats" style="margin:10px 0 6px">
+    <button class="modaltab on" data-cat="all">Все</button>
+    <button class="modaltab" data-cat="presets">⭐ Пресеты</button>
+    <button class="modaltab" data-cat="code">💻 Код и Git</button>
+    <button class="modaltab" data-cat="testing">🧪 Тесты и Анализ</button>
+    <button class="modaltab" data-cat="web">🌐 Веб и Сеть</button>
+    <button class="modaltab" data-cat="science">🔬 Наука и Данные</button>
+    <button class="modaltab" data-cat="native">📁 Нативные проекта</button>
+  </div>
+
+  <div id="skills-presets-strip" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;margin-bottom:6px"></div>
+  <div class="skills-grid" id="skills-cards-container"></div>
+  
+  <div class="row" style="justify-content:flex-end;margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+    <span id="skills-summary-lbl" class="lbl" style="flex:1"></span>
+    <button class="primary" id="saveskills">Готово</button>
+  </div>
+</div></div>
 <div class="modal" id="newmodal"><div class="sheet">
   <h3 style="margin:0">New session</h3><div class="lbl">Pick a preset (mode + skills) and a working directory — any directory, git repo or not.</div>
   <div class="presets" id="presetgrid"></div>
@@ -992,6 +1110,7 @@ async function replyQuestion(el){
   if(!CUR){toast("No active session");return;}
   try{
     await api(`/api/sessions/${CUR.id}/bus`,{method:"POST",body:JSON.stringify({text:`[User Clarification]: ${val}`,to:"all",kind:"answer"})});
+    await api(`/api/sessions/${CUR.id}/clarify`,{method:"POST",body:JSON.stringify({qid:"0",answer:val})}).catch(()=>{});
     inp.value="";
     inp.placeholder="Clarification sent! ✓";
     inp.disabled=true;
@@ -1001,14 +1120,302 @@ async function replyQuestion(el){
   }catch(e){toast(e.message);}
 }
 
+let ARTIFACTS = [];
+let CURRENT_ART_IDX = -1;
+let ATTACHED_IMAGES = [];
+let CURRENT_SKILL_CATEGORY = "all";
+let SKILL_SEARCH_QUERY = "";
+
+function registerArtifact(id, title, type, content) {
+  content = String(content || "").trim();
+  const existingIdx = ARTIFACTS.findIndex(a => a.id === id);
+  if (existingIdx >= 0) {
+    const existing = ARTIFACTS[existingIdx];
+    if (existing.content !== content) {
+      existing.version = (existing.version || 1) + 1;
+      existing.versions = existing.versions || [existing.content];
+      existing.versions.push(content);
+      existing.content = content;
+      existing.type = type || existing.type;
+      existing.title = title || existing.title;
+    }
+    updateArtifactsCount();
+    return existingIdx;
+  }
+  const idx = ARTIFACTS.length;
+  ARTIFACTS.push({
+    id: id || ("art-" + (idx + 1)),
+    title: title || ("Артефакт #" + (idx + 1)),
+    type: type || "html",
+    content: content,
+    version: 1,
+    versions: [content]
+  });
+  updateArtifactsCount();
+  return idx;
+}
+
+function updateArtifactsCount() {
+  const btn = $("artcount");
+  if (btn) btn.textContent = `(${ARTIFACTS.length})`;
+}
+
+function openArtifact(idx, verIdx) {
+  if (idx < 0 || idx >= ARTIFACTS.length) return;
+  CURRENT_ART_IDX = idx;
+  const art = ARTIFACTS[idx];
+  const content = (verIdx !== undefined && art.versions && art.versions[verIdx]) ? art.versions[verIdx] : art.content;
+  
+  const drawer = $("artifactscanvas");
+  if (drawer) drawer.classList.add("on");
+  const tEl = $("art-title");
+  if (tEl) tEl.textContent = art.title;
+  const bEl = $("art-type-badge");
+  if (bEl) bEl.textContent = (art.type || "html").toUpperCase();
+  
+  const verContainer = $("art-versions");
+  if (verContainer) {
+    verContainer.innerHTML = "";
+    if (art.versions && art.versions.length > 1) {
+      art.versions.forEach((v, vi) => {
+        const vbtn = document.createElement("button");
+        vbtn.className = "badge" + ((verIdx === vi || (verIdx === undefined && vi === art.versions.length - 1)) ? " ready" : "");
+        vbtn.textContent = `v${vi + 1}`;
+        vbtn.onclick = () => openArtifact(idx, vi);
+        verContainer.appendChild(vbtn);
+      });
+    }
+  }
+  
+  const ifr = $("art-iframe");
+  if (ifr) {
+    let docContent = content;
+    if (art.type === "svg" && !/<html/i.test(docContent)) {
+      docContent = `<!doctype html><html><body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#0d1117">${docContent}</body></html>`;
+    } else if (!/<html/i.test(docContent) && (art.type === "html" || !art.type)) {
+      docContent = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:system-ui,-apple-system,sans-serif;padding:18px;margin:0;color:#111;background:#fff}</style></head><body>${docContent}</body></html>`;
+    }
+    ifr.srcdoc = docContent;
+  }
+  
+  const codePre = $("art-code");
+  if (codePre) codePre.textContent = content;
+  
+  switchArtTab(art.type === "html" || art.type === "svg" ? "prev" : "code");
+}
+
+function switchArtTab(tab) {
+  const prevTab = $("art-tab-prev");
+  const codeTab = $("art-tab-code");
+  const ifr = $("art-iframe");
+  const codePre = $("art-code");
+  if (!prevTab || !codeTab) return;
+  if (tab === "prev") {
+    prevTab.classList.add("on");
+    codeTab.classList.remove("on");
+    if (ifr) ifr.style.display = "block";
+    if (codePre) codePre.style.display = "none";
+  } else {
+    codeTab.classList.add("on");
+    prevTab.classList.remove("on");
+    if (ifr) ifr.style.display = "none";
+    if (codePre) codePre.style.display = "block";
+  }
+}
+
+async function uploadImageFile(file) {
+  if (!file) return;
+  if (!CUR) {
+    try {
+      const wd = (ST && ST.workdir) ? ST.workdir : "";
+      const s = await api("/api/sessions", {method: "POST", body: JSON.stringify({workdir: wd, mode: sel.mode || "auto"})});
+      await refreshSessions();
+      await openSession(s.id);
+    } catch(e) {
+      toast("Не удалось создать сессию: " + e.message);
+      return;
+    }
+  }
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const b64 = ev.target.result;
+    try {
+      const res = await api(`/api/sessions/${CUR.id}/upload-image`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({image: b64, name: file.name || "image.png"})
+      });
+      ATTACHED_IMAGES.push({path: res.path, name: res.name, url: res.url, base64: b64});
+      renderImgPreviews();
+      if ($("focus_sel") && $("focus_sel").value === "auto") {
+        $("focus_sel").value = "vision";
+      }
+      toast("Изображение прикреплено: " + res.name);
+    } catch(err) {
+      toast("Ошибка загрузки изображения: " + err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderImgPreviews() {
+  const box = $("imgpreviews");
+  if (!box) return;
+  if (!ATTACHED_IMAGES.length) {
+    box.style.display = "none";
+    box.innerHTML = "";
+    return;
+  }
+  box.style.display = "flex";
+  box.innerHTML = ATTACHED_IMAGES.map((img, i) => `
+    <div class="img-chip">
+      <img src="${img.base64 || img.url}" alt="${esc(img.name)}">
+      <span class="img-name" title="${esc(img.name)}">${esc(img.name)}</span>
+      <button type="button" class="img-del" onclick="removeAttachedImage(${i})" title="Удалить">✕</button>
+    </div>
+  `).join("");
+}
+
+function removeAttachedImage(idx) {
+  ATTACHED_IMAGES.splice(idx, 1);
+  renderImgPreviews();
+}
+
+function openSkillsModal() {
+  renderSkillsHub();
+  const m = $("skillsmodal");
+  if (m) m.classList.add("on");
+}
+
+function closeSkillsModal() {
+  const m = $("skillsmodal");
+  if (m) m.classList.remove("on");
+}
+
+function renderSkillsHub() {
+  const container = $("skills-cards-container");
+  const presetsStrip = $("skills-presets-strip");
+  const activeCountEl = $("skills-active-count");
+  const summaryEl = $("skills-summary-lbl");
+  if (!container) return;
+
+  const skills = (ST && Array.isArray(ST.skills)) ? ST.skills : [];
+  const presets = (ST && Array.isArray(ST.presets)) ? ST.presets : [];
+  const nativeSkills = (ST && Array.isArray(ST.native_skills)) ? ST.native_skills : [];
+
+  if (activeCountEl) activeCountEl.textContent = `Выбрано: ${sel.skills.size}`;
+  if (summaryEl) summaryEl.textContent = `Активно ${sel.skills.size} из ${skills.length + nativeSkills.length} доступных навыков`;
+
+  if (presetsStrip) {
+    presetsStrip.innerHTML = presets.map(p => `
+      <div class="preset-pill ${chosenPreset === p.id ? "on" : ""}" data-pid="${esc(p.id)}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:12px;cursor:pointer;white-space:nowrap" title="${esc(p.description)}">
+        <b>⭐ ${esc(p.label)}</b>
+        <span class="lbl" style="font-size:11px">(${p.skills.length})</span>
+      </div>
+    `).join("");
+    presetsStrip.querySelectorAll(".preset-pill").forEach(el => {
+      el.onclick = () => {
+        const p = presets.find(x => x.id === el.dataset.pid);
+        if (p) {
+          sel.skills = new Set(p.skills);
+          sel.mode = p.mode || sel.mode;
+          chosenPreset = p.id;
+          renderSkillsHub();
+          updateSkillCount();
+          toast(`Применён пресет: ${p.label}`);
+        }
+      };
+    });
+  }
+
+  const q = (SKILL_SEARCH_QUERY || "").toLowerCase().trim();
+  const allList = [
+    ...skills.map(s => ({...s, isNative: false})),
+    ...nativeSkills.map(ns => ({id: ns.name, label: ns.name, category: "native", hint: ns.description || "", isNative: true}))
+  ];
+
+  const filtered = allList.filter(s => {
+    if (CURRENT_SKILL_CATEGORY === "native" && !s.isNative) return false;
+    if (CURRENT_SKILL_CATEGORY === "code" && !["git", "code", "dev", "linter"].includes((s.category||"").toLowerCase())) return false;
+    if (CURRENT_SKILL_CATEGORY === "testing" && !["test", "analysis", "review", "security"].includes((s.category||"").toLowerCase())) return false;
+    if (CURRENT_SKILL_CATEGORY === "web" && !["web", "browser", "net"].includes((s.category||"").toLowerCase())) return false;
+    if (CURRENT_SKILL_CATEGORY === "science" && !["science", "data", "bio", "chem"].includes((s.category||"").toLowerCase())) return false;
+    
+    if (q) {
+      const match = (s.label||"").toLowerCase().includes(q) ||
+                    (s.id||"").toLowerCase().includes(q) ||
+                    (s.category||"").toLowerCase().includes(q) ||
+                    (s.hint||"").toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px 16px;color:var(--dim)">Навыки по данному фильтру не найдены</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(s => {
+    const isSel = sel.skills.has(s.id);
+    return `
+      <div class="skill-card ${isSel ? "selected" : ""}" data-sid="${esc(s.id)}">
+        <div class="skill-toggle"></div>
+        <div class="skill-info">
+          <div class="skill-title-row">
+            <span class="skill-name">${esc(s.label || s.id)}</span>
+            <span class="skill-badge">${esc(s.category || (s.isNative ? "native" : "skill"))}</span>
+          </div>
+          <div class="skill-desc">${esc((s.hint || s.desc || "Инструмент для агента").slice(0, 110))}</div>
+          ${s.hint ? `<div class="skill-hint">💡 ${esc(s.hint.slice(0, 75))}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  container.querySelectorAll(".skill-card").forEach(card => {
+    card.onclick = () => {
+      const sid = card.dataset.sid;
+      if (sel.skills.has(sid)) {
+        sel.skills.delete(sid);
+      } else {
+        sel.skills.add(sid);
+      }
+      renderSkillsHub();
+      updateSkillCount();
+    };
+  });
+}
+
 function md(src){
   const blocks=[];
+  src=String(src).replace(/<artifact(?:\s+identifier="([^"]*)")?(?:\s+title="([^"]*)")?(?:\s+type="([^"]*)")?>([\s\S]*?)<\/artifact>/gi,(m,id,title,type,content)=>{
+    const artId = id || ("art-" + (ARTIFACTS.length + 1));
+    const artTitle = title || "Интерактивный артефакт";
+    const artType = (type || (/^\s*</.test(content) ? "html" : "code")).toLowerCase();
+    const idx = registerArtifact(artId, artTitle, artType, content);
+    const html = `<div class="artifact-card" onclick="openArtifact(${idx})">` +
+      `<div class="art-head">` +
+        `<span>🎨</span>` +
+        `<span style="flex:1">${esc(artTitle)}</span>` +
+        `<span class="art-badge">${esc(artType)}</span>` +
+      `</div>` +
+      `<div class="art-desc">Интерактивный компонент · Нажмите для открытия холста и предпросмотра</div>` +
+      `<button type="button" class="art-btn" onclick="event.stopPropagation();openArtifact(${idx})">▶ Открыть артефакт ↗</button>` +
+    `</div>`;
+    blocks.push(html);
+    return "\u0000"+(blocks.length-1)+"\u0000";
+  });
   src=String(src).replace(/```(\w*)\n([\s\S]*?)```/g,(m,l,c)=>{
     const cid=CODE_SNIPPETS.length;
     CODE_SNIPPETS.push(c);
     const lang=l?l.toLowerCase():"text";
     let pv="";
-    if(/^(html|svg)$/i.test(l)){PV.push(c);pv=`<button class="pvbtn" data-pv="${PV.length-1}">▶ Preview</button>`;}
+    if(/^(html|svg)$/i.test(l)){
+      const artIdx = registerArtifact("code-" + cid, (lang.toUpperCase() + " Виджет"), lang, c);
+      PV.push(c);
+      pv=`<button type="button" class="pvbtn" style="background:var(--accent2);color:#fff;border-color:var(--accent2)" onclick="openArtifact(${artIdx})">🎨 Холст</button>`;
+    }
     const html=`<div class="code-wrapper">`+
       `<div class="code-header">`+
         `<span class="code-lang">${esc(lang)}</span>`+
@@ -1195,6 +1602,7 @@ function showWelcome(){$("stream").innerHTML=`<div id="welcome"><h1><span style=
 async function createSession(preset,wd){try{if(preset){sel.mode=preset.mode;sel.skills=new Set(preset.skills);}
   const s=await api("/api/sessions",{method:"POST",body:JSON.stringify({workdir:wd,mode:sel.mode})});await refreshSessions();await openSession(s.id);$("newmodal").classList.remove("on");}catch(e){alert(e.message);}}
 async function openSession(id){if(ES)ES.close();toggleSidebar(false);const s=await api("/api/sessions/"+id);CUR=s;cards={};board=null;busy=false;lastId=0;busCount=0;$("buscount").textContent="";$("buslist").innerHTML="";resetBusTargets();resetThreads();usageBy={};snap=null;showUsage();ORB=orbInit(s.mode);$("stream").innerHTML="";
+  ARTIFACTS=[];CURRENT_ART_IDX=-1;updateArtifactsCount();ATTACHED_IMAGES=[];renderImgPreviews();
   $("composer").style.display="block";$("exportbtn").style.display="";$("title").textContent=s.title;$("wd").textContent=s.workdir;$("wd").title=s.workdir;
   sel.mode=s.mode;renderModes();updateSkillCount();for(const ev of s.events)apply(ev,true);if(!s.events.length)$("stream").innerHTML='<div class="sys">Чат готов — напишите или надиктуйте 🎤 задачу ниже.</div>';
   setBusy(busy);scrollDown(true);renderSessions();connect();loadFiles("");}
@@ -1277,7 +1685,25 @@ async function retryFailedAgents(failedList){
 }
 function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev);const S=$("stream");const empty=S.querySelector(".sys");if(empty&&empty.textContent.startsWith("Empty session"))empty.remove();
   switch(ev.type){
-  case"user":{lastUserPrompt=ev.text||lastUserPrompt;board=null;busy=true;const d=document.createElement("div");d.className="msg user";d.innerHTML='<div class="bubble"></div>';d.firstChild.textContent=ev.text;S.appendChild(d);if(!replay)setBusy(true);break;}
+  case"user":{
+    lastUserPrompt=ev.text||lastUserPrompt;board=null;busy=true;
+    const d=document.createElement("div");d.className="msg user";
+    const b=document.createElement("div");b.className="bubble";
+    b.textContent=ev.text;
+    if(ev.images&&ev.images.length&&CUR){
+      const imgWrap=document.createElement("div");imgWrap.className="chat-imgs";
+      for(const p of ev.images){
+        const a=document.createElement("a");
+        a.href=`/api/sessions/${CUR.id}/raw?path=${encodeURIComponent(p)}`;
+        a.target="_blank";a.className="chat-img-thumb";
+        a.innerHTML=`<img src="/api/sessions/${CUR.id}/raw?path=${encodeURIComponent(p)}" alt="image">`;
+        imgWrap.appendChild(a);
+      }
+      b.appendChild(imgWrap);
+    }
+    d.appendChild(b);S.appendChild(d);
+    if(!replay)setBusy(true);break;
+  }
   case"agent":mkCard(ev.agent,ev.title,ev.role);break;
   case"status":{if(ev.agent&&AGENT_DATA[ev.agent])AGENT_DATA[ev.agent].status=ev.status;const c=cards[ev.agent];if(c){const stEl=c.querySelector(".st");stEl.textContent=ev.status;const snip=c.querySelector(".agent-card-snippet");if(snip)snip.textContent=ev.status==="Done"?"✔ Ответ сформирован":ev.status==="Failed"?"✘ Ошибка выполнения":(ev.status||"Выполняется…");if(ev.status==="Failed"){const rb=document.createElement("button");rb.textContent="↻ Повторить";rb.style.cssText="margin-left:6px;padding:1px 7px;font-size:11px";rb.onclick=e=>{e.stopPropagation();retryFailedAgents([ev.agent]);};stEl.appendChild(rb);}const d=c.querySelector(".dot");d.className="dot "+(ev.status==="Running"||ev.status==="Merging"?"run":ev.status==="Done"?"ok":ev.status==="Failed"?"bad":"");}break;}
   case"line":{const clean=ev.text.replace(ANSI,"");if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].logs.push((ev.err?"[err] ":"")+clean);if(AGENT_DATA[ev.agent].logs.length>1000)AGENT_DATA[ev.agent].logs.shift();}const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip&&clean.trim())snip.textContent=clean.trim().slice(0,90);const p=c.querySelector("pre.log");if(p){const sp=document.createElement("span");if(ev.err)sp.className="e";sp.textContent=clean+"\n";p.appendChild(sp);while(p.childNodes.length>1500)p.removeChild(p.firstChild);if(!replay)p.scrollTop=p.scrollHeight;}}break;}
@@ -1341,25 +1767,116 @@ async function send(){if(window.Notification&&Notification.permission==="default
   const styleKey=$("respstyle")?$("respstyle").value:"normal";
   const finalPrompt=text+(STYLE_PROMPTS[styleKey]||"");
   const target_agents=parseInt($("worker_count")?$("worker_count").value:"4",10)||4;
-  try{await api(`/api/sessions/${CUR.id}/send`,{method:"POST",body:JSON.stringify({prompt:finalPrompt,mode:sel.mode,priority:sel.priority,effort:sel.effort,models:sel.models,skills:[...sel.skills],parallel:sel.parallel,sandbox:sel.sandbox,target_agents:target_agents})});}
-  catch(e){toast(e.message);ta.value=text;}}
-function autosize(){const t=$("prompt");t.style.height="auto";t.style.height=Math.min(t.scrollHeight,200)+"px";}
-function updateSkillCount(){$("skillcount").textContent="("+sel.skills.size+")";}
-function renderSkills(){
-  const pop=$("skillpop");if(!pop)return;
-  const cats={};
-  const skills=(ST&&Array.isArray(ST.skills))?ST.skills:[];
-  const presets=(ST&&Array.isArray(ST.presets))?ST.presets:[];
-  const nativeSkills=(ST&&Array.isArray(ST.native_skills))?ST.native_skills:[];
-  for(const s of skills)(cats[s.category]=cats[s.category]||[]).push(s);
-  let h='<div class="chips">'+presets.map(p=>`<span class="chip" data-p="${esc(p.id)}" title="${esc(p.description)}">${esc(p.label)}</span>`).join("")+"</div>";
-  for(const [c,list] of Object.entries(cats)){h+=`<h6>${esc(c)}</h6>`+list.map(s=>`<label title="${esc(s.hint)}"><input type="checkbox" data-s="${esc(s.id)}" ${sel.skills.has(s.id)?"checked":""}><span>${esc(s.label)}</span></label>`).join("");}
-  h+=`<h6>native opencode skills (loaded on demand)</h6>`+(nativeSkills.length?nativeSkills.map(s=>`<label><span>${esc(s.name)} <small>${esc((s.description||"").slice(0,80))}</small></span></label>`).join(""):'<small class="lbl">none yet — run <code>openswarm skills install</code></small>');
-  pop.innerHTML=h;pop.querySelectorAll("input").forEach(i=>i.onchange=()=>{i.checked?sel.skills.add(i.dataset.s):sel.skills.delete(i.dataset.s);updateSkillCount();});
-  pop.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{const p=presets.find(x=>x.id===c.dataset.p);if(p){sel.skills=new Set(p.skills);sel.mode=p.mode;renderModes();renderSkills();updateSkillCount();}});
+  const focusVal=$("focus_sel")?$("focus_sel").value:"auto";
+  const attachedImgs=ATTACHED_IMAGES.map(x=>x.path);
+  ATTACHED_IMAGES=[];
+  renderImgPreviews();
+  try{
+    await api(`/api/sessions/${CUR.id}/send`,{
+      method:"POST",
+      body:JSON.stringify({
+        prompt:finalPrompt,
+        mode:sel.mode,
+        priority:sel.priority,
+        effort:sel.effort,
+        models:sel.models,
+        skills:[...sel.skills],
+        parallel:sel.parallel,
+        sandbox:sel.sandbox,
+        target_agents:target_agents,
+        images:attachedImgs,
+        focus:focusVal
+      })
+    });
+  }catch(e){toast(e.message);ta.value=text;}
 }
-$("skillbtn").onclick=e=>{e.stopPropagation();const pop=$("skillpop");if(pop.classList.toggle("on")){renderSkills();const r=$("skillbtn").getBoundingClientRect();pop.style.left=Math.min(r.left,innerWidth-440)+"px";pop.style.top=r.bottom+6+"px";}};
-document.addEventListener("click",e=>{if(!$("skillpop").contains(e.target))$("skillpop").classList.remove("on");});
+function autosize(){const t=$("prompt");t.style.height="auto";t.style.height=Math.min(t.scrollHeight,200)+"px";}
+function updateSkillCount(){
+  const count = sel.skills.size;
+  const cEl = $("skillcount");
+  if(cEl) cEl.textContent = "("+count+")";
+  const actEl = $("skills-active-count");
+  if(actEl) actEl.textContent = `Выбрано: ${count}`;
+}
+function renderSkills(){ renderSkillsHub(); }
+$("skillbtn").onclick=e=>{e.stopPropagation();openSkillsModal();};
+
+// Artifact Canvas Buttons
+$("artbtn").onclick=()=>{
+  if(!ARTIFACTS.length){toast("В этой сессии пока нет созданных артефактов");return;}
+  openArtifact(CURRENT_ART_IDX>=0?CURRENT_ART_IDX:ARTIFACTS.length-1);
+};
+$("closeart").onclick=()=>{$("artifactscanvas").classList.remove("on");$("artifactscanvas").classList.remove("fullscreen");};
+$("art-fullscreen-btn").onclick=()=>{$("artifactscanvas").classList.toggle("fullscreen");};
+$("art-tab-prev").onclick=()=>switchArtTab("prev");
+$("art-tab-code").onclick=()=>switchArtTab("code");
+$("art-copy-btn").onclick=()=>{
+  if(CURRENT_ART_IDX<0||!ARTIFACTS[CURRENT_ART_IDX])return;
+  navigator.clipboard.writeText(ARTIFACTS[CURRENT_ART_IDX].content).then(()=>toast("Код артефакта скопирован"));
+};
+$("art-download-btn").onclick=()=>{
+  if(CURRENT_ART_IDX<0||!ARTIFACTS[CURRENT_ART_IDX])return;
+  const art=ARTIFACTS[CURRENT_ART_IDX];
+  const ext = art.type==="html"?"html":art.type==="svg"?"svg":art.type==="markdown"?"md":"txt";
+  const blob=new Blob([art.content],{type:art.type==="html"?"text/html":art.type==="svg"?"image/svg+xml":"text/plain"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(art.id||"artifact")+"."+ext;a.click();
+};
+$("art-refine-btn").onclick=()=>{
+  if(CURRENT_ART_IDX<0||!ARTIFACTS[CURRENT_ART_IDX])return;
+  const art=ARTIFACTS[CURRENT_ART_IDX];
+  const ta=$("prompt");
+  ta.value=`Доработай артефакт "${art.title}": `;
+  ta.focus();autosize();
+};
+
+// Skills Modal Controls
+$("closeskills").onclick=closeSkillsModal;
+$("saveskills").onclick=closeSkillsModal;
+$("skill-search").oninput=e=>{SKILL_SEARCH_QUERY=e.target.value;renderSkillsHub();};
+$("skills-select-all").onclick=()=>{
+  const cards=$("skills-cards-container").querySelectorAll(".skill-card");
+  cards.forEach(c=>sel.skills.add(c.dataset.sid));
+  renderSkillsHub();updateSkillCount();
+};
+$("skills-clear-all").onclick=()=>{
+  sel.skills.clear();
+  renderSkillsHub();updateSkillCount();
+};
+$("skill-cats").querySelectorAll(".modaltab").forEach(tab=>{
+  tab.onclick=()=>{
+    $("skill-cats").querySelectorAll(".modaltab").forEach(t=>t.classList.remove("on"));
+    tab.classList.add("on");
+    CURRENT_SKILL_CATEGORY=tab.dataset.cat;
+    renderSkillsHub();
+  };
+});
+
+// Image Upload Controls
+$("imgbtn").onclick=()=>$("imginput").click();
+$("imginput").onchange=e=>{
+  if(e.target.files)for(const f of e.target.files)uploadImageFile(f);
+  e.target.value="";
+};
+window.addEventListener("paste",e=>{
+  const items=(e.clipboardData||e.originalEvent?.clipboardData)?.items||[];
+  for(const it of items){
+    if(it.kind==="file"&&it.type.startsWith("image/")){
+      const f=it.getAsFile();if(f)uploadImageFile(f);
+      e.preventDefault();break;
+    }
+  }
+});
+const cboxEl=$("cbox");
+if(cboxEl){
+  cboxEl.addEventListener("dragover",e=>{e.preventDefault();cboxEl.style.borderColor="var(--accent)";});
+  cboxEl.addEventListener("dragleave",e=>{e.preventDefault();cboxEl.style.borderColor="";});
+  cboxEl.addEventListener("drop",e=>{
+    e.preventDefault();cboxEl.style.borderColor="";
+    if(e.dataTransfer&&e.dataTransfer.files){
+      for(const f of e.dataTransfer.files)if(f.type.startsWith("image/"))uploadImageFile(f);
+    }
+  });
+}
 async function loadFiles(path){viewPath=path;if(!CUR)return;try{const d=await api(`/api/sessions/${CUR.id}/files?path=${encodeURIComponent(path)}`);$("crumb").textContent="/"+d.path;const box=$("files");box.innerHTML="";
   for(const it of d.items){const row=document.createElement("div");row.className="f";const full=(d.path?d.path+"/":"")+it.name;row.innerHTML=`<span>${it.dir?"📁":"📄"}</span><span>${esc(it.name)}</span><span class="s">${it.dir?"":Math.ceil(it.size/1024)+" KB"}</span>`;
     row.onclick=()=>it.dir?loadFiles(full):viewFile(full);box.appendChild(row);}}catch(e){}}

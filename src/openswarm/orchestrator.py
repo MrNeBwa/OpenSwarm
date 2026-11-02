@@ -65,6 +65,9 @@ class Selection:
     effort: str = ""  # default|none|minimal|low|medium|high|xhigh|max (empty = cfg.effort)
     history_context: str = ""  # summarized multi-turn conversation memory from session events
     target_agents: int = 0  # explicit user-requested agent count (0 = auto/default)
+    files: list[str] = field(default_factory=list)  # attached files or context references
+    images: list[str] = field(default_factory=list)  # attached screenshots or photos for vision
+    focus: str = "auto"  # auto | code | debug | architecture | docs | vision | review | chat
 
 
 @dataclass
@@ -241,6 +244,14 @@ class Orchestrator:
         self._usage: dict[str, dict] = {}
         self._run_id = ""
         self._last_bus_id = 0
+        self._clarification_futures: dict[str, asyncio.Future[str]] = {}
+
+    def resolve_clarification(self, qid: str, answer: str) -> bool:
+        fut = self._clarification_futures.get(qid)
+        if fut and not fut.done():
+            fut.set_result(answer)
+            return True
+        return False
 
     # ------------------------------------------------------------- UI plumbing
     async def _log(self, msg: str) -> None:
@@ -257,6 +268,26 @@ class Orchestrator:
         await _emit(self.hooks.on_status, agent_id, status)
 
     def _line_cb(self, agent_id: str, line: str, is_err: bool) -> None:
+        if self._run_id and not is_err:
+            clean = strip_ansi(line).strip()
+            peer_m = re.search(r"@(\w+):\s*(.+)", clean) or re.search(r"\[PEER_MSG to=\"?(\w+)\"?\](.+?)\[/PEER_MSG\]", clean)
+            if peer_m:
+                target, text = peer_m.group(1).lower(), peer_m.group(2).strip()
+                if target in ("coder", "architect", "reviewer", "planner", "all"):
+                    mid = self.broker.post_message(self._run_id, agent_id, target, text, kind="peer_request")
+                    if self.hooks.on_event:
+                        asyncio.ensure_future(_emit(self.hooks.on_event, "bus", {
+                            "mid": mid, "sender": agent_id, "recipient": target, "kind": "peer_request", "content": text
+                        }))
+            q_m = re.search(r"<question(?: title=\"([^\"]+)\")?>([\s\S]+?)</question>", clean) or re.search(r"\[USER_QUESTION\](.+?)\[/USER_QUESTION\]", clean)
+            if q_m:
+                q_text = (q_m.group(2) if len(q_m.groups()) > 1 and q_m.group(2) else q_m.group(1)).strip()
+                mid = self.broker.post_message(self._run_id, agent_id, "user", q_text, kind="question")
+                if self.hooks.on_event:
+                    asyncio.ensure_future(_emit(self.hooks.on_event, "bus", {
+                        "mid": mid, "sender": agent_id, "recipient": "user", "kind": "question", "content": q_text
+                    }))
+
         # Runner callbacks are sync; schedule the (possibly async) hook without blocking the stream.
         res = self.hooks.on_line(agent_id, line, is_err) if self.hooks.on_line else None
         if inspect.isawaitable(res):
@@ -298,6 +329,7 @@ class Orchestrator:
         return "".join(lines)
 
     def _compose(self, role: str, body: str, extra_hints: list[str] | None = None, override: str = "", cwd: Path | None = None) -> str:
+        from .adaptive_prompt import get_adaptive_instructions
         from .optimizer import optimize_prompt_for_model
 
         bus_txt = self.broker.chat_transcript(self._run_id) if self._run_id else ""
@@ -318,16 +350,23 @@ class Orchestrator:
             "- **Итог**: Завершай ответ блоком ключевых выводов или рекомендацией следующих шагов (Key Takeaways / Next Steps).\n"
         )
 
+        adaptive = get_adaptive_instructions(
+            body, cwd or self.sel.workdir,
+            focus_override=getattr(self.sel, "focus", "auto"),
+            has_images=bool(getattr(self.sel, "images", None)),
+            role=role,
+        )
+
         if role == "chat":  # plain conversation: leave opencode's own system prompt in charge
             hints = [s.prompt_hint for s in self.skills if s.prompt_hint]
-            raw = body + bus_block + proactive_guidance + output_guide + ("\n\n[OpenSwarm guidance: " + " ".join(hints) + "]" if hints else "")
+            raw = body + bus_block + proactive_guidance + output_guide + adaptive + ("\n\n[OpenSwarm guidance: " + " ".join(hints) + "]" if hints else "")
             return optimize_prompt_for_model(raw, role="chat")
         hints = [s.prompt_hint for s in self.skills if s.prompt_hint]
         if extra_hints:
             hints.append("Planner-recommended skills/tools for this task: " + ", ".join(extra_hints))
         hint_block = ("\n## Tooling guidance\n" + "\n".join(f"- {h}" for h in hints) + "\n") if hints else ""
         head = override or getattr(self.cfg.prompts, role, "")
-        raw = f"{head}\n{hint_block}{bus_block}{proactive_guidance}{output_guide}\n## Task\n{body}" if head else f"{hint_block}{bus_block}{proactive_guidance}{output_guide}\n{body}".strip()
+        raw = f"{head}\n{hint_block}{bus_block}{proactive_guidance}{output_guide}{adaptive}\n## Task\n{body}" if head else f"{hint_block}{bus_block}{proactive_guidance}{output_guide}{adaptive}\n{body}".strip()
         return optimize_prompt_for_model(raw, role=role)
 
     def _sandbox_on(self) -> bool:
@@ -378,8 +417,16 @@ class Orchestrator:
         ep = await self.pool.endpoint(cwd, probe.build_env(), sandbox)  # type: ignore[union-attr]
         if not ep:
             return None
-        files = [{"type": "file", "mime": {"png": "image/png", "gif": "image/gif", "webp": "image/webp"}.get(p.suffix.lower()[1:], "image/jpeg"),
-                  "url": p.resolve().as_uri(), "filename": p.name} for p in self._images]
+        all_img_paths = list(self._images)
+        for img_rel in (getattr(self.sel, "images", None) or []):
+            try:
+                ip = (cwd / img_rel).resolve() if not Path(img_rel).is_absolute() else Path(img_rel)
+                if ip.is_file() and ip not in all_img_paths:
+                    all_img_paths.append(ip)
+            except Exception:
+                pass
+        files = [{"type": "file", "mime": {"png": "image/png", "gif": "image/gif", "webp": "image/webp", "svg": "image/svg+xml"}.get(p.suffix.lower()[1:], "image/jpeg"),
+                  "url": p.resolve().as_uri(), "filename": p.name} for p in all_img_paths]
         self._line_cb(agent_id, f"(opencode API {ep[0]})", False)
         try:
             from .capabilities import model_supports_variant
@@ -481,6 +528,14 @@ class Orchestrator:
         if self.git.swarm_dir.exists():
             extra_rw.append(self.git.swarm_dir)
         files = [str(p) for p in self._images] if role == "chat" else []
+        for im in (getattr(self.sel, "images", None) or []):
+            imp = str((cwd / im).resolve()) if not Path(im).is_absolute() else str(im)
+            if imp not in files:
+                files.append(imp)
+        for f in (getattr(self.sel, "files", None) or []):
+            fp = str((cwd / f).resolve()) if not Path(f).is_absolute() else str(f)
+            if fp not in files:
+                files.append(fp)
         attempt, vpn_rotations, flag_fixes, model_switches = 0, 0, 0, 0
         tried_models: set[str] = {mdl}
         from .healer import analyze_error, heal_git_workspace
