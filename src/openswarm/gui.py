@@ -106,7 +106,7 @@ def choose_backend(pref: str = "auto") -> str:
     return "browser"
 
 
-def run_gtk(url: str, gpu: bool = False) -> None:
+def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
     """Blocks until the window is closed. Optional niceties (external links, notifications) never block the window."""
     if not gpu:  # WebKitGTK's GPU compositing paints nothing (plain grey window) on many drivers: render in software
         os.environ.setdefault("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
@@ -122,8 +122,12 @@ def run_gtk(url: str, gpu: bool = False) -> None:
     app = Gtk.Application(application_id=APP_ID, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def activate(application: "Gtk.Application") -> None:
-        win = Gtk.ApplicationWindow(application=application, title="OpenSwarm")
-        win.set_default_size(1360, 880)
+        title = "OpenSwarm Pet" if pet else "OpenSwarm"
+        win = Gtk.ApplicationWindow(application=application, title=title)
+        if pet:
+            win.set_default_size(320, 390)
+        else:
+            win.set_default_size(1360, 880)
         try:
             Gtk.Window.set_default_icon_name("openswarm")
         except Exception:  # noqa: BLE001
@@ -250,6 +254,7 @@ def gui_main(argv: list[str]) -> int:
     p.add_argument("--check", action="store_true", help="show which window backends are available and exit")
     p.add_argument("--safe-render", action="store_true", help="(default now) WebKit: software rendering, fixes blank/grey windows")
     p.add_argument("--gpu", action="store_true", help="WebKit: allow GPU compositing (faster, but a grey window on some drivers)")
+    p.add_argument("--pet", action="store_true", help="Launch compact floating desktop companion / pet mode")
     p.add_argument("--no-memory", action="store_true")
     a = p.parse_args(argv)
     if a.check:
@@ -270,18 +275,20 @@ def gui_main(argv: list[str]) -> int:
         reconcile_models(cfg, asyncio.run(discover_models(cfg)))
     handle = start_server(cfg, workdir, a.port)
     backend = choose_backend(a.backend)
-    print(f"OpenSwarm {__version__} - window backend: {backend}   ({handle.url.split('?')[0]})", flush=True)
+    target_url = f"{handle.url}&pet=1" if a.pet else handle.url
+    mode_str = " (Pet Mode)" if a.pet else ""
+    print(f"OpenSwarm {__version__}{mode_str} - window backend: {backend}   ({handle.url.split('?')[0]})", flush=True)
     try:
         if backend == "gtk":
             try:
-                run_gtk(handle.url, gpu=a.gpu)
+                run_gtk(target_url, gpu=a.gpu, pet=a.pet)
             except Exception as exc:  # noqa: BLE001 - e.g. no display: degrade instead of dying
                 print(f"GTK window failed ({exc!r}); falling back", flush=True)
                 backend = "chromium" if chromium_available() else "browser"
         if backend == "chromium":
-            wait_for_process_or_ctrl_c(_open_app_window(handle.url))
+            wait_for_process_or_ctrl_c(_open_app_window(target_url, size=(320, 390) if a.pet else None))
         elif backend == "browser":
-            webbrowser.open(handle.url)
+            webbrowser.open(target_url)
             print("Opened in your browser. Press Ctrl+C to stop.", flush=True)
             wait_for_process_or_ctrl_c(None)
     finally:

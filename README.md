@@ -23,11 +23,21 @@ Manual install: `pip install .` (Python 3.11+).
 openswarm gui                 # a real application window (also in your app menu: "OpenSwarm")
 openswarm gui --check         # which backend is used and what is missing
 openswarm gui --gpu           # GPU compositing (faster, but a grey window on some drivers); software rendering is the default
+openswarm pet                 # Desktop Companion / Screen Pet mode (compact floating companion window)
 openswarm desktop-install     # (re)create the icon + menu entry
 ```
 Backends, in order: **GTK4 + WebKitGTK 6.0** (`sudo pacman -S python-gobject gtk4 webkitgtk-6.0`; installed by `install.sh`,
 the venv is created with `--system-site-packages` so it can see GTK) → a chromeless **Chromium/Chrome/Brave** app window →
 your browser. External links open in your default browser; desktop notifications ("run finished") go through the system.
+
+## Screen Pet & Desktop Companion Mode 🐾
+
+OpenSwarm includes a live desktop companion (inspired by ChatGPT Pets / Shimeji):
+- **Autonomous screen presence**: roams around the screen, reacts with animations to agent progress (`idle`, `walking`, `working` on miniature laptop, `celebrating`, `question`, `sleeping`).
+- **5 Vector Skins**: 🦊 Cyber Fox, 🐱 Neuro Cat, 🤖 Spark Bot, 🐶 Corgi Coder, 🦈 DeepSeek Shark.
+- **Window Raising ("поднятие окна")**: Automatically focuses and brings the OpenSwarm window to the front via system window managers, notifications, and synthesized melodic audio chime when models complete or ask questions.
+- **Direct Task Feeding**: Double-click or click `[Дать задачу 🍖]` to feed prompts directly from the screen overlay.
+- **Dedicated Floating Window**: Run `openswarm pet` for a compact 320×390 desktop widget.
 
 **The sphere** (left sidebar, collapsible) shows what is going on at a glance: a point-cloud globe whose **colour = mode**
 (Chat blue, Auto violet, Storm gold, Best-of-N pink, Cowork teal, Research green, Write orange, Review rose, workflows magenta),

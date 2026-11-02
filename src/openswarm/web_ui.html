@@ -317,8 +317,117 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
 .skill-badge{font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:99px;border:1px solid var(--line);color:var(--dim)}
 .skill-desc{font-size:12px;color:var(--dim);line-height:1.4}
 .skill-hint{font-size:11px;color:color-mix(in srgb,var(--accent) 80%,var(--text));font-family:ui-monospace,monospace;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#focus_sel{font-size:12px;padding:3px 8px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);outline:none}
+#focus_sel{font-size:12px;padding:3px 8px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);outline:none}
 #focus_sel:hover,#focus_sel:focus{color:var(--text);border-color:var(--accent)}
+
+/* Swarm Screen Pet & Companion Mode */
+.swarm-pet{
+  position:fixed;
+  z-index:9999;
+  cursor:grab;
+  user-select:none;
+  transition:transform .12s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  bottom:20px;
+  right:32px;
+  touch-action:none;
+}
+.swarm-pet.dragging{cursor:grabbing;transition:none}
+.pet-avatar{
+  position:relative;
+  width:64px;
+  height:64px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,0.45));
+}
+.pet-sprite{width:56px;height:56px;display:flex;align-items:center;justify-content:center;transition:transform .2s ease}
+.pet-sprite svg{width:100%;height:100%;overflow:visible}
+
+@keyframes pet-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes pet-walk{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
+@keyframes pet-work{0%,100%{transform:translateY(0)}25%{transform:translateY(-3px) rotate(2deg)}75%{transform:translateY(1px) rotate(-2deg)}}
+@keyframes pet-jump{0%,100%{transform:translateY(0) scale(1,1)}30%{transform:translateY(-26px) scale(0.9,1.15)}60%{transform:translateY(-32px) scale(1.05,0.95)}80%{transform:translateY(0) scale(1.15,0.85)}}
+@keyframes pet-sleep{0%,100%{transform:scale(1,0.95)}50%{transform:scale(0.96,1)}}
+@keyframes float-heart{0%{opacity:1;transform:translateY(0) scale(0.8)}100%{opacity:0;transform:translateY(-35px) scale(1.3)}}
+
+.pet-idle .pet-sprite{animation:pet-bob 2.8s ease-in-out infinite}
+.pet-walking .pet-sprite{animation:pet-walk 0.35s ease-in-out infinite}
+.pet-working .pet-sprite{animation:pet-work 0.45s ease-in-out infinite}
+.pet-celebrating .pet-sprite{animation:pet-jump 0.75s ease infinite}
+.pet-sleeping .pet-sprite{animation:pet-sleep 3s ease-in-out infinite}
+.pet-heart{position:absolute;font-size:16px;animation:float-heart .9s ease-out forwards;pointer-events:none}
+
+.pet-bubble{
+  position:absolute;
+  bottom:70px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--panel);
+  border:1px solid color-mix(in srgb,var(--accent) 60%,var(--line));
+  border-radius:14px;
+  padding:10px 14px;
+  width:max-content;
+  max-width:270px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.55);
+  font-size:12.5px;
+  line-height:1.45;
+  color:var(--text);
+  pointer-events:auto;
+  animation:pop .2s cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+}
+.pet-bubble::after{
+  content:'';
+  position:absolute;
+  top:100%;
+  left:50%;
+  margin-left:-6px;
+  border-width:6px;
+  border-style:solid;
+  border-color:var(--panel) transparent transparent transparent;
+}
+.pet-bubble-actions{display:flex;gap:5px;align-items:center;margin-top:6px}
+.pet-act-btn{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer;color:var(--accent)}
+.pet-act-btn:hover{background:var(--accent);color:#fff}
+.pet-close-btn{border:none;background:none;color:var(--dim);cursor:pointer;padding:2px 5px;margin-left:auto;font-size:11px}
+
+.pet-quick-input{
+  position:absolute;
+  bottom:70px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:5px;
+  background:var(--panel);
+  border:1px solid var(--accent);
+  border-radius:12px;
+  padding:6px 8px;
+  width:260px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.6);
+  animation:pop .2s ease-out both;
+}
+.pet-quick-input input{flex:1;border:none;background:transparent;padding:4px 6px;font-size:12.5px;color:var(--text);outline:none}
+.pet-quick-input button{padding:3px 9px;border-radius:8px}
+
+.pet-skins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:8px}
+.pet-skin-card{border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;cursor:pointer;background:var(--panel2);transition:all .15s}
+.pet-skin-card:hover{border-color:var(--accent)}
+.pet-skin-card.on{border-color:var(--accent2);background:color-mix(in srgb,var(--accent) 15%,var(--panel2));box-shadow:0 0 0 2px rgba(var(--glow),.3)}
+.skin-emoji{font-size:26px;margin-bottom:3px}
+.skin-title{font-size:12px;font-weight:600;color:var(--text)}
+.skin-sub{font-size:10.5px;color:var(--dim);margin-top:2px}
+
+/* Standalone Pet Window Mode (openswarm pet / ?pet=1) */
+body.pet-mode{background:var(--bg);overflow:hidden}
+body.pet-mode #side,body.pet-mode #top,body.pet-mode #threadbar,body.pet-mode #conv,body.pet-mode #composer,body.pet-mode #bar,body.pet-mode #sidefoot,body.pet-mode #side-backdrop{display:none!important}
+#pet-standalone-view{display:none}
+body.pet-mode #pet-standalone-view{display:flex;flex-direction:column;height:100vh;padding:12px;box-sizing:border-box}
+.pet-stand-head{display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.pet-stand-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.pet-stand-foot{padding-top:10px;border-top:1px solid var(--line)}
+.pet-stand-input-wrap{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:5px 8px}
+.pet-stand-input-wrap:focus-within{border-color:var(--accent)}
+.pet-stand-input-wrap input{flex:1;border:none;background:transparent;outline:none;font-size:12.5px;color:var(--text);padding:4px}
 
 /* Mobile & Minimalist Layout */
 .iconbtn{background:none;border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:15px;cursor:pointer;display:none;align-items:center;justify-content:center}
@@ -396,6 +505,7 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
     <button id="schedtopbtn" class="tbtn" title="Отложенные задачи">⏰<span class="tl"> Задачи</span></button>
     <button id="busbtn" class="tbtn" title="Swarm Room — live inter-agent chat &amp; non-blocking questions">💬<span class="tl"> Команда</span> <span id="buscount" class="lbl"></span></button>
     <button id="artbtn" class="tbtn" title="Claude Artifacts — интерактивные виджеты, SVG, код и превью">🎨<span class="tl"> Артефакты</span> <span id="artcount" class="lbl">(0)</span></button>
+    <button id="pettopbtn" class="tbtn" title="Питомец-Ассистент (Screen Pet) — живой агент на экране">🐾<span class="tl"> Питомец</span></button>
     <button id="filesbtn" class="tbtn" title="Workspace Files">📁<span class="tl"> Файлы</span></button>
     <div class="morewrap">
       <button id="morebtn" class="tbtn" title="Ещё: тема, VPN, APK, расписание, интеграции, плагины…">⋯</button>
@@ -408,6 +518,7 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
           <option value="emerald">🌿 Emerald Matrix</option>
           <option value="light">☀️ Daylight Paper</option>
         </select>
+        <button id="petbtn" title="Настройки питомца-ассистента: выбор скина, авто-поднятие окна">🐾 Питомец-Ассистент</button>
         <div class="mphead">Инструменты</div>
         <button id="vpnbtn" title="Per-app VPN: swap through 65 servers on rate limits">🛡️ VPN <span id="vpnstatus" class="lbl"></span></button>
         <button id="mobilebtn" title="Download Android APK &amp; Mobile LAN link">📱 Android APK</button>
@@ -561,6 +672,113 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
   <div class="row" style="justify-content:flex-end;margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
     <span id="skills-summary-lbl" class="lbl" style="flex:1"></span>
     <button class="primary" id="saveskills">Готово</button>
+  </div>
+</div></div>
+<div id="swarm-pet" class="swarm-pet pet-idle">
+  <div class="pet-bubble" id="pet-bubble" style="display:none">
+    <div class="pet-bubble-text" id="pet-bubble-text">Привет! Я твой ассистент 🐾</div>
+    <div class="pet-bubble-actions">
+      <button type="button" class="pet-act-btn" id="pet-act-focus">Поднять окно ↗</button>
+      <button type="button" class="pet-act-btn" id="pet-act-feed">Дать задачу 🍖</button>
+      <button type="button" class="pet-close-btn" id="pet-act-close">✕</button>
+    </div>
+  </div>
+  <div class="pet-quick-input" id="pet-quick-input" style="display:none">
+    <input type="text" id="pet-prompt-input" placeholder="Покормить задачей… (Enter)">
+    <button type="button" id="pet-prompt-send" class="primary">➤</button>
+  </div>
+  <div class="pet-avatar" id="pet-avatar" title="Нажмите, чтобы погладить или поднять окно. Перетащите в любое место!">
+    <div class="pet-sprite" id="pet-sprite"></div>
+    <div class="pet-hearts" id="pet-hearts"></div>
+  </div>
+</div>
+<div id="pet-standalone-view">
+  <header class="pet-stand-head">
+    <span style="font-size:18px">🐾</span>
+    <b style="font-size:14px;font-family:var(--serif);flex:1">OpenSwarm Companion</b>
+    <span class="badge ready" id="pet-stand-badge">● Онлайн</span>
+    <button type="button" id="pet-stand-full-btn" class="cicon" title="Открыть полное окно OpenSwarm">🗖</button>
+    <button type="button" id="pet-stand-cfg-btn" class="cicon" title="Настройки питомца">⚙</button>
+  </header>
+  <div class="pet-stand-stage" id="pet-stand-stage">
+    <div id="pet-stand-bubble" class="pet-bubble" style="position:static;transform:none;margin:0 auto 16px;max-width:92%">
+      <div id="pet-stand-bubble-text">Привет! Я твой ассистент на экране. Ожидаю задач 🐾</div>
+    </div>
+    <div class="pet-avatar pet-idle" id="pet-stand-avatar" style="width:96px;height:96px;cursor:pointer">
+      <div class="pet-sprite" id="pet-stand-sprite" style="width:84px;height:84px"></div>
+      <div class="pet-hearts" id="pet-stand-hearts"></div>
+    </div>
+    <div id="pet-stand-state-lbl" class="lbl" style="margin-top:12px;text-align:center">Отдыхает в ожидании задачи</div>
+  </div>
+  <div class="pet-stand-foot">
+    <div class="pet-stand-input-wrap">
+      <input type="text" id="pet-stand-input" placeholder="Покормить задачей… (Enter)">
+      <button type="button" id="pet-stand-send" class="primary">➤</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="petmodal"><div class="sheet" style="width:min(580px,94vw)">
+  <div class="row" style="margin-top:0">
+    <b style="font-size:17px;font-family:var(--serif);flex:1">🐾 Питомец-Ассистент (Screen Pet)</b>
+    <button id="closepetmodal">✕</button>
+  </div>
+  <div class="lbl" style="margin-bottom:14px">Живой агент-компаньон на экране (как ChatGPT Pets / Desktop Buddy). Бегает по экрану, сообщает о статусе моделей, привлекает внимание и поднимает окно, когда нужна проверка или готов ответ.</div>
+
+  <div class="row" style="margin-bottom:12px">
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+      <input type="checkbox" id="pet-enable-toggle" checked> Включить питомца на экране
+    </label>
+    <span style="flex:1"></span>
+    <button id="pet-popout-btn" class="primary" style="font-size:12px;padding:4px 10px" title="Открыть в отдельном компактном плавающем мини-окне">🗗 Отдельное окно</button>
+  </div>
+
+  <div class="mphead" style="margin:10px 0 6px">Выберите персонажа</div>
+  <div class="pet-skins-grid" id="pet-skins-grid">
+    <div class="pet-skin-card on" data-skin="fox">
+      <div class="skin-emoji">🦊</div>
+      <div class="skin-title">Кибер-Лис</div>
+      <div class="skin-sub">Шустрый, внимательный</div>
+    </div>
+    <div class="pet-skin-card" data-skin="cat">
+      <div class="skin-emoji">🐱</div>
+      <div class="skin-title">Нейро-Котик</div>
+      <div class="skin-sub">Мурчит, ластится</div>
+    </div>
+    <div class="pet-skin-card" data-skin="robot">
+      <div class="skin-emoji">🤖</div>
+      <div class="skin-title">Спарк-Бот</div>
+      <div class="skin-sub">Парит, искрит кодом</div>
+    </div>
+    <div class="pet-skin-card" data-skin="corgi">
+      <div class="skin-emoji">🐶</div>
+      <div class="skin-title">Кодер-Корги</div>
+      <div class="skin-sub">Виляет хвостом</div>
+    </div>
+    <div class="pet-skin-card" data-skin="shark">
+      <div class="skin-emoji">🦈</div>
+      <div class="skin-title">Дипсик-Акула</div>
+      <div class="skin-sub">1M контекст</div>
+    </div>
+  </div>
+
+  <div class="mphead" style="margin:14px 0 6px">Поведение и взаимодействие</div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="pet-auto-raise" checked>
+      <span>⚡ <b>Автоматически поднимать окно</b> при готовности задачи или вопросах от моделей</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="pet-wander" checked>
+      <span>🐾 <b>Свободно гулять по экрану</b> (при выключении сидит в правом углу)</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="pet-sound" checked>
+      <span>🔔 <b>Звуковой сигнал</b> при завершении работы роя</span>
+    </label>
+  </div>
+
+  <div class="row" style="justify-content:flex-end;border-top:1px solid var(--line);padding-top:12px">
+    <button class="primary" id="savepetmodal">Сохранить</button>
   </div>
 </div></div>
 <div class="modal" id="newmodal"><div class="sheet">
@@ -1704,11 +1922,11 @@ function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev)
     d.appendChild(b);S.appendChild(d);
     if(!replay)setBusy(true);break;
   }
-  case"agent":mkCard(ev.agent,ev.title,ev.role);break;
+  case"agent":mkCard(ev.agent,ev.title,ev.role);if(!replay)notifyPetWorking("Запустил агента "+(ev.title||ev.agent)+"… ⚙️");break;
   case"status":{if(ev.agent&&AGENT_DATA[ev.agent])AGENT_DATA[ev.agent].status=ev.status;const c=cards[ev.agent];if(c){const stEl=c.querySelector(".st");stEl.textContent=ev.status;const snip=c.querySelector(".agent-card-snippet");if(snip)snip.textContent=ev.status==="Done"?"✔ Ответ сформирован":ev.status==="Failed"?"✘ Ошибка выполнения":(ev.status||"Выполняется…");if(ev.status==="Failed"){const rb=document.createElement("button");rb.textContent="↻ Повторить";rb.style.cssText="margin-left:6px;padding:1px 7px;font-size:11px";rb.onclick=e=>{e.stopPropagation();retryFailedAgents([ev.agent]);};stEl.appendChild(rb);}const d=c.querySelector(".dot");d.className="dot "+(ev.status==="Running"||ev.status==="Merging"?"run":ev.status==="Done"?"ok":ev.status==="Failed"?"bad":"");}break;}
   case"line":{const clean=ev.text.replace(ANSI,"");if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].logs.push((ev.err?"[err] ":"")+clean);if(AGENT_DATA[ev.agent].logs.length>1000)AGENT_DATA[ev.agent].logs.shift();}const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip&&clean.trim())snip.textContent=clean.trim().slice(0,90);const p=c.querySelector("pre.log");if(p){const sp=document.createElement("span");if(ev.err)sp.className="e";sp.textContent=clean+"\n";p.appendChild(sp);while(p.childNodes.length>1500)p.removeChild(p.firstChild);if(!replay)p.scrollTop=p.scrollHeight;}}break;}
   case"log":{const d=document.createElement("div");d.className="sys";d.textContent=ev.text;S.appendChild(d);break;}
-  case"bus":renderBusEvent(ev,replay);break;
+  case"bus":renderBusEvent(ev,replay);if(!replay&&(ev.kind==="question"||(ev.text&&ev.text.includes("?"))))notifyPetQuestion("Агент задал вопрос команде! ❓");break;
   case"result":{if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].result=ev.text;const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip)snip.textContent="Готово. Нажмите чтобы посмотреть.";}}
     const d=document.createElement("div");d.className="msg assistant";const b=document.createElement("div");b.className="bubble";
     const asstHdr=document.createElement("div");asstHdr.className="asst-hdr";
@@ -1737,9 +1955,9 @@ function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev)
     d.querySelector("div div").textContent=r.title;d.querySelector("code").textContent=r.detail||"";const t=d.querySelector(".tools");
     for(const [lbl,val,cls] of [["Allow once","once","primary"],["Always allow","always",""],["Deny","reject","danger"]]){const b=document.createElement("button");b.textContent=lbl;if(cls)b.className=cls;
       b.onclick=async()=>{try{await api(`/api/sessions/${CUR.id}/permission`,{method:"POST",body:JSON.stringify({id:r.id,response:val})});}catch(e){toast(e.message);}};t.appendChild(b);}
-    S.appendChild(d);break;}
+    S.appendChild(d);if(!replay)notifyPetPermission("Требуется подтверждение действия! ⚠️");break;}
   case"permission_resolved":{const d=document.getElementById("perm-"+ev.pid);if(d){d.querySelector(".tools").textContent="→ "+({once:"allowed once",always:"always allowed",reject:"denied"}[ev.decision]||ev.decision);}break;}
-  case"done":{busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);refreshOptimizerStats().catch(()=>{});}
+  case"done":{busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);refreshOptimizerStats().catch(()=>{});if(ev.ok){notifyPetDone("Задача успешно завершена! ✨");}else{notifyPetAttention("Завершено с замечаниями ⚠️");}}
     const d=document.createElement("div");d.className="sys";d.textContent=(ev.ok?"✔ finished":"✘ finished with problems")+(ev.failed&&ev.failed.length?" — "+ev.failed.join(", "):"")+(ev.usage&&ev.usage.tokens?` · ${ev.usage.tokens.input}→${ev.usage.tokens.output} tokens`+(ev.usage.cost?` · $${Number(ev.usage.cost).toFixed(4)}`:""):"");
     if(!ev.ok||(ev.failed&&ev.failed.length)){const rb=document.createElement("button");rb.className="primary";rb.textContent="▶ Продолжить ответ (перезапустить fail)";rb.style.marginLeft="8px";rb.onclick=()=>retryFailedAgents(ev.failed||[]);d.appendChild(rb);}
     if(ev.snapshot){const b=document.createElement("button");b.textContent="↩ Undo this run";b.style.marginLeft="8px";b.onclick=()=>undo(ev.snapshot);d.appendChild(b);}
@@ -1772,6 +1990,7 @@ async function send(){if(window.Notification&&Notification.permission==="default
   ATTACHED_IMAGES=[];
   renderImgPreviews();
   try{
+    notifyPetWorking("Задача отправлена рою! 🚀");
     await api(`/api/sessions/${CUR.id}/send`,{
       method:"POST",
       body:JSON.stringify({
@@ -3175,8 +3394,635 @@ async function refreshOptimizerStats(){
 
 if($("schedtopbtn"))$("schedtopbtn").onclick=openScheduledModal;
 
+/* SWARM PET & COMPANION ENGINE */
+const PET_CONFIG = {
+  enabled: localStorage.getItem("openswarm_pet_enabled") !== "0",
+  skin: localStorage.getItem("openswarm_pet_skin") || "fox",
+  autoRaise: localStorage.getItem("openswarm_pet_auto_raise") !== "0",
+  wander: localStorage.getItem("openswarm_pet_wander") !== "0",
+  sound: localStorage.getItem("openswarm_pet_sound") !== "0"
+};
+let PET_STATE = "idle";
+let isDraggingPet = false;
+let petDragStart = {x:0, y:0, elX:0, elY:0, moved:false};
+let petBubbleTimer = null;
+let petWanderTimer = null;
+
+function getFoxSVG(state){
+  let eyes = `<ellipse cx="26" cy="36" rx="3.5" ry="4.5" fill="#38bdf8"/><ellipse cx="38" cy="36" rx="3.5" ry="4.5" fill="#38bdf8"/><circle cx="27" cy="34.5" r="1.5" fill="#fff"/><circle cx="39" cy="34.5" r="1.5" fill="#fff"/>`;
+  let extra = "";
+  if(state === "sleeping"){
+    eyes = `<path d="M23 37 Q26 40 29 37" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M35 37 Q38 40 41 37" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" fill="none"/><text x="44" y="24" font-size="10" fill="#38bdf8" font-family="sans-serif" font-weight="bold">zZ</text>`;
+  } else if(state === "celebrating"){
+    eyes = `<path d="M23 37 L26 33 L29 37" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M35 37 L38 33 L41 37" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="20" cy="22" r="2" fill="#fbbf24"/><circle cx="46" cy="20" r="2.5" fill="#fbbf24"/>`;
+  } else if(state === "working"){
+    eyes = `<line x1="23" y1="36" x2="29" y2="36" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/><line x1="35" y1="36" x2="41" y2="36" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>`;
+    extra = `<rect x="20" y="48" width="24" height="12" rx="2" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2"/><rect x="23" y="50" width="18" height="6" fill="#0284c7"/><line x1="22" y1="58" x2="42" y2="58" stroke="#64748b" stroke-width="1.5"/>`;
+  } else if(state === "question"){
+    eyes = `<circle cx="26" cy="36" r="3.5" fill="#38bdf8"/><circle cx="38" cy="35" r="4.5" fill="#38bdf8"/><circle cx="27" cy="35" r="1.2" fill="#fff"/><circle cx="39" cy="34" r="1.5" fill="#fff"/>`;
+    extra = `<circle cx="48" cy="18" r="7.5" fill="#f59e0b"/><text x="48" y="22" font-size="11" font-weight="bold" fill="#000" text-anchor="middle" font-family="sans-serif">?</text>`;
+  }
+  return `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M44 48 C56 46 62 34 54 26 C48 30 46 40 44 48 Z" fill="#ea580c"/>
+    <path d="M54 26 C53 28 50 31 48 30 C51 34 54 28 54 26 Z" fill="#ffffff"/>
+    <ellipse cx="32" cy="46" rx="14" ry="12" fill="#f97316"/>
+    <ellipse cx="32" cy="47" rx="8" ry="8" fill="#fff"/>
+    <path d="M19 30 L22 14 L30 26 Z" fill="#ea580c"/>
+    <path d="M22 27 L23 17 L28 25 Z" fill="#fecdd3"/>
+    <path d="M45 30 L42 14 L34 26 Z" fill="#ea580c"/>
+    <path d="M42 27 L41 17 L36 25 Z" fill="#fecdd3"/>
+    <ellipse cx="32" cy="36" rx="15" ry="13" fill="#f97316"/>
+    <path d="M18 36 C18 43 25 45 32 45 C39 45 46 43 46 36 C46 33 42 35 32 37 C22 35 18 33 18 36 Z" fill="#ffffff"/>
+    ${eyes}
+    <polygon points="32,40 30,38 34,38" fill="#1e293b"/>
+    <path d="M30 41 Q32 43 34 41" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+    <ellipse cx="25" cy="54" rx="4" ry="3" fill="#ffffff"/>
+    <ellipse cx="39" cy="54" rx="4" ry="3" fill="#ffffff"/>
+    ${extra}
+  </svg>`;
+}
+
+function getCatSVG(state){
+  let eyes = `<ellipse cx="25" cy="35" rx="3.5" ry="5" fill="#10b981"/><ellipse cx="39" cy="35" rx="3.5" ry="5" fill="#10b981"/><circle cx="26" cy="33.5" r="1.5" fill="#fff"/><circle cx="40" cy="33.5" r="1.5" fill="#fff"/>`;
+  let extra = "";
+  if(state === "sleeping"){
+    eyes = `<path d="M22 36 Q25 39 28 36" stroke="#475569" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M36 36 Q39 39 42 36" stroke="#475569" stroke-width="2" stroke-linecap="round" fill="none"/><text x="46" y="22" font-size="10" fill="#a855f7" font-weight="bold">zZ</text>`;
+  } else if(state === "celebrating"){
+    eyes = `<path d="M22 35 Q25 31 28 35" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M36 35 Q39 31 42 35" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M29 41 Q32 45 35 41" fill="#f43f5e"/>`;
+    extra = `<ellipse cx="17" cy="30" rx="3" ry="3" fill="#8b5cf6"/><ellipse cx="47" cy="30" rx="3" ry="3" fill="#8b5cf6"/>`;
+  } else if(state === "working"){
+    eyes = `<ellipse cx="25" cy="35" rx="3" ry="2" fill="#10b981"/><ellipse cx="39" cy="35" rx="3" ry="2" fill="#10b981"/>`;
+    extra = `<rect x="21" y="47" width="22" height="11" rx="2" fill="#334155" stroke="#a855f7" stroke-width="1.2"/><rect x="23" y="49" width="18" height="5" fill="#0f172a"/><line x1="24" y1="56" x2="40" y2="56" stroke="#10b981" stroke-width="1"/>`;
+  } else if(state === "question"){
+    eyes = `<circle cx="25" cy="35" r="3" fill="#10b981"/><circle cx="39" cy="34" r="4.5" fill="#10b981"/>`;
+    extra = `<circle cx="48" cy="18" r="7" fill="#8b5cf6"/><text x="48" y="22" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">?</text>`;
+  }
+  return `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M44 48 C54 48 58 38 56 30 C54 28 52 30 53 34 C54 39 50 44 44 46 Z" fill="#7c3aed"/>
+    <ellipse cx="32" cy="46" rx="13" ry="11" fill="#8b5cf6"/>
+    <ellipse cx="32" cy="47" rx="7" ry="7" fill="#ede9fe"/>
+    <polygon points="18,28 21,14 29,24" fill="#7c3aed"/>
+    <polygon points="21,26 23,17 27,23" fill="#f472b6"/>
+    <polygon points="46,28 43,14 35,24" fill="#7c3aed"/>
+    <polygon points="43,26 41,17 37,23" fill="#f472b6"/>
+    <circle cx="32" cy="35" r="14" fill="#8b5cf6"/>
+    <line x1="15" y1="36" x2="23" y2="37" stroke="#ede9fe" stroke-width="1.2"/>
+    <line x1="14" y1="39" x2="23" y2="39" stroke="#ede9fe" stroke-width="1.2"/>
+    <line x1="41" y1="37" x2="49" y2="36" stroke="#ede9fe" stroke-width="1.2"/>
+    <line x1="41" y1="39" x2="50" y2="39" stroke="#ede9fe" stroke-width="1.2"/>
+    ${eyes}
+    <polygon points="32,39 30.5,37.5 33.5,37.5" fill="#f472b6"/>
+    <path d="M30 40 Q32 42 34 40" stroke="#475569" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+    <circle cx="26" cy="54" r="3.5" fill="#ede9fe"/>
+    <circle cx="38" cy="54" r="3.5" fill="#ede9fe"/>
+    ${extra}
+  </svg>`;
+}
+
+function getRobotSVG(state){
+  let screen = `<rect x="22" y="27" width="20" height="13" rx="3" fill="#0f172a"/><circle cx="27" cy="33" r="2.5" fill="#38bdf8"/><circle cx="37" cy="33" r="2.5" fill="#38bdf8"/>`;
+  let jet = `<ellipse cx="32" cy="56" rx="5" ry="2.5" fill="#38bdf8" opacity="0.8"/>`;
+  if(state === "sleeping"){
+    screen = `<rect x="22" y="27" width="20" height="13" rx="3" fill="#0f172a"/><line x1="25" y1="33" x2="29" y2="33" stroke="#38bdf8" stroke-width="2"/><line x1="35" y1="33" x2="39" y2="33" stroke="#38bdf8" stroke-width="2"/><text x="46" y="22" font-size="10" fill="#38bdf8" font-weight="bold">zZ</text>`;
+    jet = "";
+  } else if(state === "celebrating"){
+    screen = `<rect x="22" y="27" width="20" height="13" rx="3" fill="#0f172a"/><path d="M25 35 L27 31 L29 35" stroke="#34d399" stroke-width="2" fill="none"/><path d="M35 35 L37 31 L39 35" stroke="#34d399" stroke-width="2" fill="none"/>`;
+    jet = `<ellipse cx="32" cy="56" rx="7" ry="4" fill="#34d399" opacity="0.9"/>`;
+  } else if(state === "working"){
+    screen = `<rect x="22" y="27" width="20" height="13" rx="3" fill="#0f172a"/><line x1="24" y1="31" x2="33" y2="31" stroke="#38bdf8" stroke-width="1.5"/><line x1="24" y1="34" x2="38" y2="34" stroke="#34d399" stroke-width="1.5"/><line x1="24" y1="37" x2="30" y2="37" stroke="#fbbf24" stroke-width="1.5"/>`;
+  } else if(state === "question"){
+    screen = `<rect x="22" y="27" width="20" height="13" rx="3" fill="#0f172a"/><text x="32" y="37" font-size="11" font-weight="bold" fill="#f59e0b" text-anchor="middle">?</text>`;
+  }
+  return `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="32" y1="18" x2="32" y2="22" stroke="#64748b" stroke-width="2"/>
+    <circle cx="32" cy="17" r="3" fill="#eab308"/>
+    <ellipse cx="32" cy="48" rx="11" ry="8" fill="#0284c7"/>
+    <rect x="28" y="52" width="8" height="4" rx="2" fill="#475569"/>
+    ${jet}
+    <circle cx="16" cy="42" r="3.5" fill="#38bdf8"/>
+    <circle cx="48" cy="42" r="3.5" fill="#38bdf8"/>
+    <rect x="18" y="22" width="28" height="22" rx="7" fill="#0ea5e9" stroke="#38bdf8" stroke-width="1.5"/>
+    ${screen}
+  </svg>`;
+}
+
+function getCorgiSVG(state){
+  let eyes = `<ellipse cx="25" cy="35" rx="3.5" ry="4" fill="#1e293b"/><ellipse cx="39" cy="35" rx="3.5" ry="4" fill="#1e293b"/><circle cx="26" cy="33.5" r="1.2" fill="#fff"/><circle cx="40" cy="33.5" r="1.2" fill="#fff"/>`;
+  let mouth = `<path d="M29 42 Q32 44 35 42" stroke="#1e293b" stroke-width="1.2" fill="none"/>`;
+  let extra = "";
+  if(state === "sleeping"){
+    eyes = `<path d="M22 35 Q25 38 28 35" stroke="#1e293b" stroke-width="2" fill="none"/><path d="M36 35 Q39 38 42 35" stroke="#1e293b" stroke-width="2" fill="none"/><text x="46" y="22" font-size="10" fill="#f59e0b" font-weight="bold">zZ</text>`;
+  } else if(state === "celebrating"){
+    eyes = `<path d="M22 35 L25 32 L28 35" stroke="#1e293b" stroke-width="2" fill="none"/><path d="M36 35 L39 32 L42 35" stroke="#1e293b" stroke-width="2" fill="none"/>`;
+    mouth = `<ellipse cx="32" cy="43" rx="3" ry="4" fill="#f43f5e"/>`;
+  } else if(state === "working"){
+    eyes = `<line x1="23" y1="35" x2="27" y2="35" stroke="#1e293b" stroke-width="2"/><line x1="37" y1="35" x2="41" y2="35" stroke="#1e293b" stroke-width="2"/>`;
+    extra = `<rect x="21" y="47" width="22" height="11" rx="2" fill="#1e293b"/><rect x="23" y="49" width="18" height="5" fill="#047857"/><line x1="24" y1="56" x2="40" y2="56" stroke="#94a3b8" stroke-width="1"/>`;
+  } else if(state === "question"){
+    extra = `<circle cx="48" cy="18" r="7" fill="#f59e0b"/><text x="48" y="22" font-size="11" font-weight="bold" fill="#000" text-anchor="middle">?</text>`;
+  }
+  return `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="46" cy="46" r="4.5" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+    <ellipse cx="32" cy="46" rx="14" ry="11" fill="#f59e0b"/>
+    <ellipse cx="32" cy="47" rx="8" ry="7" fill="#ffffff"/>
+    <polygon points="17,29 20,12 28,24" fill="#f59e0b"/>
+    <polygon points="20,26 22,16 26,23" fill="#fecdd3"/>
+    <polygon points="47,29 44,12 36,24" fill="#f59e0b"/>
+    <polygon points="44,26 42,16 38,23" fill="#fecdd3"/>
+    <circle cx="32" cy="35" r="14" fill="#f59e0b"/>
+    <path d="M30 22 C30 22 32 29 32 35 C32 40 27 44 32 44 C37 44 32 40 32 35 C32 29 34 22 34 22 Z" fill="#ffffff"/>
+    <rect x="21" y="31" width="9" height="7" rx="2" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <rect x="34" y="31" width="9" height="7" rx="2" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <line x1="30" y1="34" x2="34" y2="34" stroke="#334155" stroke-width="1.5"/>
+    ${eyes}
+    <ellipse cx="32" cy="39" rx="2.5" ry="1.8" fill="#1e293b"/>
+    ${mouth}
+    <circle cx="26" cy="54" r="3.5" fill="#ffffff"/>
+    <circle cx="38" cy="54" r="3.5" fill="#ffffff"/>
+    ${extra}
+  </svg>`;
+}
+
+function getSharkSVG(state){
+  let eyes = `<ellipse cx="26" cy="35" rx="3.5" ry="4" fill="#0f172a"/><ellipse cx="38" cy="35" rx="3.5" ry="4" fill="#0f172a"/><circle cx="27" cy="33.5" r="1.3" fill="#fff"/><circle cx="39" cy="33.5" r="1.3" fill="#fff"/>`;
+  let mouth = `<path d="M29 42 Q32 45 35 42" stroke="#0f172a" stroke-width="1.2" fill="none"/>`;
+  let extra = "";
+  if(state === "sleeping"){
+    eyes = `<line x1="23" y1="35" x2="28" y2="35" stroke="#0f172a" stroke-width="2"/><line x1="36" y1="35" x2="41" y2="35" stroke="#0f172a" stroke-width="2"/><text x="46" y="22" font-size="10" fill="#60a5fa" font-weight="bold">zZ</text>`;
+  } else if(state === "celebrating"){
+    eyes = `<path d="M23 35 L26 31 L29 35" stroke="#0f172a" stroke-width="2" fill="none"/><path d="M35 35 L38 31 L41 35" stroke="#0f172a" stroke-width="2" fill="none"/>`;
+    mouth = `<path d="M28 41 Q32 46 36 41 Z" fill="#f43f5e"/><polygon points="30,41 31,43 32,41" fill="#fff"/><polygon points="32,41 33,43 34,41" fill="#fff"/>`;
+  } else if(state === "working"){
+    eyes = `<polygon points="21,32 30,32 29,38 23,38" fill="#1e293b"/><polygon points="34,32 43,32 41,38 35,38" fill="#1e293b"/><line x1="30" y1="33" x2="34" y2="33" stroke="#1e293b" stroke-width="1.5"/><line x1="22" y1="33" x2="28" y2="37" stroke="#38bdf8" stroke-width="1"/>`;
+    extra = `<rect x="22" y="48" width="20" height="10" rx="2" fill="#0f172a" stroke="#60a5fa" stroke-width="1.2"/><line x1="25" y1="53" x2="39" y2="53" stroke="#38bdf8" stroke-width="1.5"/>`;
+  } else if(state === "question"){
+    extra = `<circle cx="48" cy="18" r="7" fill="#3b82f6"/><text x="48" y="22" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">?</text>`;
+  }
+  return `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M32 15 C33 22 36 24 38 25 L28 25 Z" fill="#1d4ed8"/>
+    <path d="M46 45 C54 44 58 40 60 36 C57 41 54 44 50 46 C54 48 57 51 60 56 C58 52 54 48 46 47 Z" fill="#2563eb"/>
+    <ellipse cx="32" cy="40" rx="16" ry="13" fill="#3b82f6"/>
+    <ellipse cx="32" cy="44" rx="11" ry="8" fill="#e0f2fe"/>
+    <path d="M18 42 C13 44 10 47 11 49 C14 48 18 45 20 44 Z" fill="#2563eb"/>
+    <path d="M46 42 C51 44 54 47 53 49 C50 48 46 45 44 44 Z" fill="#2563eb"/>
+    ${eyes}
+    ${mouth}
+    ${extra}
+  </svg>`;
+}
+
+function getPetSVG(skin, state){
+  switch(skin){
+    case "cat": return getCatSVG(state);
+    case "robot": return getRobotSVG(state);
+    case "corgi": return getCorgiSVG(state);
+    case "shark": return getSharkSVG(state);
+    case "fox":
+    default: return getFoxSVG(state);
+  }
+}
+
+function setPetState(state){
+  PET_STATE = state;
+  const petEl = $("swarm-pet");
+  if(petEl){
+    petEl.className = "swarm-pet pet-" + state;
+    const sp = $("pet-sprite");
+    if(sp) sp.innerHTML = getPetSVG(PET_CONFIG.skin, state);
+  }
+  const standAv = $("pet-stand-avatar");
+  if(standAv){
+    standAv.className = "pet-avatar pet-" + state;
+    const ssp = $("pet-stand-sprite");
+    if(ssp) ssp.innerHTML = getPetSVG(PET_CONFIG.skin, state);
+  }
+  const lbl = $("pet-stand-state-lbl");
+  if(lbl){
+    const desc = {
+      idle: "Отдыхает в ожидании задачи",
+      walking: "Гуляет по экрану 🐾",
+      working: "Агенты в работе… ⚙️",
+      celebrating: "Задача завершена! 🎉",
+      question: "Требуется ответ / подтверждение ❓",
+      sleeping: "Спит zZz…"
+    };
+    lbl.textContent = desc[state] || "Готов к работе";
+  }
+}
+
+function playPetChime(type="done"){
+  if(!PET_CONFIG.sound) return;
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    if(type === "done"){
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(783.99, now + 0.12);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      osc.start(now);
+      osc.stop(now + 0.46);
+    } else if(type === "alert" || type === "question"){
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(739.99, now + 0.14);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.41);
+    } else if(type === "purr"){
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(659.25, now);
+      osc.frequency.exponentialRampToValueAtTime(987.77, now + 0.08);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.start(now);
+      osc.stop(now + 0.19);
+    }
+  }catch(e){}
+}
+
+async function raiseAppWindow(reason=""){
+  try{ window.focus(); }catch(e){}
+  api("/api/window/raise", {method:"POST"}).catch(()=>{});
+  if(window.Notification && Notification.permission === "granted" && document.hidden){
+    try{
+      const title = reason ? `OpenSwarm: ${reason}` : "OpenSwarm: Требуется внимание";
+      const notif = new Notification(title, {
+        body: (CUR && CUR.title) ? CUR.title : "Нажмите, чтобы открыть окно OpenSwarm",
+        icon: "/favicon.ico"
+      });
+      notif.onclick = () => {
+        window.focus();
+        try{ notif.close(); }catch(e){}
+      };
+    }catch(e){}
+  }
+  if(document.hidden){
+    const prevTitle = document.title;
+    let toggles = 0;
+    const pulseInterval = setInterval(()=>{
+      toggles++;
+      document.title = (toggles % 2 === 1) ? "⚡ [Внимание!] OpenSwarm" : prevTitle;
+      if(toggles >= 10 || !document.hidden){
+        clearInterval(pulseInterval);
+        document.title = prevTitle;
+      }
+    }, 800);
+  }
+}
+
+function showPetBubble(text, duration=5000){
+  if(petBubbleTimer) clearTimeout(petBubbleTimer);
+  const b = $("pet-bubble");
+  const t = $("pet-bubble-text");
+  if(t) t.textContent = text;
+  if(b) b.style.display = "block";
+  const stText = $("pet-stand-bubble-text");
+  if(stText) stText.textContent = text;
+  if(duration > 0){
+    petBubbleTimer = setTimeout(hidePetBubble, duration);
+  }
+}
+
+function hidePetBubble(){
+  if(petBubbleTimer) clearTimeout(petBubbleTimer);
+  const b = $("pet-bubble");
+  if(b) b.style.display = "none";
+}
+
+const PET_LINES = [
+  "Мур! Всегда на страже! 🐾",
+  "Рой под контролем! ⚡",
+  "Жду указаний, капитан! ✨",
+  "Агенты готовы к бою! 🤖",
+  "Всё спокойно, мониторю задачи! 🦊"
+];
+
+function petHeartAnim(containerId="pet-hearts"){
+  playPetChime("purr");
+  const c = $(containerId);
+  if(c){
+    const h = document.createElement("div");
+    h.className = "pet-heart";
+    h.textContent = ["❤️","💖","✨","🐾","⭐"][Math.floor(Math.random()*5)];
+    h.style.left = `${20 + Math.random()*24}px`;
+    h.style.top = `${Math.random()*20}px`;
+    c.appendChild(h);
+    setTimeout(()=>h.remove(), 900);
+  }
+  const line = PET_LINES[Math.floor(Math.random()*PET_LINES.length)];
+  showPetBubble(line, 3500);
+}
+
+function togglePetQuickInput(){
+  const box = $("pet-quick-input");
+  if(!box) return;
+  const isHidden = box.style.display === "none";
+  box.style.display = isHidden ? "flex" : "none";
+  if(isHidden){
+    hidePetBubble();
+    const inp = $("pet-prompt-input");
+    if(inp){ inp.value = ""; inp.focus(); }
+  }
+}
+
+async function submitPetTask(promptText){
+  if(!promptText || !promptText.trim()) return;
+  const text = promptText.trim();
+  const qBox = $("pet-quick-input");
+  if(qBox) qBox.style.display = "none";
+  if($("pet-prompt-input")) $("pet-prompt-input").value = "";
+  if($("pet-stand-input")) $("pet-stand-input").value = "";
+  
+  showPetBubble("Взял задачу в работу! 🚀", 4000);
+  setPetState("working");
+  
+  if(text.startsWith("/") && await handleSlash(text)){
+    setPetState("idle");
+    return;
+  }
+  
+  if(!CUR){
+    try{
+      const wd = (ST && ST.workdir) ? ST.workdir : "";
+      const s = await api("/api/sessions", {method:"POST", body:JSON.stringify({workdir:wd, mode:sel.mode||"auto"})});
+      await refreshSessions();
+      await openSession(s.id);
+    }catch(e){
+      toast("Не удалось создать сессию: " + e.message);
+      setPetState("idle");
+      return;
+    }
+  }
+  
+  try{
+    const target_agents = parseInt($("worker_count") ? $("worker_count").value : "4", 10) || 4;
+    const focusVal = $("focus_sel") ? $("focus_sel").value : "auto";
+    await api(`/api/sessions/${CUR.id}/send`, {
+      method:"POST",
+      body:JSON.stringify({
+        prompt: text,
+        mode: sel.mode,
+        priority: sel.priority,
+        effort: sel.effort,
+        models: sel.models,
+        skills: [...sel.skills],
+        parallel: sel.parallel,
+        sandbox: sel.sandbox,
+        target_agents: target_agents,
+        focus: focusVal
+      })
+    });
+  }catch(e){
+    toast("Ошибка отправки: " + e.message);
+    setPetState("idle");
+  }
+}
+
+function notifyPetWorking(msg){
+  setPetState("working");
+  showPetBubble(msg || "Запустил агентов! Работаем 🚀", 4000);
+}
+
+function notifyPetDone(msg){
+  setPetState("celebrating");
+  showPetBubble(msg || "Всё готово! Результаты проверены ✨", 6000);
+  playPetChime("done");
+  if(PET_CONFIG.autoRaise) raiseAppWindow("Задача завершена!");
+  setTimeout(()=>{
+    if(PET_STATE === "celebrating") setPetState("idle");
+  }, 7500);
+}
+
+function notifyPetAttention(msg){
+  setPetState("question");
+  showPetBubble(msg || "Внимание: требуется проверить результат! ⚠️", 7000);
+  playPetChime("alert");
+  if(PET_CONFIG.autoRaise) raiseAppWindow("Требуется внимание!");
+}
+
+function notifyPetPermission(msg){
+  setPetState("question");
+  showPetBubble(msg || "Агент запрашивает подтверждение! ⚠️", 8000);
+  playPetChime("alert");
+  if(PET_CONFIG.autoRaise) raiseAppWindow("Запрос разрешения!");
+}
+
+function notifyPetQuestion(msg){
+  setPetState("question");
+  showPetBubble(msg || "Вопрос от агента! Нужен ответ ❓", 8000);
+  playPetChime("question");
+  if(PET_CONFIG.autoRaise) raiseAppWindow("Вопрос от агента!");
+}
+
+function wanderStep(){
+  const petEl = $("swarm-pet");
+  if(!petEl || document.body.classList.contains("pet-mode")) return;
+  const rect = petEl.getBoundingClientRect();
+  const maxW = window.innerWidth - 90;
+  const deltaX = (Math.random() * 220 - 110);
+  let newX = rect.left + deltaX;
+  if(newX < 30) newX = 30 + Math.random() * 80;
+  if(newX > maxW) newX = maxW - Math.random() * 80;
+  
+  const sprite = $("pet-sprite");
+  if(sprite) sprite.style.transform = (deltaX < 0) ? "scaleX(-1)" : "scaleX(1)";
+  
+  setPetState("walking");
+  petEl.style.transition = "left 2.2s ease-in-out, top 2.2s ease-in-out";
+  petEl.style.left = `${Math.round(newX)}px`;
+  
+  setTimeout(()=>{
+    if(PET_STATE === "walking"){
+      setPetState("idle");
+      if(sprite) sprite.style.transform = "";
+    }
+  }, 2300);
+}
+
+function startPetWanderLoop(){
+  if(petWanderTimer) clearInterval(petWanderTimer);
+  petWanderTimer = setInterval(()=>{
+    if(!PET_CONFIG.enabled || !PET_CONFIG.wander || PET_STATE !== "idle" || isDraggingPet) return;
+    if(Math.random() < 0.4) return;
+    wanderStep();
+  }, 14000);
+}
+
+function initPetDrag(){
+  const petEl = $("swarm-pet");
+  const avatar = $("pet-avatar");
+  if(!petEl || !avatar) return;
+  
+  function onStart(e){
+    if(e.target.closest("#pet-bubble") || e.target.closest("#pet-quick-input")) return;
+    isDraggingPet = true;
+    petEl.classList.add("dragging");
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const rect = petEl.getBoundingClientRect();
+    petDragStart = {
+      x: clientX,
+      y: clientY,
+      elX: rect.left,
+      elY: rect.top,
+      moved: false
+    };
+  }
+  
+  function onMove(e){
+    if(!isDraggingPet) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const dx = clientX - petDragStart.x;
+    const dy = clientY - petDragStart.y;
+    if(Math.abs(dx) > 3 || Math.abs(dy) > 3) petDragStart.moved = true;
+    
+    let nx = petDragStart.elX + dx;
+    let ny = petDragStart.elY + dy;
+    nx = Math.max(10, Math.min(window.innerWidth - 74, nx));
+    ny = Math.max(10, Math.min(window.innerHeight - 74, ny));
+    
+    petEl.style.left = `${nx}px`;
+    petEl.style.top = `${ny}px`;
+    petEl.style.right = "auto";
+    petEl.style.bottom = "auto";
+  }
+  
+  function onEnd(e){
+    if(!isDraggingPet) return;
+    isDraggingPet = false;
+    petEl.classList.remove("dragging");
+    if(!petDragStart.moved){
+      petHeartAnim("pet-hearts");
+    } else {
+      const rect = petEl.getBoundingClientRect();
+      localStorage.setItem("openswarm_pet_pos", JSON.stringify({x: rect.left, y: rect.top}));
+    }
+  }
+  
+  avatar.addEventListener("mousedown", onStart);
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onEnd);
+  
+  avatar.addEventListener("touchstart", onStart, {passive:true});
+  window.addEventListener("touchmove", onMove, {passive:true});
+  window.addEventListener("touchend", onEnd);
+  
+  avatar.addEventListener("dblclick", e =>{
+    e.stopPropagation();
+    togglePetQuickInput();
+  });
+}
+
+function openPetModal(){
+  $("pet-enable-toggle").checked = PET_CONFIG.enabled;
+  $("pet-auto-raise").checked = PET_CONFIG.autoRaise;
+  $("pet-wander").checked = PET_CONFIG.wander;
+  $("pet-sound").checked = PET_CONFIG.sound;
+  document.querySelectorAll(".pet-skin-card").forEach(c =>{
+    c.classList.toggle("on", (c.dataset.skin || "fox") === PET_CONFIG.skin);
+  });
+  $("petmodal").classList.add("on");
+}
+
+function savePetSettings(){
+  PET_CONFIG.enabled = $("pet-enable-toggle").checked;
+  PET_CONFIG.autoRaise = $("pet-auto-raise").checked;
+  PET_CONFIG.wander = $("pet-wander").checked;
+  PET_CONFIG.sound = $("pet-sound").checked;
+  
+  localStorage.setItem("openswarm_pet_enabled", PET_CONFIG.enabled ? "1" : "0");
+  localStorage.setItem("openswarm_pet_auto_raise", PET_CONFIG.autoRaise ? "1" : "0");
+  localStorage.setItem("openswarm_pet_wander", PET_CONFIG.wander ? "1" : "0");
+  localStorage.setItem("openswarm_pet_sound", PET_CONFIG.sound ? "1" : "0");
+  
+  const petEl = $("swarm-pet");
+  if(petEl){
+    petEl.style.display = PET_CONFIG.enabled ? "block" : "none";
+  }
+  setPetState(PET_STATE);
+  $("petmodal").classList.remove("on");
+  toast("Настройки питомца сохранены!");
+}
+
+function initPet(){
+  const urlParams = new URLSearchParams(window.location.search);
+  const isPetStandalone = urlParams.get("pet") === "1";
+  if(isPetStandalone){
+    document.body.classList.add("pet-mode");
+    if($("pet-standalone-view")) $("pet-standalone-view").style.display = "flex";
+  }
+  
+  try{
+    const savedPos = JSON.parse(localStorage.getItem("openswarm_pet_pos") || "null");
+    const petEl = $("swarm-pet");
+    if(savedPos && petEl && !isPetStandalone){
+      petEl.style.left = `${savedPos.x}px`;
+      petEl.style.top = `${savedPos.y}px`;
+      petEl.style.right = "auto";
+      petEl.style.bottom = "auto";
+    }
+  }catch(e){}
+  
+  if(!PET_CONFIG.enabled && $("swarm-pet")){
+    $("swarm-pet").style.display = "none";
+  }
+  
+  setPetState("idle");
+  initPetDrag();
+  startPetWanderLoop();
+  
+  if($("pettopbtn")) $("pettopbtn").onclick = openPetModal;
+  if($("petbtn")) $("petbtn").onclick = openPetModal;
+  if($("closepetmodal")) $("closepetmodal").onclick = ()=> $("petmodal").classList.remove("on");
+  if($("savepetmodal")) $("savepetmodal").onclick = savePetSettings;
+  if($("pet-popout-btn")) $("pet-popout-btn").onclick = ()=>{
+    window.open(window.location.pathname + "?token=" + TOKEN + "&pet=1", "OpenSwarmPet", "width=320,height=390,menubar=no,toolbar=no");
+  };
+  
+  if($("pet-act-focus")) $("pet-act-focus").onclick = ()=> raiseAppWindow("Пользователь нажал Поднять окно");
+  if($("pet-act-feed")) $("pet-act-feed").onclick = togglePetQuickInput;
+  if($("pet-act-close")) $("pet-act-close").onclick = hidePetBubble;
+  
+  if($("pet-prompt-send")) $("pet-prompt-send").onclick = ()=> submitPetTask($("pet-prompt-input")?.value);
+  if($("pet-prompt-input")) $("pet-prompt-input").onkeydown = e =>{
+    if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); submitPetTask(e.target.value); }
+  };
+  
+  if($("pet-stand-send")) $("pet-stand-send").onclick = ()=> submitPetTask($("pet-stand-input")?.value);
+  if($("pet-stand-input")) $("pet-stand-input").onkeydown = e =>{
+    if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); submitPetTask(e.target.value); }
+  };
+  if($("pet-stand-cfg-btn")) $("pet-stand-cfg-btn").onclick = openPetModal;
+  if($("pet-stand-full-btn")) $("pet-stand-full-btn").onclick = ()=>{
+    const u = new URL(window.location.href);
+    u.searchParams.delete("pet");
+    window.location.href = u.toString();
+  };
+  if($("pet-stand-avatar")) $("pet-stand-avatar").onclick = ()=> petHeartAnim("pet-stand-hearts");
+  
+  const skinCards = document.querySelectorAll(".pet-skin-card");
+  skinCards.forEach(card =>{
+    card.onclick = ()=>{
+      skinCards.forEach(c => c.classList.remove("on"));
+      card.classList.add("on");
+      PET_CONFIG.skin = card.dataset.skin || "fox";
+      localStorage.setItem("openswarm_pet_skin", PET_CONFIG.skin);
+      setPetState(PET_STATE);
+    };
+  });
+}
+
 // Slash Command Palette (Claude Code / Antigravity style)
 const SLASH_COMMANDS=[
+  {cmd:"/pet",desc:"Open Screen Pet & Desktop Companion settings",run:async()=>{openPetModal();return true;}},
   {cmd:"/auto",desc:"Switch to ✨ Auto intelligent dispatch mode",run:async()=>{sel.mode="auto";renderModes();toast("Mode → ✨ Auto");return true;}},
   {cmd:"/telegram",desc:"Open Telegram Userbot Assistant (read chats & suggest replies)",run:async()=>{await openTelegramModal();return true;}},
   {cmd:"/free",desc:"Open Free AI Models Catalog (OpenCode, Kilo, Gemini, Groq)",run:async()=>{await openFreeModelsModal();return true;}},
@@ -3243,6 +4089,7 @@ $("prompt").addEventListener("input",updateSlashPop);
     refreshDshStatus();
     refreshKiloStatus();
     refreshHealBadge();
+    initPet();
     setInterval(refreshSessions,5000);
     const urlParams=new URLSearchParams(window.location.search);
     const targetSess=urlParams.get("session");

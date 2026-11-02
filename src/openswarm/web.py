@@ -730,6 +730,17 @@ class WebApp:
             return await _json(writer, self.free_models_catalog())
         if parts and parts[0] == "scheduled":
             return await self.scheduled_route(method, parts[1:], js, writer)
+        if parts == ["window", "raise"] and method == "POST":
+            raised = False
+            for cmd in (["wmctrl", "-a", "OpenSwarm"], ["xdotool", "search", "--name", "OpenSwarm", "windowactivate"]):
+                if shutil.which(cmd[0]):
+                    try:
+                        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                        raised = True
+                        break
+                    except Exception:
+                        pass
+            return await _json(writer, {"ok": True, "raised": raised})
         if parts and parts[0] == "mobile":
             return await self.mobile_route(method, parts[1:], writer)
         if parts == ["dirs"] and method == "GET":
@@ -1592,14 +1603,17 @@ async def _json(writer: asyncio.StreamWriter, data: Any, status: int = 200) -> N
     await _send(writer, status, json.dumps(data).encode(), "application/json")
 
 
-def _open_app_window(url: str) -> subprocess.Popen | None:
+def _open_app_window(url: str, size: tuple[int, int] | None = None) -> subprocess.Popen | None:
     """Open a chromeless window with its own profile, so the process lives exactly as long as the window."""
     profile = state_path().parent / "app-profile"
     for exe in ("chromium", "google-chrome-stable", "google-chrome", "brave", "chrome", "microsoft-edge-stable"):
         path = shutil.which(exe)
         if path:
+            cmd = [path, f"--app={url}", f"--user-data-dir={profile}", "--no-first-run", "--new-window"]
+            if size:
+                cmd.append(f"--window-size={size[0]},{size[1]}")
             return subprocess.Popen(
-                [path, f"--app={url}", f"--user-data-dir={profile}", "--no-first-run", "--new-window"],
+                cmd,
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
             )
     return None

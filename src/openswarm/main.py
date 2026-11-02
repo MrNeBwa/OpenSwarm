@@ -362,6 +362,10 @@ def main(argv: list[str] | None = None) -> None:
         from .gui import gui_main
 
         sys.exit(gui_main(argv[1:]))
+    if argv and argv[0] == "pet":  # desktop companion pet mode
+        from .gui import gui_main
+
+        sys.exit(gui_main(["--pet"] + argv[1:]))
     if argv and argv[0] == "desktop-install":  # icon + application-menu entry
         from .gui import install_desktop
 
