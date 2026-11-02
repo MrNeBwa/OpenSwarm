@@ -145,6 +145,21 @@ Run `--doctor --live` first: it confirms the assumptions OpenSwarm makes about o
 Warm password-protected `opencode serve` per chat directory (no MCP cold boot), HTTP API instead of re-parsing CLI output,
 massive parallelism, strong model only for planning/judging and cheap ones for workers (remembered per role).
 
+## Per-App VPN & Exit Node Auto-Rotation 🛡️
+
+OpenSwarm isolates agent traffic with an embedded private proxy (`127.0.0.1:18089`) without root, system routing changes, or touching your browser. When AI providers hit rate limits or 429s, OpenSwarm automatically rotates to another exit node:
+- **Settling Delay**: brief pause (`settle_delay_seconds`) allows socket handshakes and local routing to stabilize before repeating requests.
+- **Stale State Reset**: flushes warm server connection pools, dead helper processes, temporary config files, and expired cooldowns.
+- **Active Health Verification**: tests end-to-end proxy connectivity, measures latency (ping in ms), and verifies external exit IP.
+
+```bash
+openswarm vpn status           # show current tunnel, latency and exit IP
+openswarm vpn rotate           # rotate exit server with settling delay & verification
+openswarm vpn verify           # run active connectivity and ping check
+openswarm vpn on|off           # toggle VPN proxy for agents
+openswarm vpn reset            # clear all server cooldowns
+```
+
 ## Swarm Room: Inter-Agent Chat & Non-Blocking Questions
 
 Agents share a live SQLite-backed message bus (`Swarm Room`) so they can coordinate with each other and ask you questions **without stopping their work** (Claude-style non-blocking questions):

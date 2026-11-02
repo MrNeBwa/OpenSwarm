@@ -802,15 +802,17 @@ body.pet-mode #pet-standalone-view{display:flex;flex-direction:column;height:100
 <div class="modal" id="vpnmodal"><div class="sheet">
   <div class="row"><b style="flex:1;font-size:16px">🛡️ Per-App VPN (NinjaVPN Exit Nodes)</b><button id="vpnclose">Close</button></div>
   <div class="lbl">Only OpenSwarm agents go through this VPN proxy (127.0.0.1:18089). System network and your main browser are untouched. When an agent hits provider limits or 429s, OpenSwarm swaps to the next exit server automatically.</div>
-  <div class="row" style="margin:14px 0 8px;gap:10px;align-items:center">
+  <div class="row" style="margin:14px 0 8px;gap:8px;align-items:center;flex-wrap:wrap">
     <button id="vpntoggle" class="primary">Toggle VPN</button>
     <button id="vpnrotate">↻ Rotate Server Now</button>
+    <button id="vpnverify" title="Проверить соединение, задержку и внешний IP через туннель">⚡ Проверить связь</button>
     <button id="vpnreset">Reset Cooldowns</button>
     <label class="lbl" style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto">
       <input type="checkbox" id="vpnmodalautoswitch" checked>
       <span>Auto-swap on limits</span>
     </label>
   </div>
+  <div id="vpncheckstatus" style="font-size:12.5px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;margin-bottom:8px;display:none;align-items:center;gap:8px"></div>
   <div class="row"><span id="vpninfo" style="font-size:13px;color:var(--dim)"></span></div>
   <div id="vpnmsg" class="lbl" style="min-height:18px"></div>
   <div style="font-weight:600;font-size:13px;margin:12px 0 6px">Available Servers (click to connect immediately)</div>
@@ -2333,8 +2335,9 @@ async function loadOrModels(quiet){try{if(!quiet)kmsg("loading models…");const
 async function refreshVpnStatus(){
   try{
     const d=await api("/api/vpn");
-    const label=d.enabled?(d.running?(d.current||"on"):"starting"):"off";
-    $("vpnstatus").textContent=d.enabled?(d.running?"● "+(d.current||"on"):"● starting"):"off";
+    const lat=d.last_check&&d.last_check.ok&&d.last_check.latency_ms?` (${d.last_check.latency_ms}ms)`:"";
+    const label=d.enabled?(d.running?((d.current||"on")+lat):"starting"):"off";
+    $("vpnstatus").textContent=d.enabled?(d.running?"● "+(d.current||"on")+lat:"● starting"):"off";
     $("vpnstatus").style.color=d.enabled?(d.running?"var(--ok)":"var(--warn)"):"var(--dim)";
     $("vpnbadge").textContent=label;
     $("vpnbadge").className="badge "+(d.enabled?(d.running?"ready":"cooling"):"");
@@ -2360,7 +2363,28 @@ function renderVpnModal(d){
   $("vpntoggle").className=d.enabled?"danger":"primary";
   $("vpnmodalautoswitch").checked=!!d.auto_switch_on_limits;
   $("vpnautoswitch").checked=!!d.auto_switch_on_limits;
-  $("vpninfo").textContent=`State: ${d.enabled?(d.running?"RUNNING ("+d.current+")":"WAITING"):"DISABLED"} · Auto-swap on limits: ${d.auto_switch_on_limits?"ON":"OFF"} · Rotations: ${d.rotations||0}`;
+  const settle = d.settle_delay_seconds ? ` · Settle: ${d.settle_delay_seconds}s` : "";
+  $("vpninfo").textContent=`State: ${d.enabled?(d.running?"RUNNING ("+d.current+")":"WAITING"):"DISABLED"} · Auto-swap on limits: ${d.auto_switch_on_limits?"ON":"OFF"} · Rotations: ${d.rotations||0}${settle}`;
+  
+  const chkBox = $("vpncheckstatus");
+  if(chkBox){
+    const c = d.last_check;
+    if(c && c.checked_at){
+      chkBox.style.display = "flex";
+      if(c.ok){
+        const latStr = (c.latency_ms !== null && c.latency_ms !== undefined) ? ` · Пинг: <b>${c.latency_ms} мс</b>` : "";
+        const ipStr = c.exit_ip ? ` · Выходной IP: <code>${esc(c.exit_ip)}</code>` : "";
+        chkBox.innerHTML = `<span>⚡ Связь проверена: <b style="color:var(--ok)">OK</b>${latStr}${ipStr}</span><span class="lbl" style="margin-left:auto">${new Date(c.checked_at*1000).toLocaleTimeString()}</span>`;
+        chkBox.style.borderColor = "color-mix(in srgb,var(--ok) 40%,var(--line))";
+      } else {
+        chkBox.innerHTML = `<span style="color:var(--danger)">⚠️ Ошибка проверки туннеля: ${esc(c.error || "нет связи")}</span>`;
+        chkBox.style.borderColor = "var(--danger)";
+      }
+    } else {
+      chkBox.style.display = "none";
+    }
+  }
+
   const box=$("vpnlist");box.innerHTML="";
   if(!d.servers||!d.servers.length){box.innerHTML='<div class="lbl">No servers found from NinjaVPN.</div>';return;}
   d.servers.forEach(s=>{
@@ -2371,9 +2395,18 @@ function renderVpnModal(d){
     row.style.background=isCur?"color-mix(in srgb,var(--accent) 20%,transparent)":"";
     row.innerHTML=`<span>${isCur?"👉":"🌐"}</span><span style="font-weight:${isCur?600:400}">${esc(s.id)}</span><span class="lbl">${esc(s.country||s.country_code||"")}</span><span class="lbl" style="margin-left:auto">${isCool?`cooling ${s.cooling}s`:s.protocol}</span>`;
     row.onclick=async()=>{
-      $("vpnmsg").textContent="switching to "+s.id+"…";
-      try{const r=await api("/api/vpn/use",{method:"POST",body:JSON.stringify({id:s.id})});renderVpnModal(await api("/api/vpn"));refreshVpnStatus();}
-      catch(e){$("vpnmsg").textContent=e.message;}
+      $("vpnmsg").textContent="Переключение на "+s.id+" (ожидание и проверка)…";
+      $("vpnmsg").style.color="var(--accent)";
+      try{
+        const r=await api("/api/vpn/use",{method:"POST",body:JSON.stringify({id:s.id})});
+        renderVpnModal(await api("/api/vpn"));
+        refreshVpnStatus();
+        if(r.ok){
+          const lat = (r.check && r.check.latency_ms !== null) ? ` (${r.check.latency_ms} мс)` : "";
+          const ip = (r.check && r.check.exit_ip) ? `, IP: ${r.check.exit_ip}` : "";
+          toast(`VPN подключён: ${s.id}!${lat}${ip}`);
+        }
+      }catch(e){$("vpnmsg").textContent=e.message;}
     };
     box.appendChild(row);
   });
@@ -2405,10 +2438,38 @@ $("vpnmodalautoswitch").onchange=()=>setAutoSwitch($("vpnmodalautoswitch").check
 
 $("vpnrotate").onclick=async()=>{
   try{
-    $("vpnmsg").textContent="rotating exit server…";
-    await api("/api/vpn/rotate",{method:"POST"});
+    $("vpnmsg").textContent="Ротация сервера, сброс кэшей и проверка связи…";
+    $("vpnmsg").style.color="var(--accent)";
+    const r=await api("/api/vpn/rotate",{method:"POST"});
     renderVpnModal(await api("/api/vpn"));
     refreshVpnStatus();
+    if(r.ok){
+      const lat = (r.check && r.check.latency_ms !== null && r.check.latency_ms !== undefined) ? ` (${r.check.latency_ms} мс)` : "";
+      const ip = (r.check && r.check.exit_ip) ? `, IP: ${r.check.exit_ip}` : "";
+      toast(`VPN переключён на ${r.current}!${lat}${ip}`);
+    } else {
+      toast("Ошибка ротации VPN: " + (r.error || "нет доступных серверов"));
+    }
+  }catch(e){$("vpnmsg").textContent=e.message;}
+};
+if($("vpnverify"))$("vpnverify").onclick=async()=>{
+  try{
+    $("vpnmsg").textContent="Выполняется проверка туннеля и задержки…";
+    $("vpnmsg").style.color="var(--accent)";
+    const r=await api("/api/vpn/verify",{method:"POST"});
+    renderVpnModal(await api("/api/vpn"));
+    refreshVpnStatus();
+    if(r.ok){
+      const lat = (r.check && r.check.latency_ms !== null) ? ` (${r.check.latency_ms} мс)` : "";
+      const ip = (r.check && r.check.exit_ip) ? `, IP: ${r.check.exit_ip}` : "";
+      $("vpnmsg").textContent = `Связь в норме!${lat}${ip}`;
+      $("vpnmsg").style.color = "var(--ok)";
+      toast(`VPN проверен: связь активна${lat}${ip}`);
+    } else {
+      $("vpnmsg").textContent = "Сбой проверки: " + (r.check?.error || "нет соединения");
+      $("vpnmsg").style.color = "var(--danger)";
+      toast("Ошибка проверки VPN: " + (r.check?.error || "нет соединения"));
+    }
   }catch(e){$("vpnmsg").textContent=e.message;}
 };
 $("vpnreset").onclick=async()=>{
@@ -4045,7 +4106,7 @@ const SLASH_COMMANDS=[
   {cmd:"/mcp",desc:"Configure MCP servers (.mcp.json & opencode.json)",run:async()=>{await openPluginsModal();switchPluginTab("mcp");return true;}},
   {cmd:"/kilo",desc:"Open Kilo AI Gateway (Free Models · Laguna, North Code, Beam, Nemotron) settings",run:async()=>{await openKiloModal();return true;}},
   {cmd:"/dsh",desc:"Open DeepSeek Harness (Free Unlimited DeepSeek-V4.1-Flash 1M) settings",run:async()=>{await openDshModal();return true;}},
-  {cmd:"/vpn",desc:"Open Per-App VPN settings or rotate exit server (/vpn rotate)",run:async arg=>{if(arg==="rotate"){await api("/api/vpn/rotate",{method:"POST"});await refreshVpnStatus();toast("VPN rotated");return true;}await openVpnModal();return true;}},
+  {cmd:"/vpn",desc:"Open Per-App VPN settings or rotate exit server (/vpn rotate)",run:async arg=>{if(arg==="rotate"){toast("Ротация VPN-сервера…");const r=await api("/api/vpn/rotate",{method:"POST"});await refreshVpnStatus();const lat=(r.check&&r.check.latency_ms!==null)?` (${r.check.latency_ms} мс)`:"";const ip=(r.check&&r.check.exit_ip)?`, IP: ${r.check.exit_ip}`:"";toast(`VPN переключён на ${r.current}!${lat}${ip}`);return true;}await openVpnModal();return true;}},
   {cmd:"/diff",desc:"Show git diff in current workspace",run:async()=>{await showDiff();return true;}},
   {cmd:"/export",desc:"Export session transcript as Markdown",run:async()=>{$("exportbtn").click();return true;}},
 ];

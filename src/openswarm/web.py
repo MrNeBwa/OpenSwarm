@@ -1054,15 +1054,21 @@ class WebApp:
         if rest == ["rotate"] and method == "POST":
             m.enabled = True
             ok = await asyncio.to_thread(m.rotate, "manual (web)", False)
-            if ok:
+            if ok and self.pool:
                 await self.pool.close()
-            return await _json(writer, {**m.status(), "ok": ok})
+                self.pool.api_bad = False
+            return await _json(writer, {**m.status(), "ok": ok, "check": getattr(m, "last_check", {})})
         if rest == ["use"] and method == "POST":
             sid = str(js.get("id", ""))
             ok = await asyncio.to_thread(m.use, sid)
-            if ok:
+            if ok and self.pool:
                 await self.pool.close()
-            return await _json(writer, {**m.status(), "ok": ok})
+                self.pool.api_bad = False
+            return await _json(writer, {**m.status(), "ok": ok, "check": getattr(m, "last_check", {})})
+        if rest == ["verify"] and method == "POST":
+            target = str(js.get("target", ""))
+            chk = await asyncio.to_thread(m.verify, target)
+            return await _json(writer, {"ok": chk.get("ok", False), "check": chk, "status": m.status()})
         if rest == ["reset"] and method == "POST":
             m.cooldown.clear()
             m._save()

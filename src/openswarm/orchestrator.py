@@ -514,8 +514,16 @@ class Orchestrator:
                     if rotated:
                         if self.pool:
                             await self.pool.close()
-                        self._line_cb(agent_id, f"-> Swapped VPN exit server to {vpn.current}, repeating request", False)
-                        await self._log(f"{title}: swapped VPN server to {vpn.current} after limit")
+                            self.pool.api_bad = False
+                        chk = getattr(vpn, "last_check", {})
+                        info_parts = []
+                        if chk.get("latency_ms") is not None:
+                            info_parts.append(f"{chk['latency_ms']}ms")
+                        if chk.get("exit_ip"):
+                            info_parts.append(f"IP {chk['exit_ip']}")
+                        diag = f" ({', '.join(info_parts)})" if info_parts else ""
+                        self._line_cb(agent_id, f"-> Swapped VPN exit server to {vpn.current}{diag}, repeating request", False)
+                        await self._log(f"{title}: swapped VPN server to {vpn.current}{diag} after limit")
                         sid = self._api_session or sid
                         continue
                 break
@@ -625,8 +633,16 @@ class Orchestrator:
                 if rotated:
                     if use_server and self.pool:
                         await self.pool.close()
-                    self._line_cb(agent_id, f"-> Swapped VPN exit server to {vpn.current}, repeating request", False)
-                    await self._log(f"{title}: swapped VPN server to {vpn.current} after limit")
+                        self.pool.api_bad = False
+                    chk = getattr(vpn, "last_check", {})
+                    info_parts = []
+                    if chk.get("latency_ms") is not None:
+                        info_parts.append(f"{chk['latency_ms']}ms")
+                    if chk.get("exit_ip"):
+                        info_parts.append(f"IP {chk['exit_ip']}")
+                    diag = f" ({', '.join(info_parts)})" if info_parts else ""
+                    self._line_cb(agent_id, f"-> Swapped VPN exit server to {vpn.current}{diag}, repeating request", False)
+                    await self._log(f"{title}: swapped VPN server to {vpn.current}{diag} after limit")
                     continue
             if not res.ok and runner.server_url and re.search(r"ECONNREFUSED|fetch failed|unable to connect|failed to connect|\b401\b|unauthori", text, re.I):
                 self.pool.mark_bad(cwd, env, sandbox)  # type: ignore[union-attr]

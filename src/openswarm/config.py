@@ -315,6 +315,8 @@ class VpnSettings(BaseModel):
     exclude: list[str] = Field(default_factory=list)
     order: Literal["sequential", "shuffle"] = "shuffle"
     cooldown_seconds: int = 1800  # a server that hit a limit is skipped this long
+    settle_delay_seconds: float = 0.8  # brief pause after rotation for socket handshakes to settle
+    verify_on_rotate: bool = True  # verify connectivity, latency and exit IP after rotation
     max_rotations_per_request: int = 8
     rotate_pattern: str = (
         r"rate.?limit|\b429\b|too many requests|quota|usage limit|limit (?:reached|exceeded)|exceeded[^\n]{0,40}limit"

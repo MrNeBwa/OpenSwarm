@@ -87,3 +87,76 @@ class VpnUnit(Env):
         cmd2 = r2.build_command("hi")
         self.assertIn("--server", cmd2)
         self.assertNotIn("--standalone", cmd2)
+
+    def test_rotation_resets_stale_state_and_verifies_tunnel(self):
+        clk = Clock()
+        mgr = self._make_mgr(clk)
+        self.assertTrue(mgr.set_enabled(True))
+        # Add an expired cooldown and a future cooldown
+        mgr.cooldown["expired-server"] = clk.t - 10
+        mgr.cooldown["cooling-server"] = clk.t + 300
+        mgr.last_error = "some stale error"
+
+        self.assertTrue(mgr.rotate("manual test", limited=False))
+        # Expired cooldown and stale error should be cleaned up:
+        self.assertNotIn("expired-server", mgr.cooldown)
+        self.assertIn("cooling-server", mgr.cooldown)
+        self.assertEqual(mgr.last_error, "")
+
+        # Verification check was run and recorded in history:
+        st = mgr.status()
+        self.assertIn("last_check", st)
+        self.assertTrue(st["last_check"].get("ok"))
+        self.assertIn("latency_ms", st["last_check"])
+
+        latest = mgr.history[-1]
+        self.assertIn("reset_actions", latest)
+        self.assertIn("pruned_1_cooldowns", latest["reset_actions"])
+        self.assertIn("cleared_error_flags", latest["reset_actions"])
+        self.assertIn("verification", latest)
+
+    def test_verify_method(self):
+        clk = Clock()
+        mgr = self._make_mgr(clk)
+        mgr.current = "edge-de"
+        res = mgr.verify(target="custom.target:443")
+        self.assertTrue(res["ok"])
+        self.assertEqual(res["server"], "edge-de")
+        self.assertEqual(res["target"], "custom.target:443")
+        self.assertIsNotNone(res["latency_ms"])
+
+    async def test_web_api_vpn_endpoints(self):
+        import asyncio
+        import http.client
+        from openswarm.web import WebApp
+
+        app = WebApp(self.cfg, self.plain("wd_vpn"), 0, "tok")
+        srv = await asyncio.start_server(app.handle, "127.0.0.1", 0, limit=2**20)
+        app.port = srv.sockets[0].getsockname()[1]
+        try:
+            def call(method, path, body=None):
+                c = http.client.HTTPConnection("127.0.0.1", app.port, timeout=10)
+                h = {"X-Token": "tok", "Host": f"127.0.0.1:{app.port}"}
+                data = json.dumps(body).encode() if body is not None else None
+                if data:
+                    h["Content-Type"] = "application/json"
+                c.request(method, path, data, h)
+                r = c.getresponse()
+                raw = r.read()
+                c.close()
+                return r.status, json.loads(raw)
+
+            # 1. GET /api/vpn
+            status, d = await asyncio.to_thread(call, "GET", "/api/vpn")
+            self.assertEqual(status, 200)
+            self.assertIn("settle_delay_seconds", d)
+            self.assertIn("last_check", d)
+
+            # 2. POST /api/vpn/verify
+            status, v = await asyncio.to_thread(call, "POST", "/api/vpn/verify", {})
+            self.assertEqual(status, 200)
+            self.assertIn("ok", v)
+            self.assertIn("check", v)
+        finally:
+            srv.close()
+            await app.shutdown()

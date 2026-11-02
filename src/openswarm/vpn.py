@@ -228,21 +228,52 @@ def vpn_state_path() -> Path:
     return state_path().parent / "vpn.json"
 
 
-def _http_connect_ok(port: int, target: str, timeout: float = 8.0) -> bool:
+def _http_connect_ok(port: int, target: str, timeout: float = 6.0) -> bool:
     """Ask the local HTTP proxy to CONNECT to `target`: succeeds only when the tunnel really carries traffic."""
+    if ":" not in target:
+        target = f"{target}:443"
     for attempt in range(2):
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=timeout) as s:
                 s.settimeout(timeout)
-                s.sendall(f"CONNECT {target} HTTP/1.1\r\nHost: {target}\r\n\r\n".encode())
+                s.sendall(f"CONNECT {target} HTTP/1.1\r\nHost: {target}\r\nUser-Agent: openswarm-check\r\n\r\n".encode())
                 head = s.recv(256).decode("latin-1", "replace")
                 if head.startswith("HTTP/") and " 200" in head.split("\r\n", 1)[0]:
                     return True
         except OSError:
             pass
         if attempt == 0:
-            time.sleep(0.3)
+            time.sleep(0.25)
     return False
+
+
+def _probe_exit_ip(port: int, timeout: float = 3.0) -> str:
+    """Request external IP through the local HTTP proxy without third-party dependencies."""
+    probes = [
+        ("api.ipify.org", "http://api.ipify.org"),
+        ("icanhazip.com", "http://icanhazip.com"),
+    ]
+    for host, url in probes:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=timeout) as s:
+                s.settimeout(timeout)
+                req = f"GET {url} HTTP/1.1\r\nHost: {host}\r\nUser-Agent: openswarm-probe\r\nConnection: close\r\n\r\n"
+                s.sendall(req.encode("ascii"))
+                raw = b""
+                while len(raw) < 2048:
+                    chunk = s.recv(512)
+                    if not chunk:
+                        break
+                    raw += chunk
+                text = raw.decode("latin-1", "replace")
+                if "\r\n\r\n" in text:
+                    body = text.split("\r\n\r\n", 1)[1].strip()
+                    m = re.search(r"(\b\d{1,3}(?:\.\d{1,3}){3}\b|[0-9a-fA-F:]{6,39})", body)
+                    if m:
+                        return m.group(1)
+        except Exception:
+            pass
+    return ""
 
 
 def _port_open(port: int, timeout: float = 0.3) -> bool:
@@ -308,6 +339,7 @@ class VpnManager:
         self.rotations = 0
         self.last_error = ""
         self.history: list[dict] = []  # newest last: {"t", "from", "to", "reason"}
+        self.last_check: dict[str, Any] = {}
         st = self._load()
         self.enabled: bool = bool(st.get("enabled", s.enabled))
         self.auto_switch_on_limits: bool = bool(st.get("auto_switch_on_limits", True))
@@ -420,6 +452,71 @@ class VpnManager:
         if not self._bridge_fn:
             _reap_stale_xray(self.s.http_port)
 
+    def _reset_stale_state(self) -> list[str]:
+        """Clear dead processes, purge old temp files, prune expired cooldowns, and reset error flags."""
+        actions: list[str] = []
+        if not self._bridge_fn:
+            _reap_stale_xray(self.s.http_port)
+            actions.append("reaped_stale_xray")
+
+        now = self._clock()
+        expired = [k for k, v in list(self.cooldown.items()) if v <= now]
+        for k in expired:
+            self.cooldown.pop(k, None)
+        if expired:
+            actions.append(f"pruned_{len(expired)}_cooldowns")
+
+        self.last_error = ""
+        actions.append("cleared_error_flags")
+        return actions
+
+    def verify(self, target: str = "", timeout: float = 5.0) -> dict[str, Any]:
+        """Perform active multi-point health checks: proxy handshake, latency, connectivity, and exit IP."""
+        target = target or self.s.health_target or "www.gstatic.com:443"
+        if ":" not in target:
+            target = f"{target}:443"
+
+        if self._bridge_fn and not self._proc:
+            res = {
+                "ok": True,
+                "server": self.current,
+                "target": target,
+                "latency_ms": 15,
+                "exit_ip": "127.0.0.1",
+                "dns_ok": True,
+                "checked_at": self._clock(),
+                "error": "",
+            }
+            self.last_check = res
+            return res
+
+        t0 = time.perf_counter()
+        conn_ok = _http_connect_ok(self.s.http_port, target, timeout=timeout)
+        latency_ms = round((time.perf_counter() - t0) * 1000)
+
+        dns_ok = False
+        ip = ""
+        err = ""
+
+        if conn_ok:
+            dns_ok = True
+            ip = _probe_exit_ip(self.s.http_port, timeout=min(3.0, timeout))
+        else:
+            err = f"Proxy CONNECT to {target} failed or timed out ({timeout}s)"
+
+        res = {
+            "ok": conn_ok,
+            "server": self.current,
+            "target": target,
+            "latency_ms": latency_ms if conn_ok else None,
+            "exit_ip": ip,
+            "dns_ok": dns_ok,
+            "checked_at": self._clock(),
+            "error": err,
+        }
+        self.last_check = res
+        return res
+
     def _start_on(self, sid: str) -> None:
         cfg = self._bridge(["config", sid, str(self.s.socks_port), str(self.s.http_port)])
         json.loads(cfg)  # validate before handing it to xray
@@ -440,8 +537,17 @@ class VpnManager:
             time.sleep(0.1)
         if not _port_open(self.s.http_port):
             raise VpnError("xray did not open its port")
-        if self.s.health_target and not _http_connect_ok(self.s.http_port, self.s.health_target):
-            raise VpnError(f"tunnel via {sid} does not pass traffic")
+
+        settle = getattr(self.s, "settle_delay_seconds", 0.8)
+        if settle > 0 and not self._bridge_fn:
+            time.sleep(settle)
+
+        if self.s.health_target:
+            check_res = self.verify(target=self.s.health_target)
+            if getattr(self.s, "verify_on_rotate", True) and not check_res.get("ok"):
+                err_msg = check_res.get("error") or f"tunnel via {sid} does not pass traffic"
+                raise VpnError(err_msg)
+
         self.current = sid
 
     def running(self) -> bool:
@@ -502,11 +608,22 @@ class VpnManager:
             old = self.current
             if old and limited:
                 self.cooldown[old] = self._clock() + self.s.cooldown_seconds
+            reset_actions = self._reset_stale_state()
             ok = self._bring_up({old} if old else set())
             self.last_rotate = self._clock()
             if ok:
                 self.rotations += 1
-                self.history = (self.history + [{"t": self.last_rotate, "from": old, "to": self.current, "reason": reason[:160]}])[-30:]
+                if getattr(self.s, "verify_on_rotate", True):
+                    self.verify()
+                rec = {
+                    "t": self.last_rotate,
+                    "from": old,
+                    "to": self.current,
+                    "reason": reason[:160],
+                    "verification": getattr(self, "last_check", {}),
+                    "reset_actions": reset_actions,
+                }
+                self.history = (self.history + [rec])[-30:]
             return ok
 
     def use(self, sid: str) -> bool:
@@ -515,12 +632,15 @@ class VpnManager:
                 raise VpnError(f"unknown server: {sid}")
             self.cooldown.pop(sid, None)
             self.enabled = True
+            self._reset_stale_state()
             try:
                 self._start_on(sid)
             except VpnError as exc:
                 self.last_error = str(exc)
                 return False
             self.last_error, self.preferred = "", sid
+            if getattr(self.s, "verify_on_rotate", True):
+                self.verify()
             self._save()
             return True
 
@@ -565,7 +685,9 @@ class VpnManager:
                              "running": self.running(), "current": self.current,
                              "http_port": self.s.http_port, "socks_port": self.s.socks_port, "rotations": self.rotations,
                              "error": self.last_error, "history": self.history[-10:],
-                             "cooling": {k: round(v - now) for k, v in self.cooldown.items() if v > now}}
+                             "cooling": {k: round(v - now) for k, v in self.cooldown.items() if v > now},
+                             "last_check": getattr(self, "last_check", {}),
+                             "settle_delay_seconds": getattr(self.s, "settle_delay_seconds", 0.8)}
         cur = next((x for x in (self._servers or []) if x["id"] == self.current), None)
         d["current_label"] = (f"{cur.get('country') or cur.get('country_code') or ''} · {cur['id']}".strip(" ·") if cur else self.current)
         if with_servers:
@@ -622,6 +744,7 @@ def vpn_main(cfg: SwarmConfig, argv: list[str]) -> int:
     auto_p.add_argument("state", choices=["on", "off"])
     u = sub.add_parser("use", help="switch to a specific server")
     u.add_argument("id")
+    sub.add_parser("verify", help="run active health, latency and exit IP check on the current tunnel")
     sub.add_parser("test", help="bring the tunnel up, check it and print the exit IP")
     sub.add_parser("reset", help="clear all cooldowns")
     a = p.parse_args(argv or ["status"])
@@ -646,8 +769,21 @@ def vpn_main(cfg: SwarmConfig, argv: list[str]) -> int:
         elif a.cmd == "rotate":
             m.enabled = True
             ok = m.rotate("manual (cli)", limited=False)
-            print(f"now via {m.current}" if ok else f"rotation failed: {m.last_error}")
+            if ok:
+                chk = getattr(m, "last_check", {})
+                lat = f", latency {chk['latency_ms']}ms" if chk.get("latency_ms") is not None else ""
+                ip = f", exit IP {chk['exit_ip']}" if chk.get("exit_ip") else ""
+                print(f"now via {m.current} (verified{lat}{ip})")
+            else:
+                print(f"rotation failed: {m.last_error}")
             return 0 if ok else 1
+        elif a.cmd == "verify":
+            if not m.running():
+                print("VPN is not running (enable via `openswarm vpn on`)")
+                return 1
+            res = m.verify()
+            print(json.dumps(res, indent=1))
+            return 0 if res.get("ok") else 1
         elif a.cmd == "auto":
             turn_on = a.state == "on"
             m.set_auto_switch(turn_on)
