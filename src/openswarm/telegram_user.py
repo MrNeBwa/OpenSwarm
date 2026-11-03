@@ -284,17 +284,44 @@ class TelegramUserManager:
                 raise RuntimeError("Пользователь Telegram не авторизован")
 
             entity = await client.get_entity(int(chat_id) if str(chat_id).lstrip("-").isdigit() else chat_id)
+            chat_title = getattr(entity, "title", None) or getattr(entity, "first_name", None) or str(chat_id)
             messages = await client.get_messages(entity, limit=limit)
             out: list[dict[str, Any]] = []
             for m in reversed(messages):
-                text = getattr(m, "message", "") or ""
+                text = (getattr(m, "message", "") or "").strip()
                 if not text:
-                    continue
+                    if getattr(m, "photo", None):
+                        text = "[Фото]"
+                    elif getattr(m, "voice", None):
+                        text = "[Голосовое сообщение]"
+                    elif getattr(m, "sticker", None):
+                        text = "[Стикер]"
+                    elif getattr(m, "video", None) or getattr(m, "video_note", None):
+                        text = "[Видео]"
+                    elif getattr(m, "document", None):
+                        text = "[Файл]"
+                    else:
+                        continue
+                is_out = bool(getattr(m, "out", False))
+                sender_name = "Вы" if is_out else str(chat_title)
+                snd = getattr(m, "sender", None)
+                if not is_out and snd is not None:
+                    fn = (getattr(snd, "first_name", "") or "").strip()
+                    ln = (getattr(snd, "last_name", "") or "").strip()
+                    tl = (getattr(snd, "title", "") or "").strip()
+                    un = (getattr(snd, "username", "") or "").strip()
+                    full = f"{fn} {ln}".strip()
+                    sender_name = full or tl or (f"@{un}" if un else sender_name)
+                reply_to_id = getattr(m, "reply_to_msg_id", None)
+                if reply_to_id is None and getattr(m, "reply_to", None) is not None:
+                    reply_to_id = getattr(m.reply_to, "reply_to_msg_id", None)
                 out.append({
                     "id": m.id,
                     "sender_id": getattr(m, "sender_id", 0),
-                    "out": bool(getattr(m, "out", False)),
+                    "sender": sender_name,
+                    "out": is_out,
                     "text": text,
+                    "reply_to_msg_id": reply_to_id,
                     "date": m.date.isoformat() if m.date else "",
                 })
             return out
@@ -334,45 +361,292 @@ class TelegramUserManager:
             msg = await client.send_message(entity, clean_text)
             return {"ok": True, "sent": True, "message_id": msg.id}
 
-    async def suggest_reply(self, chat_id: int | str, prompt_hint: str = "", runner_fn: Any = None) -> list[str]:
-        """Reads recent conversation and drafts 2-3 contextual replies (never sends automatically)."""
-        msgs = await self.get_messages(chat_id, limit=8)
-        if not msgs:
-            return ["Привет! Чем могу помочь?", "Здравствуйте! Да, на связи.", "Спасибо, принято!"]
+    @staticmethod
+    def _clean_llm_output(raw: str) -> str:
+        """Removes CLI banners (`> agent · model`), Thinking traces, and ANSI sequences."""
+        if not raw:
+            return ""
+        clean = re.sub(r"\x1b\[[0-9;?]*[ -/]*[@-~]", "", str(raw))
+        lines: list[str] = []
+        for ln in clean.splitlines():
+            s = ln.strip()
+            if not s:
+                continue
+            if s.startswith("> ") and "·" in s:
+                continue
+            if s.startswith("Thinking:") or s.startswith("$ "):
+                continue
+            lines.append(ln)
+        return "\n".join(lines).strip()
 
-        transcript = []
-        for m in msgs:
-            who = "Я" if m["out"] else "Собеседник"
-            transcript.append(f"{who}: {m['text']}")
-        context_str = "\n".join(transcript)
+    @staticmethod
+    def _parse_llm_suggestion_payload(raw: str) -> dict[str, Any]:
+        """Parses structured JSON or plain-text reply variants from model output."""
+        cleaned = TelegramUserManager._clean_llm_output(raw)
+        if not cleaned:
+            return {"need_more_context": False, "replies": [], "reason": "", "summary": ""}
 
-        prompt = (
-            f"Ниже приведён недавний диалог в Telegram:\n\n{context_str}\n\n"
-            f"Дополнительное указание пользователя: {prompt_hint or 'Предложи естественные, вежливые и уместные ответы'}\n\n"
-            "Сгенерируй ровно 3 разных варианта ответа (краткий, развёрнутый и вежливый/деловой). "
-            "Выведи только варианты ответов в формате JSON-массива строк, например: [\"Вариант 1\", \"Вариант 2\", \"Вариант 3\"]. "
-            "Никакого лишнего текста, только валидный JSON."
-        )
-
-        if runner_fn:
-            raw = await runner_fn(prompt)
+        # 1. Try parsing JSON object {"need_more_context": ..., "replies": [...]}
+        obj_matches = list(re.finditer(r"\{[\s\S]*\}", cleaned))
+        for m in reversed(obj_matches):
+            candidate = m.group(0)
             try:
-                match = re.search(r"\[\s*\".*?\"\s*\]", raw, re.DOTALL)
-                if match:
-                    parsed = json.loads(match.group(0))
-                    if isinstance(parsed, list) and parsed:
-                        return [str(x) for x in parsed[:3]]
+                data = json.loads(candidate)
+                if isinstance(data, dict):
+                    need_more = bool(data.get("need_more_context", False))
+                    raw_replies = data.get("replies") or data.get("suggestions") or []
+                    replies = [
+                        str(x).strip()
+                        for x in (raw_replies if isinstance(raw_replies, list) else [])
+                        if str(x).strip()
+                    ]
+                    return {
+                        "need_more_context": need_more,
+                        "replies": replies[:3],
+                        "reason": str(data.get("reason") or "").strip(),
+                        "summary": str(data.get("context_summary") or data.get("summary") or "").strip(),
+                    }
             except Exception:
                 pass
-            lines = [ln.strip().lstrip("123.-*• ") for ln in raw.splitlines() if ln.strip()]
-            if lines:
-                return lines[:3]
 
-        return [
-            "Здравствуйте! Ознакомился с сообщением, скоро дам подробный ответ.",
-            "Привет! Да, всё в порядке, продолжаю работу.",
-            "Спасибо за информацию! Если есть вопросы — пишите.",
+        if "NEED_MORE_CONTEXT" in cleaned.upper() and not re.search(r'"need_more_context"\s*:\s*false', cleaned, re.I):
+            reason_m = re.search(r"NEED_MORE_CONTEXT\s*[:\-]?\s*(.*)", cleaned, re.I)
+            return {
+                "need_more_context": True,
+                "replies": [],
+                "reason": (reason_m.group(1).strip() if reason_m else "Недостаточно контекста в последних сообщениях"),
+                "summary": "",
+            }
+
+        # 2. Try parsing JSON array ["Вариант 1", "Вариант 2", "Вариант 3"]
+        arr_match = re.search(r"\[\s*\"[\s\S]*?\"\s*\]", cleaned)
+        if arr_match:
+            try:
+                parsed = json.loads(arr_match.group(0))
+                if isinstance(parsed, list):
+                    replies = [str(x).strip() for x in parsed if str(x).strip()]
+                    if replies:
+                        return {"need_more_context": False, "replies": replies[:3], "reason": "", "summary": ""}
+            except Exception:
+                pass
+
+        # 3. Fallback line-by-line extraction (ignoring markdown fences and meta-lines)
+        lines: list[str] = []
+        for ln in cleaned.splitlines():
+            s = ln.strip()
+            if not s or s.startswith("```") or s.startswith("{") or s.startswith("}") or s.startswith("[") or s.startswith("]"):
+                continue
+            s = re.sub(r"^(?:вариант\s*\d+\s*[:\-–]|ответ\s*\d+\s*[:\-–]|\d+[\.\)]\s*|[-*•]\s*)", "", s, flags=re.I).strip()
+            s = s.strip("\"'«» ")
+            if len(s) >= 2 and not s.lower().startswith(("ниже привед", "вот три", "конечно", "json")):
+                lines.append(s)
+        return {"need_more_context": False, "replies": lines[:3], "reason": "", "summary": ""}
+
+    @staticmethod
+    def _needs_auto_expansion(msgs: list[dict[str, Any]]) -> tuple[bool, str]:
+        """Detects when the current message window is structurally incomplete."""
+        if not msgs:
+            return False, ""
+        msg_ids = {m.get("id") for m in msgs if m.get("id") is not None}
+        for m in msgs:
+            rep_id = m.get("reply_to_msg_id")
+            if rep_id and rep_id not in msg_ids:
+                return True, f"Сообщение ссылается на более раннее сообщение #{rep_id}"
+        meaningful_texts = [
+            re.sub(r"\[.*?\]", "", str(m.get("text") or "")).strip()
+            for m in msgs
         ]
+        non_empty = [t for t in meaningful_texts if t]
+        total_words = sum(len(t.split()) for t in non_empty)
+        if total_words < 6:
+            return True, "Последние сообщения слишком короткие для понимания сути разговора"
+        return False, ""
+
+    @staticmethod
+    def _smart_fallback_replies(msgs: list[dict[str, Any]], prompt_hint: str = "") -> list[str]:
+        """Generates natural, context-aware replies when the LLM runner is unavailable."""
+        if not msgs:
+            return ["Привет! Как дела?", "Привет! На связи, что нового?", "Здравствуйте! Чем могу помочь?"]
+
+        all_text = " ".join(str(m.get("text") or "") for m in msgs).lower()
+        is_formal = any(w in all_text for w in ("здравствуйте", "добрый день", "коллеги", "уважаем", "подскажите, пожалуйста"))
+        incoming = [m for m in msgs if not m.get("out")]
+        last_msg = (incoming[-1] if incoming else msgs[-1]).get("text", "").strip()
+        last_low = last_msg.lower()
+
+        if prompt_hint:
+            hint_clean = prompt_hint.strip().rstrip(".")
+            if is_formal:
+                return [
+                    f"Да, {hint_clean}.",
+                    f"Здравствуйте! По этому вопросу: {hint_clean}.",
+                    f"Принято, спасибо! {hint_clean[:1].upper() + hint_clean[1:]}.",
+                ]
+            return [
+                f"{hint_clean[:1].upper() + hint_clean[1:]}",
+                f"Давай так: {hint_clean}",
+                f"Ок, понял! {hint_clean[:1].upper() + hint_clean[1:]}",
+            ]
+
+        if "?" in last_msg or any(w in last_low for w in ("когда", "где", "как", "почему", "сможешь", "будешь", "получилось", "что думаешь")):
+            if is_formal:
+                return [
+                    "Да, конечно, сейчас проверю и уточню детали.",
+                    "Планирую в ближайшее время, сразу напишу по результату.",
+                    "Пока уточняю этот момент, вернусь с ответом чуть позже.",
+                ]
+            return [
+                "Да, давай! Сейчас гляну и напишу.",
+                "Скоро буду знать точно, сразу маякну 👍",
+                "Пока в процессе, чуть позже смогу сказать точнее.",
+            ]
+
+        if any(w in last_low for w in ("привет", "ку", "здаров", "доброе утро", "добрый вечер", "хай")):
+            if is_formal:
+                return [
+                    "Здравствуйте! Рад слышать, как ваши дела?",
+                    "Добрый день! На связи, чем могу помочь?",
+                    "Здравствуйте! Всё отлично, спасибо.",
+                ]
+            return [
+                "Привет! Всё супер, ты как?",
+                "Привет! На связи, что нового?",
+                "Хай! Как дела?",
+            ]
+
+        if is_formal:
+            return [
+                "Спасибо, принял к сведению!",
+                "Понял вас, спасибо за информацию. Буду на связи.",
+                "Отлично, договорились!",
+            ]
+        return [
+            "Понял, спасибо! 👍",
+            "Супер, давай так и сделаем!",
+            "Ок, принято, на связи!",
+        ]
+
+    async def suggest_reply(
+        self,
+        chat_id: int | str,
+        prompt_hint: str = "",
+        runner_fn: Any = None,
+        initial_limit: int = 5,
+        max_limit: int = 40,
+        return_meta: bool = False,
+    ) -> list[str] | dict[str, Any]:
+        """Reads recent conversation starting from `initial_limit` (5) messages and progressively
+        doubles context (`5 -> 10 -> 20 -> 40`) if the conversation window is insufficient.
+        Never sends any message automatically.
+        """
+        limit = max(1, int(initial_limit or 5))
+        cap = max(limit, int(max_limit or 40))
+        steps_tried: list[int] = []
+        expansion_reasons: list[str] = []
+        msgs: list[dict[str, Any]] = []
+        final_replies: list[str] = []
+        summary: str = ""
+
+        while True:
+            msgs = await self.get_messages(chat_id, limit=limit)
+            steps_tried.append(len(msgs))
+            if not msgs:
+                final_replies = ["Привет! Как дела?", "Привет! На связи.", "Здравствуйте! Чем могу помочь?"]
+                break
+
+            reached_beginning = len(msgs) < limit
+            can_expand = (not reached_beginning) and (limit < cap)
+
+            # Check if structural context is obviously incomplete (e.g. reply to older msg or 1-word fragments)
+            auto_expand, auto_reason = self._needs_auto_expansion(msgs)
+            if auto_expand and can_expand and len(steps_tried) == 1:
+                expansion_reasons.append(auto_reason)
+                limit = min(cap, limit * 2)
+                continue
+
+            if not runner_fn:
+                final_replies = self._smart_fallback_replies(msgs, prompt_hint=prompt_hint)
+                break
+
+            msg_by_id = {m.get("id"): m for m in msgs if m.get("id") is not None}
+            transcript_lines: list[str] = []
+            for idx, m in enumerate(msgs, 1):
+                who = "Вы (пользователь)" if m.get("out") else f"Собеседник ({m.get('sender') or 'Контакт'})"
+                t_str = (m.get("date") or "")[11:16]
+                time_part = f" [{t_str}]" if t_str else ""
+                rep_id = m.get("reply_to_msg_id")
+                rep_part = ""
+                if rep_id:
+                    if rep_id in msg_by_id:
+                        snippet = str(msg_by_id[rep_id].get("text") or "")[:40]
+                        rep_part = f" (в ответ на: «{snippet}»)"
+                    else:
+                        rep_part = f" (в ответ на старое сообщение #{rep_id} вне текущего окна)"
+                transcript_lines.append(f"{idx}.{time_part} {who}{rep_part}: {m.get('text', '')}")
+
+            context_str = "\n".join(transcript_lines)
+            last_speaker = "Вы (пользователь)" if msgs[-1].get("out") else "Собеседник"
+
+            expand_instruction = (
+                f"Сейчас тебе показаны последние {len(msgs)} сообщений диалога (шаг окна: {limit}).\n"
+                "ВАЖНО: Оцени, достаточно ли этих сообщений, чтобы точно понять тему, тон общения и смысл последнего сообщения.\n"
+                "- Если в этих сообщениях не хватает начала мысли, непонятно о чём речь, есть отсылки к более ранним сообщениям или это только короткие обрывки — "
+                "НЕ выдумывай странный ответ наугад, а запроси расширение истории в 2 раза, вернув строго JSON:\n"
+                '{"need_more_context": true, "reason": "кратко чего не хватает"}\n'
+                "- Если контекста ДОСТАТОЧНО для адекватного ответа, верни строго JSON:\n"
+                '{"need_more_context": false, "context_summary": "суть диалога в 5-8 словах", "replies": ["Вариант 1", "Вариант 2", "Вариант 3"]}\n'
+            ) if can_expand else (
+                f"Показаны последние {len(msgs)} сообщений диалога (максимальное доступное окно).\n"
+                "Верни строго JSON с 3 адекватными вариантами ответа:\n"
+                '{"need_more_context": false, "context_summary": "суть диалога в 5-8 словах", "replies": ["Вариант 1", "Вариант 2", "Вариант 3"]}\n'
+            )
+
+            prompt = (
+                "Ты — умный помощник для личной переписки в Telegram. Твоя задача — предложить 3 живых, естественных и уместных ответа от лица пользователя («Вы»).\n\n"
+                f"История последних сообщений ({len(msgs)} шт.):\n"
+                f"{context_str}\n\n"
+                f"Последнее сообщение написал: {last_speaker}.\n"
+                f"Пожелание пользователя к ответу: {prompt_hint or 'Ответить адекватно, естественно и в том же стиле/тоне, в котором ведётся переписка'}.\n\n"
+                "Правила хорошего ответа:\n"
+                "1. Строго соблюдай тон переписки: если общение неформальное на «ты» и без официоза — пиши просто, живо и естественно (без канцеляризмов вроде «Ознакомился с сообщением»). Если деловое на «Вы» — пиши вежливо и по делу.\n"
+                "2. Отвечай конкретно на суть последних сообщений собеседника (или дополни свою мысль, если последнее сообщение от пользователя).\n"
+                "3. Предложи 3 разных по оттенку варианта: (1) краткий/естественный, (2) более подробный/конструктивный, (3) мягкий/уточняющий или альтернативный.\n\n"
+                f"{expand_instruction}"
+                "Выведи ТОЛЬКО валидный JSON без пояснений и без markdown-обёрток."
+            )
+
+            raw = await runner_fn(prompt)
+            parsed = self._parse_llm_suggestion_payload(raw)
+
+            if parsed.get("need_more_context") and can_expand:
+                reason = parsed.get("reason") or f"Модель запросила больше контекста после {len(msgs)} сообщений"
+                expansion_reasons.append(reason)
+                limit = min(cap, limit * 2)
+                continue
+
+            if parsed.get("replies"):
+                final_replies = parsed["replies"][:3]
+                summary = parsed.get("summary") or ""
+                break
+
+            # If model returned nothing parseable and we can still expand once, try expanding or fallback
+            final_replies = self._smart_fallback_replies(msgs, prompt_hint=prompt_hint)
+            break
+
+        if not final_replies:
+            final_replies = self._smart_fallback_replies(msgs, prompt_hint=prompt_hint)
+
+        if return_meta:
+            return {
+                "replies": final_replies,
+                "context_used": len(msgs),
+                "initial_limit": initial_limit,
+                "steps": steps_tried,
+                "expanded": len(steps_tried) > 1,
+                "reasons": expansion_reasons,
+                "summary": summary,
+            }
+        return final_replies
 
     async def logout(self) -> bool:
         """Disconnects and deletes session files."""

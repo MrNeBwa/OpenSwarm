@@ -107,11 +107,95 @@ def choose_backend(pref: str = "auto") -> str:
     return "browser"
 
 
+def ensure_hyprland_pet_rules(ontop: bool = True, overlay: bool = True) -> None:
+    """Registers floating/pinned/size/position rules for `dev.openswarm.pet` on Hyprland (both 0.57+ Lua and legacy)."""
+    if not shutil.which("hyprctl"):
+        return
+    pin_lua = "true" if ontop else "false"
+    lua_rule = (
+        "if _G._openswarm_pet_rule then pcall(function() _G._openswarm_pet_rule:set_enabled(false) end) end; "
+        f"_G._openswarm_pet_rule = hl.window_rule({{ "
+        f"name = 'openswarm-pet-float', "
+        f"match = {{ class = '^dev\\\\.openswarm\\\\.pet$' }}, "
+        f"float = true, pin = {pin_lua}, "
+        f"size = '340 420', move = 'monitor_w-364 monitor_h-444', "
+        f"border_size = {0 if overlay else 1}, no_shadow = {'true' if overlay else 'false'}, no_blur = {'true' if overlay else 'false'} "
+        f"}})"
+    )
+    try:
+        r = subprocess.run(["hyprctl", "eval", lua_rule], capture_output=True, text=True, timeout=1.5)
+        if r.returncode == 0 and "error" not in (r.stdout or "").lower():
+            return
+    except Exception:
+        pass
+    # Legacy Hyprland (< 0.57) fallback via keyword windowrulev2
+    try:
+        rules = [
+            f"float,class:^({PET_APP_ID})$",
+            f"size 340 420,class:^({PET_APP_ID})$",
+            f"move 100%-364 100%-444,class:^({PET_APP_ID})$",
+        ]
+        if ontop:
+            rules.append(f"pin,class:^({PET_APP_ID})$")
+        if overlay:
+            rules.append(f"noborder,class:^({PET_APP_ID})$")
+            rules.append(f"noshadow,class:^({PET_APP_ID})$")
+        for rl in rules:
+            subprocess.run(["hyprctl", "keyword", "windowrulev2", rl], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+    except Exception:
+        pass
+
+
+def apply_hyprland_pet_state(ontop: bool = True, overlay: bool = True) -> bool:
+    """Ensures an already-mapped `dev.openswarm.pet` window is floating, sized, and pinned on Hyprland."""
+    if not shutil.which("hyprctl"):
+        return False
+    pin_lua = "true" if ontop else "false"
+    lua_code = (
+        f"local ontop = {pin_lua}; "
+        "for _, sel in ipairs({'class:dev.openswarm.pet', 'title:OpenSwarm Pet'}) do "
+        "  local w = hl.get_window(sel); "
+        "  if w then "
+        "    if not w.floating then hl.dispatch(hl.dsp.window.float({ action = 'set', window = sel })) end; "
+        "    if ontop and not w.pinned then hl.dispatch(hl.dsp.window.pin({ window = sel })) "
+        "    elseif (not ontop) and w.pinned then hl.dispatch(hl.dsp.window.pin({ window = sel })) end; "
+        "    hl.dispatch(hl.dsp.window.resize({ x = 340, y = 420, relative = false, window = sel })); "
+        "    hl.dispatch(hl.dsp.window.bring_to_top()); "
+        "    return 'ok' "
+        "  end "
+        "end"
+    )
+    try:
+        r = subprocess.run(["hyprctl", "eval", lua_code], capture_output=True, text=True, timeout=1.5)
+        if r.returncode == 0 and "error" not in (r.stdout or "").lower():
+            return True
+    except Exception:
+        pass
+    # Legacy Hyprland fallback: check client state before toggling
+    try:
+        import json as _json
+        out = subprocess.check_output(["hyprctl", "clients", "-j"], text=True, timeout=1.5)
+        for c in _json.loads(out):
+            if c.get("class") == PET_APP_ID or c.get("title") == "OpenSwarm Pet":
+                sel = f"address:{c['address']}" if c.get("address") else f"class:{PET_APP_ID}"
+                if not c.get("floating"):
+                    subprocess.run(["hyprctl", "dispatch", "setfloating", sel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                if bool(c.get("pinned")) != bool(ontop):
+                    subprocess.run(["hyprctl", "dispatch", "pin", sel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                subprocess.run(["hyprctl", "dispatch", "resizewindowpixel", f"exact 340 420,{sel}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, overlay: bool = True) -> None:
     """Blocks until the window is closed. Optional niceties (external links, notifications) never block the window."""
     if not gpu:  # WebKitGTK's GPU compositing paints nothing (plain grey window) on many drivers: render in software
         os.environ.setdefault("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
         os.environ.setdefault("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
+    if pet:
+        ensure_hyprland_pet_rules(ontop=ontop, overlay=overlay)
     import gi
 
     gi.require_version("Gdk", "4.0")
@@ -124,15 +208,20 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, 
     app = Gtk.Application(application_id=app_id, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def activate(application: "Gtk.Application") -> None:
-        title = f"OpenSwarm Pet" if pet else f"OpenSwarm v{__version__}"
+        title = "OpenSwarm Pet" if pet else f"OpenSwarm v{__version__}"
         win = Gtk.ApplicationWindow(application=application, title=title)
         if pet:
-            win.set_default_size(330, 410)
+            win.set_default_size(340, 420)
             if overlay:
                 win.set_decorated(False)
                 try:
                     win.add_css_class("pet-overlay")
-                    css = "window.pet-overlay { background: transparent; background-color: transparent; border: none; box-shadow: none; }"
+                    # Keep alpha=0.01 instead of 0.0 so GTK4 GSK on Wayland/Hyprland always commits
+                    # the initial toplevel surface buffer even with WebKit software compositing.
+                    css = (
+                        "window.pet-overlay, window.pet-overlay > * { "
+                        "background-color: rgba(15, 17, 26, 0.01); border: none; box-shadow: none; outline: none; }"
+                    )
                     provider = Gtk.CssProvider()
                     provider.load_from_data(css.encode("utf-8"))
                     Gtk.StyleContext.add_provider_for_display(
@@ -144,12 +233,6 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, 
             win.set_default_size(1360, 880)
         try:
             Gtk.Window.set_default_icon_name("openswarm")
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            gtk_settings = Gtk.Settings.get_default()
-            if gtk_settings:
-                gtk_settings.set_property("gtk-application-prefer-dark-theme", True)
         except Exception:  # noqa: BLE001
             pass
         if pet and ontop:
@@ -183,10 +266,10 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, 
         except Exception:  # noqa: BLE001
             pass
         view = WebKit.WebView(settings=settings)
-        try:  # transparent for pet overlay, dark for full workspace
+        try:  # near-transparent for pet overlay, dark for full workspace
             bg = Gdk.RGBA()
             if pet and overlay:
-                bg.parse("rgba(0,0,0,0)")
+                bg.parse("rgba(15,17,26,0.01)")
             else:
                 bg.parse("#191815")
             view.set_background_color(bg)
@@ -255,36 +338,26 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, 
             win.set_child(view)
         win.present()
 
-        def pin_pet():
-            if not ontop:
-                return
-            if shutil.which("hyprctl"):
+        def pin_pet_bg() -> None:
+            for delay in (0.25, 0.85, 1.6):
+                time.sleep(delay)
                 try:
-                    for sel in (f"class:{PET_APP_ID}", "title:OpenSwarm Pet"):
-                        subprocess.run(["hyprctl", "dispatch", "setfloating", sel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        subprocess.run(["hyprctl", "dispatch", "pin", sel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        subprocess.run(["hyprctl", "setprop", sel, "pinned", "1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        subprocess.run(["hyprctl", "setprop", sel, "noborder", "1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                        subprocess.run(["hyprctl", "setprop", sel, "noshadow", "1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    apply_hyprland_pet_state(ontop=ontop, overlay=overlay)
                 except Exception:
                     pass
-            if shutil.which("swaymsg"):
-                try:
-                    subprocess.run(["swaymsg", f'[app_id="{PET_APP_ID}"] floating enable, sticky enable, border none'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                except Exception:
-                    pass
-            if shutil.which("wmctrl"):
-                try:
-                    subprocess.run(["wmctrl", "-r", "OpenSwarm Pet", "-b", "add,above,sticky"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                except Exception:
-                    pass
+                if shutil.which("swaymsg"):
+                    try:
+                        subprocess.run(["swaymsg", f'[app_id="{PET_APP_ID}"] floating enable, sticky enable, border none'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                    except Exception:
+                        pass
+                if shutil.which("wmctrl") and ontop:
+                    try:
+                        subprocess.run(["wmctrl", "-r", "OpenSwarm Pet", "-b", "add,above,sticky"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                    except Exception:
+                        pass
 
-        if pet and ontop:
-            try:
-                GLib.timeout_add(150, lambda: (pin_pet(), False)[1])
-                GLib.timeout_add(600, lambda: (pin_pet(), False)[1])
-            except Exception:
-                pass
+        if pet:
+            threading.Thread(target=pin_pet_bg, daemon=True).start()
 
     app.connect("activate", activate)
     app.run(None)

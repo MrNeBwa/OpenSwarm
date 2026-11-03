@@ -743,6 +743,16 @@ class WebApp:
             return await self.pet_window_route(method, parts[1:], js, writer)
         if parts == ["window", "raise"] and method == "POST":
             raised = False
+            if shutil.which("hyprctl"):
+                try:
+                    r = subprocess.run(
+                        ["hyprctl", "eval", "hl.dispatch(hl.dsp.focus({ window = 'class:dev.openswarm.app' }))"],
+                        capture_output=True, text=True, timeout=1.0,
+                    )
+                    if r.returncode == 0 and "error" not in (r.stdout or "").lower():
+                        raised = True
+                except Exception:
+                    pass
             cmds = [
                 ["hyprctl", "dispatch", "focuswindow", "class:dev.openswarm.app"],
                 ["swaymsg", '[app_id="dev.openswarm.app"] focus'],
@@ -750,7 +760,7 @@ class WebApp:
                 ["xdotool", "search", "--name", "OpenSwarm", "windowactivate"],
             ]
             for cmd in cmds:
-                if shutil.which(cmd[0]):
+                if not raised and shutil.which(cmd[0]):
                     try:
                         r = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
                         if r.returncode == 0:
@@ -765,9 +775,14 @@ class WebApp:
             val = "1" if enabled else "0"
             if shutil.which("hyprctl"):
                 try:
-                    subprocess.run(["hyprctl", "setprop", "class:dev.openswarm.app", "pinned", val], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
-                    subprocess.run(["hyprctl", "dispatch", "pin", "class:dev.openswarm.app"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
-                    pinned = True
+                    from .gui import apply_hyprland_pet_state, ensure_hyprland_pet_rules
+                    ensure_hyprland_pet_rules(ontop=enabled, overlay=True)
+                    if apply_hyprland_pet_state(ontop=enabled, overlay=True):
+                        pinned = True
+                    else:
+                        subprocess.run(["hyprctl", "setprop", "class:dev.openswarm.app", "pinned", val], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                        subprocess.run(["hyprctl", "dispatch", "pin", "class:dev.openswarm.app"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                        pinned = True
                 except Exception:
                     pass
             if shutil.which("swaymsg"):
@@ -1501,6 +1516,8 @@ class WebApp:
         raise HttpError(404, "unknown endpoint in optimizer api")
 
     async def pet_window_route(self, method: str, rest: list[str], js: dict[str, Any], writer: asyncio.StreamWriter) -> None:
+        from .gui import apply_hyprland_pet_state, ensure_hyprland_pet_rules
+
         is_running = self._pet_proc is not None and self._pet_proc.poll() is None
         if (not rest or rest == ["status"]) and method == "GET":
             return await _json(writer, {
@@ -1515,6 +1532,7 @@ class WebApp:
                 f"http://127.0.0.1:{self.port}/?token={self.token}"
                 f"&pet=1&ontop={'1' if ontop else '0'}&overlay={'1' if overlay else '0'}"
             )
+            await asyncio.to_thread(ensure_hyprland_pet_rules, ontop, overlay)
             if not is_running:
                 env = os.environ.copy()
                 src_root = str(Path(__file__).resolve().parent.parent)
@@ -1533,12 +1551,11 @@ class WebApp:
                         stderr=subprocess.DEVNULL,
                         start_new_session=True,
                     )
-                    is_running = True
+                    is_running = self._pet_proc.poll() is None
                 except Exception as exc:
                     raise HttpError(500, f"Не удалось запустить отдельное окно питомца: {exc}")
             else:
-                if shutil.which("hyprctl"):
-                    subprocess.run(["hyprctl", "dispatch", "focuswindow", "class:dev.openswarm.pet"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                await asyncio.to_thread(apply_hyprland_pet_state, ontop, overlay)
             return await _json(writer, {
                 "ok": True,
                 "detached": is_running,
@@ -1553,23 +1570,46 @@ class WebApp:
                     pass
             self._pet_proc = None
             if shutil.which("hyprctl"):
-                subprocess.run(["hyprctl", "dispatch", "closewindow", "class:dev.openswarm.pet"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                try:
+                    subprocess.run(
+                        ["hyprctl", "eval", "hl.dispatch(hl.dsp.window.close({ window = 'class:dev.openswarm.pet' }))"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0,
+                    )
+                    subprocess.run(
+                        ["hyprctl", "dispatch", "closewindow", "class:dev.openswarm.pet"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0,
+                    )
+                except Exception:
+                    pass
             return await _json(writer, {"ok": True, "detached": False})
         if rest == ["move"] and method == "POST":
             dx = int(float(js.get("dx", 0)))
             dy = int(float(js.get("dy", 0)))
             moved = False
             if shutil.which("hyprctl") and (dx or dy):
-                for sel in ("class:dev.openswarm.pet", "title:OpenSwarm Pet"):
-                    r = subprocess.run(
-                        ["hyprctl", "dispatch", "movewindowpixel", f"{dx} {dy},{sel}"],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        timeout=1.0,
+                try:
+                    lua_move = (
+                        f"hl.dispatch(hl.dsp.window.move({{ x = {dx}, y = {dy}, relative = true, window = 'class:dev.openswarm.pet' }}))"
                     )
-                    if r.returncode == 0:
+                    r = subprocess.run(["hyprctl", "eval", lua_move], capture_output=True, text=True, timeout=1.0)
+                    if r.returncode == 0 and "error" not in (r.stdout or "").lower():
                         moved = True
-                        break
+                except Exception:
+                    pass
+                if not moved:
+                    for sel in ("class:dev.openswarm.pet", "title:OpenSwarm Pet"):
+                        try:
+                            r = subprocess.run(
+                                ["hyprctl", "dispatch", "movewindowpixel", f"{dx} {dy},{sel}"],
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL,
+                                timeout=1.0,
+                            )
+                            if r.returncode == 0:
+                                moved = True
+                                break
+                        except Exception:
+                            pass
             return await _json(writer, {"ok": True, "moved": moved})
         raise HttpError(404, "unknown endpoint in pet api")
 
@@ -1615,7 +1655,16 @@ class WebApp:
             async def _run_llm(p: str) -> str:
                 try:
                     from .runner import OpenCodeRunner
-                    runner = OpenCodeRunner(self.cfg, self.workdir, "desktop_assist", "chat", self.cfg.roles.coder)
+                    mdl = getattr(self.cfg.roles, "chat", "") or self.cfg.roles.coder
+                    runner = OpenCodeRunner(
+                        self.cfg,
+                        self.workdir,
+                        agent_id="desktop_assist",
+                        role="chat",
+                        model=mdl,
+                        standalone=True,
+                        sandbox=False,
+                    )
                     res = await runner.run(p)
                     return res.clean_output
                 except Exception:
@@ -1723,19 +1772,48 @@ class WebApp:
             if not chat_id:
                 raise HttpError(400, "Укажите chat_id")
             hint = str(js.get("hint", "")).strip()
+            init_limit = max(1, min(40, int(js.get("initial_limit") or 5)))
+            max_limit = max(init_limit, min(80, int(js.get("max_limit") or 40)))
 
             async def _run_llm(p: str) -> str:
                 try:
                     from .runner import OpenCodeRunner
-                    runner = OpenCodeRunner(self.cfg, self.workdir, "tg_suggest", "chat", self.cfg.roles.coder)
+                    mdl = getattr(self.cfg.roles, "chat", "") or self.cfg.roles.coder
+                    runner = OpenCodeRunner(
+                        self.cfg,
+                        self.workdir,
+                        agent_id="tg_suggest",
+                        role="chat",
+                        model=mdl,
+                        standalone=True,
+                        sandbox=False,
+                    )
                     res = await runner.run(p)
                     return res.clean_output
                 except Exception:
                     return ""
 
             try:
-                replies = await mgr.suggest_reply(chat_id, hint, runner_fn=_run_llm)
-                return await _json(writer, {"ok": True, "suggestions": replies})
+                meta = await mgr.suggest_reply(
+                    chat_id,
+                    hint,
+                    runner_fn=_run_llm,
+                    initial_limit=init_limit,
+                    max_limit=max_limit,
+                    return_meta=True,
+                )
+                if isinstance(meta, dict):
+                    return await _json(writer, {
+                        "ok": True,
+                        "suggestions": meta.get("replies", []),
+                        "context_used": meta.get("context_used", init_limit),
+                        "initial_limit": meta.get("initial_limit", init_limit),
+                        "steps": meta.get("steps", [init_limit]),
+                        "expanded": meta.get("expanded", False),
+                        "reasons": meta.get("reasons", []),
+                        "summary": meta.get("summary", ""),
+                    })
+                return await _json(writer, {"ok": True, "suggestions": meta})
             except Exception as exc:
                 raise HttpError(400, f"Ошибка генерации ответов: {exc}")
 

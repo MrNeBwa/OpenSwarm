@@ -140,6 +140,70 @@ class TestTelegramUserManager(unittest.IsolatedAsyncioTestCase):
         # Must NOT send if confirmed=False
         self.assertFalse(await send_telegram(cfg.telegram_bot_token, cfg.telegram_chat_id, "Test alert", confirmed=False))
 
+    async def test_suggest_reply_progressive_context_expansion_doubling(self):
+        mgr = TelegramUserManager()
+        all_msgs = [
+            {"id": i, "sender_id": 100, "sender": "Алексей", "out": (i % 2 == 0), "text": f"Сообщение номер {i} про разработку проекта и дедлайн в пятницу", "reply_to_msg_id": None, "date": "2026-11-03T12:00:00"}
+            for i in range(1, 25)
+        ]
+        requested_limits = []
+
+        async def fake_get_messages(chat_id, limit=15):
+            requested_limits.append(limit)
+            return all_msgs[-limit:]
+
+        mgr.get_messages = fake_get_messages
+
+        call_count = 0
+
+        async def fake_runner(prompt: str) -> str:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # Model sees 5 messages, asks for more context
+                return '{"need_more_context": true, "reason": "Непонятно о каком именно проекте идёт речь"}'
+            if call_count == 2:
+                # Model sees 10 messages, asks for more context again
+                return '{"need_more_context": true, "reason": "Нужно увидеть начало обсуждения дедлайна"}'
+            # Model sees 20 messages and returns 3 contextual replies
+            return (
+                "> chat · opencode/deepseek-v4.1-flash-free\n"
+                "Thinking: analyzing 20 messages\n"
+                '{"need_more_context": false, "context_summary": "Обсуждение релиза в пятницу", '
+                '"replies": ["Да, к пятнице всё успеем!", "Привет! По проекту всё идёт по плану, в пятницу сдадим.", "Давай созвонимся вечером и сверим задачи до пятницы."]}'
+            )
+
+        meta = await mgr.suggest_reply("777", runner_fn=fake_runner, initial_limit=5, max_limit=40, return_meta=True)
+        self.assertEqual(requested_limits, [5, 10, 20])
+        self.assertTrue(meta["expanded"])
+        self.assertEqual(meta["steps"], [5, 10, 20])
+        self.assertEqual(meta["context_used"], 20)
+        self.assertEqual(len(meta["replies"]), 3)
+        self.assertEqual(meta["replies"][0], "Да, к пятнице всё успеем!")
+
+    async def test_suggest_reply_auto_expands_on_missing_reply_target(self):
+        mgr = TelegramUserManager()
+        all_msgs = [
+            {"id": i, "sender_id": 100, "sender": "Иван", "out": False, "text": f"Подробное сообщение #{i} с контекстом задачи", "reply_to_msg_id": (2 if i == 10 else None), "date": "2026-11-03T12:00:00"}
+            for i in range(1, 11)
+        ]
+        requested_limits = []
+
+        async def fake_get_messages(chat_id, limit=15):
+            requested_limits.append(limit)
+            return all_msgs[-limit:]
+
+        mgr.get_messages = fake_get_messages
+
+        async def fake_runner(prompt: str) -> str:
+            return '["Понял, сделаю!", "Да, по этому пункту всё готово.", "Ок, сейчас поправлю."]'
+
+        res = await mgr.suggest_reply("888", runner_fn=fake_runner, initial_limit=5, max_limit=20, return_meta=False)
+        # First window of 5 messages (ids 6..10) references reply_to_msg_id=2 which is outside 6..10 -> auto-doubles to 10!
+        self.assertEqual(requested_limits, [5, 10])
+        self.assertEqual(len(res), 3)
+        self.assertEqual(res[0], "Понял, сделаю!")
+
 
 class TestDesktopAgentManager(unittest.IsolatedAsyncioTestCase):
     def test_desktop_action_confirmation_queue(self):
