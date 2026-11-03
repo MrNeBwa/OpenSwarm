@@ -732,15 +732,89 @@ class WebApp:
             return await self.scheduled_route(method, parts[1:], js, writer)
         if parts == ["window", "raise"] and method == "POST":
             raised = False
-            for cmd in (["wmctrl", "-a", "OpenSwarm"], ["xdotool", "search", "--name", "OpenSwarm", "windowactivate"]):
+            cmds = [
+                ["hyprctl", "dispatch", "focuswindow", "class:dev.openswarm.app"],
+                ["swaymsg", '[app_id="dev.openswarm.app"] focus'],
+                ["wmctrl", "-a", "OpenSwarm"],
+                ["xdotool", "search", "--name", "OpenSwarm", "windowactivate"],
+            ]
+            for cmd in cmds:
                 if shutil.which(cmd[0]):
                     try:
-                        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
-                        raised = True
-                        break
+                        r = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                        if r.returncode == 0:
+                            raised = True
+                            break
                     except Exception:
                         pass
             return await _json(writer, {"ok": True, "raised": raised})
+        if parts == ["window", "pin"] and method == "POST":
+            pinned = False
+            enabled = bool(js.get("pinned", True))
+            val = "1" if enabled else "0"
+            if shutil.which("hyprctl"):
+                try:
+                    subprocess.run(["hyprctl", "setprop", "class:dev.openswarm.app", "pinned", val], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                    subprocess.run(["hyprctl", "dispatch", "pin", "class:dev.openswarm.app"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                    pinned = True
+                except Exception:
+                    pass
+            if shutil.which("swaymsg"):
+                try:
+                    cmd = "sticky enable" if enabled else "sticky disable"
+                    subprocess.run(["swaymsg", f'[app_id="dev.openswarm.app"] {cmd}'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                    pinned = True
+                except Exception:
+                    pass
+            if shutil.which("wmctrl"):
+                try:
+                    flag = "add,above,sticky" if enabled else "remove,above,sticky"
+                    subprocess.run(["wmctrl", "-r", "OpenSwarm", "-b", flag], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1.0)
+                    pinned = True
+                except Exception:
+                    pass
+            return await _json(writer, {"ok": True, "pinned": pinned})
+        if parts == ["screen", "capture"] and method == "POST":
+            sdir = self.workdir / ".swarm" / "screenshots"
+            sdir.mkdir(parents=True, exist_ok=True)
+            ts = int(time.time())
+            spath = sdir / f"screen_{ts}.png"
+            captured = False
+            if shutil.which("grim"):
+                try:
+                    r = subprocess.run(["grim", str(spath)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3.0)
+                    if r.returncode == 0 and spath.is_file():
+                        captured = True
+                except Exception:
+                    pass
+            if not captured and shutil.which("grimblast"):
+                try:
+                    r = subprocess.run(["grimblast", "save", "screen", str(spath)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3.0)
+                    if r.returncode == 0 and spath.is_file():
+                        captured = True
+                except Exception:
+                    pass
+            if not captured and shutil.which("import"):
+                try:
+                    r = subprocess.run(["import", "-window", "root", str(spath)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3.0)
+                    if r.returncode == 0 and spath.is_file():
+                        captured = True
+                except Exception:
+                    pass
+            if not captured:
+                for tool in ("maim", "scrot"):
+                    if shutil.which(tool):
+                        try:
+                            r = subprocess.run([tool, str(spath)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3.0)
+                            if r.returncode == 0 and spath.is_file():
+                                captured = True
+                                break
+                        except Exception:
+                            pass
+            if not captured:
+                return await _json(writer, {"ok": False, "error": "No screenshot utility found (grim/import/maim/scrot)"})
+            rel = str(spath.relative_to(self.workdir)) if spath.is_relative_to(self.workdir) else str(spath)
+            return await _json(writer, {"ok": True, "path": rel, "filename": spath.name})
         if parts and parts[0] == "mobile":
             return await self.mobile_route(method, parts[1:], writer)
         if parts == ["dirs"] and method == "GET":

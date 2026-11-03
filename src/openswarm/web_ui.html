@@ -417,17 +417,46 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
 .skin-title{font-size:12px;font-weight:600;color:var(--text)}
 .skin-sub{font-size:10.5px;color:var(--dim);margin-top:2px}
 
-/* Standalone Pet Window Mode (openswarm pet / ?pet=1) */
-body.pet-mode{background:var(--bg);overflow:hidden}
+/* Standalone Pet Window & Desktop Overlay Mode (openswarm pet / ?pet=1) */
+body.pet-mode{background:transparent!important;overflow:hidden;margin:0;padding:0}
 body.pet-mode #side,body.pet-mode #top,body.pet-mode #threadbar,body.pet-mode #conv,body.pet-mode #composer,body.pet-mode #bar,body.pet-mode #sidefoot,body.pet-mode #side-backdrop{display:none!important}
 #pet-standalone-view{display:none}
-body.pet-mode #pet-standalone-view{display:flex;flex-direction:column;height:100vh;padding:12px;box-sizing:border-box}
-.pet-stand-head{display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:12px}
+body.pet-mode #pet-standalone-view{
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  padding:12px;
+  box-sizing:border-box;
+  background:color-mix(in srgb,var(--panel) 90%,transparent);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-radius:20px;
+  box-shadow:0 18px 48px rgba(0,0,0,0.55);
+  border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));
+}
+.pet-stand-head{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:12px;
+  cursor:grab;
+  -webkit-app-region:drag;
+}
+.pet-stand-head .cicon{
+  -webkit-app-region:no-drag;
+}
+.pet-stand-head .cicon.active{
+  background:color-mix(in srgb,var(--accent) 25%,var(--panel2));
+  color:var(--accent);
+  border-color:var(--accent);
+}
 .pet-stand-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
 .pet-stand-foot{padding-top:10px;border-top:1px solid var(--line)}
-.pet-stand-input-wrap{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:5px 8px}
-.pet-stand-input-wrap:focus-within{border-color:var(--accent)}
-.pet-stand-input-wrap input{flex:1;border:none;background:transparent;outline:none;font-size:12.5px;color:var(--text);padding:4px}
+.pet-stand-input-wrap{display:flex;gap:6px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 8px}
+.pet-stand-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--glow),0.2)}
+.pet-stand-input-wrap input{flex:1;border:none;background:transparent;outline:none;font-size:12.5px;color:var(--text);padding:5px 2px}
 
 /* Mobile & Minimalist Layout */
 .iconbtn{background:none;border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:15px;cursor:pointer;display:none;align-items:center;justify-content:center}
@@ -697,24 +726,27 @@ body.pet-mode #pet-standalone-view{display:flex;flex-direction:column;height:100
 <div id="pet-standalone-view">
   <header class="pet-stand-head">
     <span style="font-size:18px">🐾</span>
-    <b style="font-size:14px;font-family:var(--serif);flex:1">OpenSwarm Companion</b>
-    <span class="badge ready" id="pet-stand-badge">● Онлайн</span>
+    <b style="font-size:13.5px;font-family:var(--serif);flex:1">OpenSwarm Pet</b>
+    <span class="badge ready" id="pet-stand-badge" style="font-size:10.5px">● Онлайн</span>
+    <button type="button" id="pet-stand-pin-btn" class="cicon active" title="Поверх всех окон (Always on Top)">📌</button>
+    <button type="button" id="pet-stand-screen-btn" class="cicon" title="Снимок экрана и анализ (Look at screen)">👁️</button>
     <button type="button" id="pet-stand-full-btn" class="cicon" title="Открыть полное окно OpenSwarm">🗖</button>
     <button type="button" id="pet-stand-cfg-btn" class="cicon" title="Настройки питомца">⚙</button>
   </header>
   <div class="pet-stand-stage" id="pet-stand-stage">
-    <div id="pet-stand-bubble" class="pet-bubble" style="position:static;transform:none;margin:0 auto 16px;max-width:92%">
+    <div id="pet-stand-bubble" class="pet-bubble" style="position:static;transform:none;margin:0 auto 14px;max-width:94%">
       <div id="pet-stand-bubble-text">Привет! Я твой ассистент на экране. Ожидаю задач 🐾</div>
     </div>
     <div class="pet-avatar pet-idle" id="pet-stand-avatar" style="width:96px;height:96px;cursor:pointer">
       <div class="pet-sprite" id="pet-stand-sprite" style="width:84px;height:84px"></div>
       <div class="pet-hearts" id="pet-stand-hearts"></div>
     </div>
-    <div id="pet-stand-state-lbl" class="lbl" style="margin-top:12px;text-align:center">Отдыхает в ожидании задачи</div>
+    <div id="pet-stand-state-lbl" class="lbl" style="margin-top:10px;text-align:center">Отдыхает над рабочим столом</div>
   </div>
   <div class="pet-stand-foot">
     <div class="pet-stand-input-wrap">
-      <input type="text" id="pet-stand-input" placeholder="Покормить задачей… (Enter)">
+      <button type="button" id="pet-stand-voice" class="cicon mini" title="Голосовой ввод">🎤</button>
+      <input type="text" id="pet-stand-input" placeholder="Покормить задачей или спросить… (Enter)">
       <button type="button" id="pet-stand-send" class="primary">➤</button>
     </div>
   </div>
@@ -726,12 +758,12 @@ body.pet-mode #pet-standalone-view{display:flex;flex-direction:column;height:100
   </div>
   <div class="lbl" style="margin-bottom:14px">Живой агент-компаньон на экране (как ChatGPT Pets / Desktop Buddy). Бегает по экрану, сообщает о статусе моделей, привлекает внимание и поднимает окно, когда нужна проверка или готов ответ.</div>
 
-  <div class="row" style="margin-bottom:12px">
+  <div class="row" style="margin-bottom:12px;flex-wrap:wrap;gap:8px">
     <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
       <input type="checkbox" id="pet-enable-toggle" checked> Включить питомца на экране
     </label>
     <span style="flex:1"></span>
-    <button id="pet-popout-btn" class="primary" style="font-size:12px;padding:4px 10px" title="Открыть в отдельном компактном плавающем мини-окне">🗗 Отдельное окно</button>
+    <button id="pet-popout-btn" class="primary" style="font-size:12px;padding:4px 10px" title="Открыть в отдельном плавающем мини-окне поверх всех приложений">🗗 Окно поверх всех окон</button>
   </div>
 
   <div class="mphead" style="margin:10px 0 6px">Выберите персонажа</div>
@@ -765,6 +797,14 @@ body.pet-mode #pet-standalone-view{display:flex;flex-direction:column;height:100
 
   <div class="mphead" style="margin:14px 0 6px">Поведение и взаимодействие</div>
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="pet-always-ontop" checked>
+      <span>📌 <b>Питомец поверх всех окон (Always on Top)</b> (плавает над кодом, браузером и другими приложениями)</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="pet-overlay-mode" checked>
+      <span>🪟 <b>Прозрачный оверлей без рамок</b> (персонаж гуляет прямо по рабочему столу)</span>
+    </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="pet-auto-raise" checked>
       <span>⚡ <b>Автоматически поднимать окно</b> при готовности задачи или вопросах от моделей</span>
@@ -3461,7 +3501,9 @@ const PET_CONFIG = {
   skin: localStorage.getItem("openswarm_pet_skin") || "fox",
   autoRaise: localStorage.getItem("openswarm_pet_auto_raise") !== "0",
   wander: localStorage.getItem("openswarm_pet_wander") !== "0",
-  sound: localStorage.getItem("openswarm_pet_sound") !== "0"
+  sound: localStorage.getItem("openswarm_pet_sound") !== "0",
+  alwaysOnTop: localStorage.getItem("openswarm_pet_always_ontop") !== "0",
+  overlay: localStorage.getItem("openswarm_pet_overlay") !== "0"
 };
 let PET_STATE = "idle";
 let isDraggingPet = false;
@@ -3984,6 +4026,8 @@ function initPetDrag(){
 
 function openPetModal(){
   $("pet-enable-toggle").checked = PET_CONFIG.enabled;
+  if($("pet-always-ontop")) $("pet-always-ontop").checked = PET_CONFIG.alwaysOnTop;
+  if($("pet-overlay-mode")) $("pet-overlay-mode").checked = PET_CONFIG.overlay;
   $("pet-auto-raise").checked = PET_CONFIG.autoRaise;
   $("pet-wander").checked = PET_CONFIG.wander;
   $("pet-sound").checked = PET_CONFIG.sound;
@@ -3995,11 +4039,15 @@ function openPetModal(){
 
 function savePetSettings(){
   PET_CONFIG.enabled = $("pet-enable-toggle").checked;
+  if($("pet-always-ontop")) PET_CONFIG.alwaysOnTop = $("pet-always-ontop").checked;
+  if($("pet-overlay-mode")) PET_CONFIG.overlay = $("pet-overlay-mode").checked;
   PET_CONFIG.autoRaise = $("pet-auto-raise").checked;
   PET_CONFIG.wander = $("pet-wander").checked;
   PET_CONFIG.sound = $("pet-sound").checked;
   
   localStorage.setItem("openswarm_pet_enabled", PET_CONFIG.enabled ? "1" : "0");
+  localStorage.setItem("openswarm_pet_always_ontop", PET_CONFIG.alwaysOnTop ? "1" : "0");
+  localStorage.setItem("openswarm_pet_overlay", PET_CONFIG.overlay ? "1" : "0");
   localStorage.setItem("openswarm_pet_auto_raise", PET_CONFIG.autoRaise ? "1" : "0");
   localStorage.setItem("openswarm_pet_wander", PET_CONFIG.wander ? "1" : "0");
   localStorage.setItem("openswarm_pet_sound", PET_CONFIG.sound ? "1" : "0");
@@ -4009,8 +4057,97 @@ function savePetSettings(){
     petEl.style.display = PET_CONFIG.enabled ? "block" : "none";
   }
   setPetState(PET_STATE);
+  if(document.body.classList.contains("pet-mode")){
+    syncPetPinState(PET_CONFIG.alwaysOnTop);
+  }
   $("petmodal").classList.remove("on");
   toast("Настройки питомца сохранены!");
+}
+
+let isPetStandPinned = true;
+async function syncPetPinState(pinned){
+  isPetStandPinned = !!pinned;
+  const btn = $("pet-stand-pin-btn");
+  if(btn){
+    btn.classList.toggle("active", isPetStandPinned);
+    btn.title = isPetStandPinned ? "Поверх всех окон: ВКЛ (Always on top)" : "Поверх всех окон: ВЫКЛ (Кликнуть чтобы закрепить)";
+  }
+  try{
+    await api("/api/window/pin", {method:"POST", body:JSON.stringify({pinned: isPetStandPinned})});
+  }catch(e){}
+}
+
+async function togglePetStandPin(){
+  await syncPetPinState(!isPetStandPinned);
+  toast(isPetStandPinned ? "Питомец закреплён поверх всех окон 📌" : "Режим поверх всех окон отключён");
+}
+
+async function captureAndAskScreen(){
+  showPetBubble("Делаю снимок экрана и анализирую… 👁️", 4000);
+  setPetState("working");
+  try{
+    const res = await api("/api/screen/capture", {method:"POST"});
+    if(!res.ok){
+      showPetBubble("Не удалось сделать снимок: " + (res.error || "ошибка"), 5000);
+      setPetState("idle");
+      return;
+    }
+    const filename = res.filename || "screen.png";
+    const promptText = `Посмотри на снимок моего экрана (.swarm/screenshots/${filename}) и подскажи, что происходит или помоги с открытой задачей.`;
+    const inp = $("pet-stand-input");
+    if(inp) inp.value = promptText;
+    await submitPetTask(promptText);
+  }catch(e){
+    showPetBubble("Ошибка захвата: " + e.message, 4000);
+    setPetState("idle");
+  }
+}
+
+let petRec = null, petRecognizing = false;
+function togglePetVoice(){
+  const vbtn = $("pet-stand-voice");
+  const inp = $("pet-stand-input");
+  if(!vbtn || !inp) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    toast("Голосовой ввод не поддерживается браузером");
+    return;
+  }
+  if(petRec && petRecognizing){
+    petRec.stop();
+    return;
+  }
+  try{
+    petRec = new SR();
+    petRec.continuous = false;
+    petRec.interimResults = true;
+    petRec.lang = localStorage.getItem("openswarm_voicelang") || "ru-RU";
+    let baseText = inp.value ? (inp.value.trim() + " ") : "";
+    petRec.onstart = () => {
+      petRecognizing = true;
+      vbtn.classList.add("recording");
+      showPetBubble("Слушаю вас… 🎙️", 3000);
+    };
+    petRec.onresult = e => {
+      let tr = "";
+      for(let i = 0; i < e.results.length; i++){
+        tr += e.results[i][0].transcript;
+      }
+      inp.value = baseText + tr;
+    };
+    petRec.onerror = e => {
+      petRecognizing = false;
+      vbtn.classList.remove("recording");
+    };
+    petRec.onend = () => {
+      petRecognizing = false;
+      vbtn.classList.remove("recording");
+      inp.focus();
+    };
+    petRec.start();
+  }catch(e){
+    toast("Ошибка микрофона: " + e.message);
+  }
 }
 
 function initPet(){
@@ -4019,6 +4156,9 @@ function initPet(){
   if(isPetStandalone){
     document.body.classList.add("pet-mode");
     if($("pet-standalone-view")) $("pet-standalone-view").style.display = "flex";
+    if(PET_CONFIG.alwaysOnTop){
+      syncPetPinState(true);
+    }
   }
   
   try{
@@ -4044,7 +4184,9 @@ function initPet(){
   if($("closepetmodal")) $("closepetmodal").onclick = ()=> $("petmodal").classList.remove("on");
   if($("savepetmodal")) $("savepetmodal").onclick = savePetSettings;
   if($("pet-popout-btn")) $("pet-popout-btn").onclick = ()=>{
-    window.open(window.location.pathname + "?token=" + TOKEN + "&pet=1", "OpenSwarmPet", "width=320,height=390,menubar=no,toolbar=no");
+    const ontopFlag = PET_CONFIG.alwaysOnTop ? "1" : "0";
+    const overlayFlag = PET_CONFIG.overlay ? "1" : "0";
+    window.open(window.location.pathname + "?token=" + TOKEN + "&pet=1&ontop=" + ontopFlag + "&overlay=" + overlayFlag, "OpenSwarmPet", "width=340,height=420,menubar=no,toolbar=no");
   };
   
   if($("pet-act-focus")) $("pet-act-focus").onclick = ()=> raiseAppWindow("Пользователь нажал Поднять окно");
@@ -4060,6 +4202,9 @@ function initPet(){
   if($("pet-stand-input")) $("pet-stand-input").onkeydown = e =>{
     if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); submitPetTask(e.target.value); }
   };
+  if($("pet-stand-pin-btn")) $("pet-stand-pin-btn").onclick = togglePetStandPin;
+  if($("pet-stand-screen-btn")) $("pet-stand-screen-btn").onclick = captureAndAskScreen;
+  if($("pet-stand-voice")) $("pet-stand-voice").onclick = togglePetVoice;
   if($("pet-stand-cfg-btn")) $("pet-stand-cfg-btn").onclick = openPetModal;
   if($("pet-stand-full-btn")) $("pet-stand-full-btn").onclick = ()=>{
     const u = new URL(window.location.href);

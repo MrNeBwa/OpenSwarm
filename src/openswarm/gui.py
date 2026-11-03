@@ -106,7 +106,7 @@ def choose_backend(pref: str = "auto") -> str:
     return "browser"
 
 
-def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
+def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, overlay: bool = True) -> None:
     """Blocks until the window is closed. Optional niceties (external links, notifications) never block the window."""
     if not gpu:  # WebKitGTK's GPU compositing paints nothing (plain grey window) on many drivers: render in software
         os.environ.setdefault("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
@@ -116,7 +116,7 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
     gi.require_version("Gdk", "4.0")
     gi.require_version("Gtk", "4.0")
     gi.require_version("WebKit", "6.0")
-    from gi.repository import Gdk, Gio, Gtk, WebKit
+    from gi.repository import Gdk, Gio, GLib, Gtk, WebKit
 
     base = url.split("/?")[0]
     app = Gtk.Application(application_id=APP_ID, flags=Gio.ApplicationFlags.NON_UNIQUE)
@@ -125,7 +125,19 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
         title = f"OpenSwarm v{__version__} Pet" if pet else f"OpenSwarm v{__version__}"
         win = Gtk.ApplicationWindow(application=application, title=title)
         if pet:
-            win.set_default_size(320, 390)
+            win.set_default_size(340, 420)
+            if overlay:
+                win.set_decorated(False)
+                try:
+                    win.add_css_class("pet-overlay")
+                    css = "window.pet-overlay { background: transparent; background-color: transparent; border: none; box-shadow: none; }"
+                    provider = Gtk.CssProvider()
+                    provider.load_from_data(css.encode("utf-8"))
+                    Gtk.StyleContext.add_provider_for_display(
+                        Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
         else:
             win.set_default_size(1360, 880)
         try:
@@ -138,6 +150,22 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
                 gtk_settings.set_property("gtk-application-prefer-dark-theme", True)
         except Exception:  # noqa: BLE001
             pass
+        if pet and ontop:
+            try:
+                gi.require_version("Gtk4LayerShell", "1.0")
+                from gi.repository import Gtk4LayerShell
+
+                if Gtk4LayerShell.is_supported():
+                    Gtk4LayerShell.init_for_window(win)
+                    Gtk4LayerShell.set_layer(win, Gtk4LayerShell.Layer.OVERLAY)
+                    Gtk4LayerShell.set_anchor(win, Gtk4LayerShell.Edge.BOTTOM, True)
+                    Gtk4LayerShell.set_anchor(win, Gtk4LayerShell.Edge.RIGHT, True)
+                    Gtk4LayerShell.set_margin(win, Gtk4LayerShell.Edge.BOTTOM, 24)
+                    Gtk4LayerShell.set_margin(win, Gtk4LayerShell.Edge.RIGHT, 24)
+                    Gtk4LayerShell.set_keyboard_mode(win, Gtk4LayerShell.KeyboardMode.ON_DEMAND)
+                    Gtk4LayerShell.set_namespace(win, "openswarm-pet")
+            except Exception:  # noqa: BLE001
+                pass
         settings = WebKit.Settings()
         if not gpu:
             try:
@@ -153,9 +181,12 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
         except Exception:  # noqa: BLE001
             pass
         view = WebKit.WebView(settings=settings)
-        try:  # never a grey/white flash: paint the app's own background until the page is drawn
+        try:  # transparent for pet overlay, dark for full workspace
             bg = Gdk.RGBA()
-            bg.parse("#191815")
+            if pet and overlay:
+                bg.parse("rgba(0,0,0,0)")
+            else:
+                bg.parse("#191815")
             view.set_background_color(bg)
         except Exception:  # noqa: BLE001
             pass
@@ -214,8 +245,41 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
                 view.connect(sig, cb)
             except TypeError:
                 pass
-        win.set_child(view)
+        if pet:
+            handle = Gtk.WindowHandle()
+            handle.set_child(view)
+            win.set_child(handle)
+        else:
+            win.set_child(view)
         win.present()
+
+        def pin_pet():
+            if not ontop:
+                return
+            if shutil.which("hyprctl"):
+                try:
+                    subprocess.run(["hyprctl", "dispatch", "setfloating", f"class:{APP_ID}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    subprocess.run(["hyprctl", "dispatch", "pin", f"class:{APP_ID}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    subprocess.run(["hyprctl", "setprop", f"class:{APP_ID}", "pinned", "1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except Exception:
+                    pass
+            if shutil.which("swaymsg"):
+                try:
+                    subprocess.run(["swaymsg", f'[app_id="{APP_ID}"] floating enable, sticky enable'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except Exception:
+                    pass
+            if shutil.which("wmctrl"):
+                try:
+                    subprocess.run(["wmctrl", "-r", "OpenSwarm", "-b", "add,above,sticky"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except Exception:
+                    pass
+
+        if pet and ontop:
+            try:
+                GLib.timeout_add(150, lambda: (pin_pet(), False)[1])
+                GLib.timeout_add(600, lambda: (pin_pet(), False)[1])
+            except Exception:
+                pass
 
     app.connect("activate", activate)
     app.run(None)
@@ -270,6 +334,10 @@ def gui_main(argv: list[str]) -> int:
     p.add_argument("--safe-render", action="store_true", help="(default now) WebKit: software rendering, fixes blank/grey windows")
     p.add_argument("--gpu", action="store_true", help="WebKit: allow GPU compositing (faster, but a grey window on some drivers)")
     p.add_argument("--pet", action="store_true", help="Launch compact floating desktop companion / pet mode")
+    p.add_argument("--overlay", action="store_true", default=True, help="Run pet in frameless transparent overlay mode floating over other apps")
+    p.add_argument("--no-overlay", dest="overlay", action="store_false", help="Run pet in standard window")
+    p.add_argument("--ontop", action="store_true", default=True, help="Keep pet pinned always above other desktop applications")
+    p.add_argument("--no-ontop", dest="ontop", action="store_false", help="Do not keep window pinned on top")
     p.add_argument("--no-memory", action="store_true")
     a = p.parse_args(argv)
     if a.check:
@@ -291,21 +359,41 @@ def gui_main(argv: list[str]) -> int:
     handle = start_server(cfg, workdir, a.port)
     backend = choose_backend(a.backend)
     target_url = f"{handle.url}&pet=1" if a.pet else handle.url
-    mode_str = " (Pet Mode)" if a.pet else ""
+    if a.pet and getattr(a, "overlay", True):
+        target_url += "&overlay=1"
+    mode_str = " (Pet Overlay Mode)" if (a.pet and getattr(a, "overlay", True)) else (" (Pet Mode)" if a.pet else "")
     print(f"OpenSwarm {__version__}{mode_str} - window backend: {backend}   ({handle.url.split('?')[0]})", flush=True)
     try:
         if backend == "gtk":
             try:
-                run_gtk(target_url, gpu=a.gpu, pet=a.pet)
+                run_gtk(target_url, gpu=a.gpu, pet=a.pet, ontop=getattr(a, "ontop", True), overlay=getattr(a, "overlay", True))
             except Exception as exc:  # noqa: BLE001 - e.g. no display: degrade instead of dying
                 print(f"GTK window failed ({exc!r}); falling back", flush=True)
                 backend = "chromium" if chromium_available() else "browser"
         if backend == "chromium":
-            wait_for_process_or_ctrl_c(_open_app_window(target_url, size=(320, 390) if a.pet else None))
+            size = (340, 420) if a.pet else None
+            proc = _open_app_window(target_url, size=size)
+            if a.pet and getattr(a, "ontop", True):
+                def pin_chromium():
+                    time.sleep(0.6)
+                    if shutil.which("hyprctl"):
+                        try:
+                            subprocess.run(["hyprctl", "dispatch", "setfloating", "class:google-chrome"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            subprocess.run(["hyprctl", "dispatch", "pin", "class:google-chrome"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        except Exception:
+                            pass
+                    if shutil.which("wmctrl"):
+                        try:
+                            subprocess.run(["wmctrl", "-r", "OpenSwarm", "-b", "add,above,sticky"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        except Exception:
+                            pass
+                threading.Thread(target=pin_chromium, daemon=True).start()
+            wait_for_process_or_ctrl_c(proc)
         elif backend == "browser":
             webbrowser.open(target_url)
             print("Opened in your browser. Press Ctrl+C to stop.", flush=True)
             wait_for_process_or_ctrl_c(None)
     finally:
         handle.stop()
+    return 0
     return 0
