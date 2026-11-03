@@ -330,25 +330,31 @@ class Orchestrator:
 
     def _compose(self, role: str, body: str, extra_hints: list[str] | None = None, override: str = "", cwd: Path | None = None) -> str:
         from .adaptive_prompt import get_adaptive_instructions
-        from .optimizer import optimize_prompt_for_model
+        from .optimizer import get_optimizer_settings, get_token_saving_directive, optimize_prompt_for_model
 
+        opt_cfg = get_optimizer_settings()
         bus_txt = self.broker.chat_transcript(self._run_id) if self._run_id else ""
         bus_block = f"\n## Swarm Room Messages (live team & user feed)\n{bus_txt}\n" if bus_txt else ""
-        proactive_guidance = (
-            "\n## Interaction & Proactive Clarification\n"
-            "- Proactively ask the user questions: If specifications or architecture choices are ambiguous, DO NOT guess silently. State your current assumptions and ask clarifying questions.\n"
-            "- Subagent delegation: Decompose complex subtasks and spawn targeted subagents when appropriate.\n"
-        )
-        proactive_guidance += self._boundary_block(cwd)
+        boundary = self._boundary_block(cwd)
+        eco_dir = get_token_saving_directive(role)
 
-        output_guide = (
-            "\n## Правила оформления ответа (Clean Presentation):\n"
-            "- **Структура**: Начинай с краткого, емкого резюме (1-3 предложения), затем приводи структурированное решение.\n"
-            "- **Оформление**: Используй понятные заголовки (H2/H3), маркированные списки, акценты жирным шрифтом и таблицы там, где это уместно.\n"
-            "- **Блоки кода**: Любой программный код или команды оформляй в блоки с указанием языка (```python, ```bash, ```json и т.д.).\n"
-            "- **Чистота вывода**: Не дублируй в финальном ответе сырые логи и промежуточные вызовы инструментов — давай готовый, чистый результат для пользователя.\n"
-            "- **Итог**: Завершай ответ блоком ключевых выводов или рекомендацией следующих шагов (Key Takeaways / Next Steps).\n"
-        )
+        if opt_cfg.mode == "ultra":
+            proactive_guidance = f"\n## Rules\n- Ask clarifying questions if ambiguous.\n{boundary}"
+            output_guide = "\n## Presentation\n- Start with a brief summary, use H2 headers and fenced code blocks.\n" + eco_dir
+        else:
+            proactive_guidance = (
+                "\n## Interaction & Proactive Clarification\n"
+                "- Proactively ask the user questions: If specifications or architecture choices are ambiguous, DO NOT guess silently. State your current assumptions and ask clarifying questions.\n"
+                "- Subagent delegation: Decompose complex subtasks and spawn targeted subagents when appropriate.\n"
+            ) + boundary
+            output_guide = (
+                "\n## Правила оформления ответа (Clean Presentation):\n"
+                "- **Структура**: Начинай с краткого, емкого резюме (1-3 предложения), затем приводи структурированное решение.\n"
+                "- **Оформление**: Используй понятные заголовки (H2), маркированные списки, акценты жирным шрифтом и таблицы там, где это уместно.\n"
+                "- **Блоки кода**: Любой программный код или команды оформляй в блоки с указанием языка (```python, ```bash, ```json и т.д.).\n"
+                "- **Чистота вывода**: Не дублируй в финальном ответе сырые логи и промежуточные вызовы инструментов — давай готовый, чистый результат для пользователя.\n"
+                "- **Итог**: Завершай ответ блоком ключевых выводов или рекомендацией следующих шагов (Key Takeaways / Next Steps).\n"
+            ) + eco_dir
 
         adaptive = get_adaptive_instructions(
             body, cwd or self.sel.workdir,
@@ -359,14 +365,18 @@ class Orchestrator:
 
         if role == "chat":  # plain conversation: leave opencode's own system prompt in charge
             hints = [s.prompt_hint for s in self.skills if s.prompt_hint]
-            raw = body + bus_block + proactive_guidance + output_guide + adaptive + ("\n\n[OpenSwarm guidance: " + " ".join(hints) + "]" if hints else "")
+            hint_sfx = ("\n\n[OpenSwarm guidance: " + " ".join(hints) + "]") if hints else ""
+            if opt_cfg.kv_prefix_align:
+                raw = f"{proactive_guidance}{output_guide}{adaptive}{hint_sfx}{bus_block}\n## User Request\n{body}"
+            else:
+                raw = body + bus_block + proactive_guidance + output_guide + adaptive + hint_sfx
             return optimize_prompt_for_model(raw, role="chat")
         hints = [s.prompt_hint for s in self.skills if s.prompt_hint]
         if extra_hints:
             hints.append("Planner-recommended skills/tools for this task: " + ", ".join(extra_hints))
         hint_block = ("\n## Tooling guidance\n" + "\n".join(f"- {h}" for h in hints) + "\n") if hints else ""
         head = override or getattr(self.cfg.prompts, role, "")
-        raw = f"{head}\n{hint_block}{bus_block}{proactive_guidance}{output_guide}{adaptive}\n## Task\n{body}" if head else f"{hint_block}{bus_block}{proactive_guidance}{output_guide}{adaptive}\n{body}".strip()
+        raw = f"{head}\n{hint_block}{proactive_guidance}{output_guide}{adaptive}{bus_block}\n## Task\n{body}" if head else f"{hint_block}{proactive_guidance}{output_guide}{adaptive}{bus_block}\n{body}".strip()
         return optimize_prompt_for_model(raw, role=role)
 
     def _sandbox_on(self) -> bool:

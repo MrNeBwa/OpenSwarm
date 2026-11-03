@@ -165,6 +165,41 @@ class WebTests(Web):
         self.assertEqual(bus_evs[0]["kind"], "question")
         self.assertEqual(bus_evs[1]["kind"], "answer")
 
+    async def test_session_patch_workdir_mode_and_desktop_optimizer_apis(self):
+        await self.start()
+        sid = await self.session()
+        d2 = self.plain("proj2")
+        st, patched = await self.call("PATCH", f"/api/sessions/{sid}", {"workdir": str(d2), "mode": "architect"})
+        self.assertEqual(st, 200)
+        self.assertEqual(patched["workdir"], str(d2.resolve()))
+        self.assertEqual(patched["mode"], "architect")
+
+        # Optimizer v2.0 API
+        st, opt = await self.call("POST", "/api/optimizer/settings", {"mode": "ultra", "kv_prefix_align": True})
+        self.assertEqual(st, 200)
+        self.assertEqual(opt["settings"]["mode"], "ultra")
+        await self.call("POST", "/api/optimizer/settings", {"mode": "aggressive"})
+
+        # Desktop automation confirmation queue API
+        st, desk = await self.call("POST", "/api/desktop/action", {"kind": "paste_text", "target_window": "code", "text": "hello", "confirmed": False})
+        self.assertEqual(st, 200)
+        self.assertFalse(desk["ok"])
+        self.assertTrue(desk["requires_confirmation"])
+        act_id = desk["action"]["id"]
+        st, rej = await self.call("POST", "/api/desktop/reject", {"action_id": act_id})
+        self.assertEqual(st, 200)
+        self.assertTrue(rej["ok"])
+
+        # Telegram strict confirmation API
+        st, tg = await self.call("POST", "/api/telegram/user/send", {"chat_id": "999", "text": "Unconfirmed message", "confirmed": False})
+        self.assertEqual(st, 200)
+        self.assertFalse(tg["sent"])
+        self.assertTrue(tg["requires_confirmation"])
+        did = tg["draft"]["id"]
+        st, tgrej = await self.call("POST", "/api/telegram/user/drafts/reject", {"draft_id": did})
+        self.assertEqual(st, 200)
+        self.assertTrue(tgrej["ok"])
+
 
 class UiStatic(Env):
     def test_every_referenced_element_exists_and_js_parses(self):

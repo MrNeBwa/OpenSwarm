@@ -458,6 +458,22 @@ body.pet-mode #pet-standalone-view{
 .pet-stand-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--glow),0.2)}
 .pet-stand-input-wrap input{flex:1;border:none;background:transparent;outline:none;font-size:12.5px;color:var(--text);padding:5px 2px}
 
+/* Workspace Directory Pill & Launchpad */
+.wd-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:11.5px;color:var(--muted);cursor:pointer;max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:border-color .15s,color .15s,background .15s}
+.wd-pill:hover{border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+.welcome-launchpad{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 16px;box-shadow:0 4px 16px rgba(0,0,0,.14)}
+.new-mode-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px;margin:8px 0 12px}
+.new-mode-card{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 11px;cursor:pointer;transition:border-color .14s,background .14s,transform .1s;display:flex;flex-direction:column;gap:3px}
+.new-mode-card:hover{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));transform:translateY(-1px)}
+.new-mode-card.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,var(--panel2));box-shadow:0 0 0 1px var(--accent)}
+.new-mode-card b{font-size:12.5px;display:flex;align-items:center;gap:6px;color:var(--text)}
+.new-mode-card span{font-size:11px;color:var(--dim);line-height:1.35}
+.quick-dir-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
+.qdir-chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:11.5px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.qdir-chip:hover,.qdir-chip.on{border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 14%,var(--panel2))}
+.desk-win-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);margin-bottom:5px;font-size:12.5px}
+.desk-act-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid var(--accent);border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,var(--panel2));margin-bottom:6px;font-size:12.5px}
+
 /* Mobile & Minimalist Layout */
 .iconbtn{background:none;border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:15px;cursor:pointer;display:none;align-items:center;justify-content:center}
 #side-backdrop{display:none}
@@ -526,7 +542,7 @@ body.pet-mode #pet-standalone-view{
     <div style="display:flex;align-items:center;gap:8px;min-width:0">
       <span id="title" title="Нажмите, чтобы переименовать сессию" style="cursor:pointer;font-weight:600;font-size:15px;font-family:var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">OpenSwarm</span>
       <span class="badge ready" style="font-size:11px" title="Личный ИИ ассистент онлайн">● Онлайн</span>
-      <span id="wd" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;opacity:0.75"></span>
+      <span id="wd" class="wd-pill" title="Нажмите, чтобы выбрать рабочую папку и режим чата"></span>
     </div>
     <span style="flex:1"></span>
     <span id="usage" class="lbl"></span><span id="runstate" class="lbl"></span>
@@ -538,9 +554,10 @@ body.pet-mode #pet-standalone-view{
       <button id="morebtn" class="tbtn" title="Все инструменты, настройки, темы и интеграции">⋯</button>
       <div id="morepop">
         <div class="mphead">Инструменты &amp; ИИ</div>
+        <button id="desktopbtn" title="Управление приложениями рабочего стола (Computer Use Agent)">🖥️ Управление приложениями</button>
         <button id="freetopbtn" title="Каталог бесплатных нейросетей (DeepSeek Harness, Kilo, OpenRouter)">🎁 Бесплатные модели</button>
-        <button id="tgtopbtn" title="Подключить личный Telegram аккаунт и отвечать на сообщения">📱 Telegram</button>
-        <button id="opttopbtn" title="Оптимизация и экономия токенов">⚡ Токены &amp; Оптимизация <span id="optbadge" class="badge ready">0%</span></button>
+        <button id="tgtopbtn" title="Подключить личный Telegram аккаунт и отвечать на сообщения (с подтверждением)">📱 Telegram (Безопасный)</button>
+        <button id="opttopbtn" title="Оптимизация и экономия токенов (KV-Cache, LLMLingua, AST RepoMap)">⚡ Токены &amp; Оптимизация <span id="optbadge" class="badge ready">0%</span></button>
         <button id="schedbtn" title="Отложенные задачи и напоминания">⏰ Отложенные задачи</button>
         <button id="petbtn" title="Питомец-Ассистент на экране">🐾 Питомец-Ассистент</button>
         <button id="vpnbtn" title="Per-app VPN: swap through 65 servers on rate limits">🛡️ VPN <span id="vpnstatus" class="lbl"></span></button>
@@ -823,10 +840,28 @@ body.pet-mode #pet-standalone-view{
     <button class="primary" id="savepetmodal">Сохранить</button>
   </div>
 </div></div>
-<div class="modal" id="newmodal"><div class="sheet">
-  <h3 style="margin:0">New session</h3><div class="lbl">Pick a preset (mode + skills) and a working directory — any directory, git repo or not.</div>
-  <div class="presets" id="presetgrid"></div>
-  <div class="row"><span class="lbl">Папка</span><input type="text" id="nwd" autocomplete="off" spellcheck="false" placeholder="/home/you/project — Tab дополняет путь, Enter открывает"><button id="pkpick" title="Системный диалог выбора папки" style="display:none">🗂 Системный…</button><button id="browse" title="Показать/скрыть обзор папок">📂 Обзор</button></div>
+<div class="modal" id="newmodal"><div class="sheet" style="max-width:860px">
+  <div class="row" style="margin-top:0">
+    <h3 style="margin:0;flex:1;font-family:var(--serif)">🚀 Новый чат и выбор рабочей директории</h3>
+    <button id="cancelnew">✕</button>
+  </div>
+  <div class="lbl">Выберите режим работы ИИ (одиночный чат, авто-выбор или рой агентов) и укажите папку проекта.</div>
+
+  <div class="mphead" style="margin:10px 0 4px">1. Режим работы нового чата</div>
+  <div class="new-mode-grid" id="new_mode_grid"></div>
+  <div id="preset_sec" style="display:none">
+    <div class="lbl" style="margin:6px 0 4px;font-weight:600">Готовые шаблоны (режим + навыки):</div>
+    <div class="presets" id="presetgrid"></div>
+  </div>
+
+  <div class="mphead" style="margin:12px 0 4px">2. Рабочая директория проекта</div>
+  <div class="quick-dir-chips" id="new_quick_dirs"></div>
+  <div class="row" style="margin-top:4px">
+    <span class="lbl">📁 Путь:</span>
+    <input type="text" id="nwd" autocomplete="off" spellcheck="false" placeholder="/home/you/project — Tab дополняет путь, Enter открывает" style="flex:1;font-family:ui-monospace,Consolas,monospace;font-size:12.5px">
+    <button id="pkpick" title="Системный диалог выбора папки" style="display:none">🗂 Системный…</button>
+    <button id="browse" title="Показать/скрыть обзор папок">📂 Обзор</button>
+  </div>
   <div class="picker" id="picker">
     <div class="pk-side" id="pkside"></div>
     <div class="pk-main">
@@ -836,7 +871,10 @@ body.pet-mode #pet-standalone-view{
       <div class="pk-info" id="pkinfo"></div>
     </div>
   </div>
-  <div class="row" style="justify-content:flex-end"><button id="cancelnew">Cancel</button><button class="primary" id="createnew">Create</button></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px;border-top:1px solid var(--line);padding-top:12px;gap:8px">
+    <button id="applywdcurrent" title="Применить выбранную папку и режим к текущему активному окну">📁 Применить к текущему чату</button>
+    <button class="primary" id="createnew">＋ Создать новый чат</button>
+  </div>
 </div></div>
 <div class="modal" id="viewmodal"><div class="sheet"><div class="row"><b id="vname" style="flex:1"></b><button id="vinsert">Insert @path</button><button id="vclose">Close</button></div><div id="vbody" class="pre"></div></div></div>
 <div class="modal" id="pvmodal"><div class="sheet"><div class="row"><b style="flex:1">Preview (sandboxed)</b><button id="pvclose">Close</button></div><iframe id="pvf" sandbox="allow-scripts"></iframe></div></div>
@@ -937,8 +975,11 @@ body.pet-mode #pet-standalone-view{
   <div id="integmsg" class="lbl" style="min-height:18px;margin-bottom:6px"></div>
 
   <div id="ipane_tg">
-    <label class="lbl" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer">
+    <label class="lbl" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
       <input type="checkbox" id="itg_enabled"> <b>Enable Telegram Notifications</b>
+    </label>
+    <label class="lbl" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer">
+      <input type="checkbox" id="itg_confirm" checked> <span>🔒 <b>Только с подтверждением</b> (запретить автоматическую фоновую отправку без спроса)</span>
     </label>
     <div style="display:flex;flex-direction:column;gap:8px">
       <div>
@@ -1216,8 +1257,8 @@ body.pet-mode #pet-standalone-view{
 
 <!-- Telegram Userbot Modal -->
 <div class="modal" id="telegrammodal"><div class="sheet" style="max-width:880px">
-  <div class="row"><b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>📱</span> Личный Telegram ассистент</b><button id="tgclose">✕</button></div>
-  <div class="lbl">Подключите личный аккаунт Telegram. OpenSwarm сможет читать входящие сообщения ваших собеседников и предлагать умные варианты ответов с помощью ИИ.</div>
+  <div class="row"><b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>📱</span> Личный Telegram ассистент</b><span class="badge ready" title="Без вашего подтверждения ни одно сообщение не будет отправлено">🔒 Только с подтверждением</span><button id="tgclose">✕</button></div>
+  <div class="lbl">Подключите личный аккаунт Telegram. OpenSwarm сможет читать входящие сообщения и предлагать варианты ответов. <b>Ни одно сообщение никогда не отправляется автоматически без вашего явного подтверждения.</b></div>
   
   <div id="tg_auth_box" style="margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)">
     <div id="tg_status_banner" class="row" style="margin-bottom:12px">
@@ -1242,6 +1283,11 @@ body.pet-mode #pet-standalone-view{
     </div>
   </div>
 
+  <div id="tg_drafts_box" style="display:none;margin-top:12px;padding:10px 12px;border:1px solid var(--accent);border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,var(--panel2))">
+    <div class="row" style="margin:0 0 6px"><b style="font-size:13px;color:var(--accent)">⏳ Сообщения, ожидающие вашего подтверждения:</b></div>
+    <div id="tg_drafts_list" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+
   <div id="tg_dialogs_box" style="display:none;margin-top:16px">
     <div class="row" style="justify-content:space-between">
       <b style="font-size:14px">Недавние диалоги</b>
@@ -1253,17 +1299,75 @@ body.pet-mode #pet-standalone-view{
         <div id="tg_chat_hdr" style="font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:13.5px">Выберите диалог слева</div>
         <div id="tg_messages_stream" style="flex:1;overflow:auto;padding:8px 0;display:flex;flex-direction:column;gap:6px"></div>
         <div id="tg_suggestions_box" style="display:none;padding:8px;background:var(--panel2);border:1px solid var(--accent);border-radius:10px;margin-bottom:8px">
-          <div style="font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px">🤖 Предложенные ответы ИИ (кликните, чтобы выбрать):</div>
+          <div style="font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px">🤖 Предложенные ответы ИИ (кликните, чтобы подставить в черновик — без авто-отправки):</div>
           <div id="tg_suggestions_list" style="display:flex;flex-direction:column;gap:4px"></div>
+        </div>
+        <div id="tg_confirm_bar" style="display:none;padding:8px 10px;background:color-mix(in srgb,var(--warn) 16%,var(--panel2));border:1px solid var(--warn);border-radius:10px;margin-bottom:8px;font-size:12.5px">
+          <div id="tg_confirm_preview" style="margin-bottom:6px;word-break:break-word"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button type="button" id="tg_confirm_no" class="mini">✕ Отмена</button>
+            <button type="button" id="tg_confirm_yes" class="primary mini">✓ Подтвердить и отправить</button>
+          </div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <button id="tg_suggest_btn" class="primary" title="ИИ проанализирует сообщения и предложит 3 варианта ответа">🤖 Предложить ответ</button>
-          <input type="text" id="tg_reply_input" placeholder="Текст сообщения в Telegram…" style="flex:1">
-          <button id="tg_send_btn" class="primary" title="Отправить в Telegram">✈</button>
+          <input type="text" id="tg_reply_input" placeholder="Черновик сообщения в Telegram (требуется подтверждение)…" style="flex:1">
+          <button id="tg_send_btn" class="primary" title="Проверить и подтвердить отправку в Telegram">✈</button>
         </div>
       </div>
     </div>
   </div>
+</div></div>
+
+<!-- Desktop Automation / Computer Use Modal -->
+<div class="modal" id="desktopmodal"><div class="sheet" style="max-width:860px">
+  <div class="row">
+    <b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>🖥️</span> Работа в приложениях за вас (Computer Use Agent)</b>
+    <button id="desk_refresh_btn" class="mini">↻ Обновить окна</button>
+    <button id="desk_close">✕</button>
+  </div>
+  <div class="lbl">OpenSwarm видит открытые окна рабочего стола и может переключать фокус, вставлять сгенерированный код или текст, нажимать горячие клавиши и делать снимки окон.</div>
+
+  <div class="row" style="margin:10px 0;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;justify-content:space-between">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="desk_confirm_toggle" checked>
+      <span>🔒 <b>Запрашивать моё подтверждение перед выполнением действий в приложениях</b></span>
+    </label>
+    <span id="desk_active_lbl" class="lbl"></span>
+  </div>
+
+  <div id="desk_pending_box" style="display:none;margin:10px 0">
+    <div style="font-weight:600;font-size:13px;color:var(--accent);margin-bottom:6px">⏳ Очередь действий, ожидающих подтверждения:</div>
+    <div id="desk_pending_list"></div>
+  </div>
+
+  <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0">
+    <div style="font-weight:600;font-size:13px;margin-bottom:6px">🤖 Поручить задачу ИИ-агенту в приложениях</div>
+    <div class="row" style="gap:8px">
+      <input type="text" id="desk_goal_input" placeholder="Например: Вставь готовый код в открытое окно редактора и нажми Ctrl+S…" style="flex:1">
+      <button type="button" id="desk_assist_btn" class="primary">⚡ Спланировать действия</button>
+    </div>
+  </div>
+
+  <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0">
+    <div style="font-weight:600;font-size:13px;margin-bottom:6px">⚡ Быстрое действие с приложением</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <select id="desk_act_type" style="font-size:12.5px">
+        <option value="type_text">⌨️ Вставить/ввести текст в окно</option>
+        <option value="focus_window">🎯 Переключить фокус на окно</option>
+        <option value="send_shortcut">⚡ Нажать клавиши (например CTRL+S)</option>
+        <option value="clipboard_set">📋 Записать в буфер обмена</option>
+        <option value="capture_window">📸 Снимок выбранного окна</option>
+        <option value="launch_app">🚀 Запустить приложение / URL</option>
+      </select>
+      <input type="text" id="desk_act_target" placeholder="Окно (class или адрес)" style="width:190px;font-size:12.5px">
+      <input type="text" id="desk_act_val" placeholder="Текст, клавиши (CTRL+S) или URL…" style="flex:1;min-width:180px;font-size:12.5px">
+      <button type="button" id="desk_act_run_btn" class="primary">▶ Выполнить</button>
+    </div>
+  </div>
+
+  <div style="font-weight:600;font-size:13px;margin:10px 0 6px">🪟 Открытые окна на рабочем столе (нажмите для выбора):</div>
+  <div id="desk_windows_list" style="max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px"></div>
 </div></div>
 
 <!-- Free Models Modal -->
@@ -1274,31 +1378,53 @@ body.pet-mode #pet-standalone-view{
 </div></div>
 
 <!-- Token Optimizer Modal -->
-<div class="modal" id="optimizermodal"><div class="sheet" style="max-width:680px">
-  <div class="row"><b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>⚡</span> Оптимизация и экономия токенов</b><button id="optclose">✕</button></div>
-  <div class="lbl">OpenSwarm использует интеллектуальное сжатие запросов, чтобы не тратить лимиты и ускорять генерацию ответов.</div>
-  <div class="row" style="margin:16px 0;gap:12px;flex-wrap:wrap">
-    <div class="card" style="flex:1;min-width:180px;padding:12px;text-align:center">
-      <div style="font-size:24px;font-weight:700;color:var(--ok)" id="opt_saved_chars">0</div>
-      <div class="lbl">Символов сэкономлено</div>
+<div class="modal" id="optimizermodal"><div class="sheet" style="max-width:740px">
+  <div class="row">
+    <b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>⚡</span> Оптимизация и экономия токенов v2.0</b>
+    <button id="opt_reset_btn" class="mini" title="Сбросить счётчики и кэш">↻ Сброс</button>
+    <button id="optclose">✕</button>
+  </div>
+  <div class="lbl">Современные подходы к снижению расхода токенов: KV-Cache Prefix Alignment, LLMLingua-сжатие, AST-скелетизация кода (RepoMap) и Diff-First генерация.</div>
+  <div class="row" style="margin:14px 0;gap:10px;flex-wrap:wrap">
+    <div class="card" style="flex:1;min-width:140px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--ok)" id="opt_saved_chars">0</div>
+      <div class="lbl">Символов сжато</div>
     </div>
-    <div class="card" style="flex:1;min-width:180px;padding:12px;text-align:center">
-      <div style="font-size:24px;font-weight:700;color:var(--accent)" id="opt_savings_pct">0%</div>
+    <div class="card" style="flex:1;min-width:140px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--ok)" id="opt_saved_tokens">0</div>
+      <div class="lbl">Токенов сэкономлено</div>
+    </div>
+    <div class="card" style="flex:1;min-width:140px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--accent)" id="opt_savings_pct">0%</div>
       <div class="lbl">Экономия контекста</div>
     </div>
-    <div class="card" style="flex:1;min-width:180px;padding:12px;text-align:center">
-      <div style="font-size:24px;font-weight:700;color:var(--warn)" id="opt_cache_hits">0</div>
+    <div class="card" style="flex:1;min-width:140px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--warn)" id="opt_cache_hits">0</div>
       <div class="lbl">Попаданий в кэш</div>
     </div>
   </div>
-  <div style="font-size:13px;line-height:1.6;color:var(--dim);border-top:1px solid var(--line);padding-top:12px">
-    <b>Как это работает:</b>
-    <ul style="margin:6px 0;padding-left:20px">
-      <li><b>Сжатие огромных логов</b>: вывод терминалов и git diffs аккуратно усекается, скрывая тысячи лишних строк.</li>
-      <li><b>Умное суммирование истории</b>: старые сообщения диалога заменяются кратким резюме, сохраняя суть без перегрузки контекста.</li>
-      <li><b>Чистый вывод моделей</b>: фильтрация дубликатов и системных служебных инструкций.</li>
-      <li><b>Кэш частых запросов</b>: мгновенный ответ на повторяющиеся проверки.</li>
-    </ul>
+
+  <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px">
+    <div class="row" style="margin-top:0;justify-content:space-between">
+      <b style="font-size:13.5px">Профиль оптимизации токенов</b>
+      <select id="opt_mode_sel" style="font-size:12.5px">
+        <option value="balanced">⚖️ Сбалансированный (Balanced)</option>
+        <option value="aggressive" selected>⚡ Агрессивный (Aggressive · Рекомендуется)</option>
+        <option value="ultra">🚀 Ультра-экономия (Ultra · До 80% меньше токенов)</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:12.5px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="opt_kv_prefix" checked> <span><b>KV-Cache Prefix Alignment</b> (кэш префикса)</span></label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="opt_llmlingua" checked> <span><b>LLMLingua Prompt Pruning</b> (сжатие воды)</span></label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="opt_repomap" checked> <span><b>AST RepoMap Skeleton</b> (сигнатуры вместо файлов)</span></label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="opt_diff_first" checked> <span><b>Diff-First Output</b> (только изменённый код)</span></label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="opt_sem_cache" checked> <span><b>Semantic Normalized Cache</b> (умный кэш)</span></label>
+    </div>
+    <div class="row" style="margin-top:10px;justify-content:space-between">
+      <button type="button" id="opt_build_repomap_btn">🧬 Сгенерировать AST-карту проекта (RepoMap)</button>
+      <button type="button" id="opt_save_btn" class="primary">Сохранить настройки</button>
+    </div>
+    <pre id="opt_repomap_preview" style="display:none;max-height:160px;overflow:auto;margin-top:8px;padding:8px;background:var(--code);border-radius:8px;font:11.5px/1.4 ui-monospace,monospace;color:#cfc9be"></pre>
   </div>
 </div></div>
 <script>
@@ -1851,21 +1977,46 @@ async function refreshSessions(){
 }
 function resetBusTargets(){const selEl=$("busto");selEl.innerHTML='<option value="all">@all (whole swarm)</option><option value="planner">@planner</option><option value="coder">@coder</option><option value="reviewer">@reviewer</option>';}
 function addBusTarget(id,title){const selEl=$("busto");if([...selEl.options].some(o=>o.value===id))return;const o=document.createElement("option");o.value=id;o.textContent="@"+id+(title&&title!==id?" ("+title+")":"");selEl.appendChild(o);}
-function closeSession(){if(ES)ES.close();ES=null;CUR=null;busCount=0;$("buscount").textContent="";$("buslist").innerHTML="";resetBusTargets();resetThreads();$("stream").innerHTML="";showWelcome();$("bar").style.display=$("exportbtn").style.display="none";$("composer").style.display="block";$("title").textContent="OpenSwarm";$("wd").textContent=(ST&&ST.workdir)?ST.workdir:"";}
-function showWelcome(){$("stream").innerHTML=`<div id="welcome"><h1><span style="color:var(--accent)">✻</span> Чем помочь сегодня?</h1><p>Пишите или диктуйте 🎤 сразу в поле ниже — для простых вопросов и сложных проектов. Или выберите сценарий:</p><div class="presets" id="wp"></div></div>`;
+function formatWdBadge(path){
+  const p=path||((ST&&ST.workdir)?ST.workdir:"");
+  if(!p)return "📁 Выбрать папку ▾";
+  const short=p.split("/").filter(Boolean).slice(-2).join("/")||p;
+  return `📁 ${short} ▾`;
+}
+function closeSession(){if(ES)ES.close();ES=null;CUR=null;busCount=0;$("buscount").textContent="";$("buslist").innerHTML="";resetBusTargets();resetThreads();$("stream").innerHTML="";showWelcome();$("bar").style.display=$("exportbtn").style.display="none";$("composer").style.display="block";$("title").textContent="OpenSwarm";const w=(ST&&ST.workdir)?ST.workdir:"";$("wd").textContent=formatWdBadge(w);$("wd").title=w||"Нажмите, чтобы выбрать рабочую папку";}
+function showWelcome(){
+  const curWd=CUR?CUR.workdir:((ST&&ST.workdir)?ST.workdir:"");
+  const mInfo=modeInfo(sel.mode||"auto");
+  $("stream").innerHTML=`<div id="welcome">
+    <h1><span style="color:var(--accent)">✻</span> Чем помочь сегодня?</h1>
+    <div class="welcome-launchpad">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0">
+        <span class="lbl">Рабочая папка:</span>
+        <code style="font-size:12px;color:var(--text);background:var(--panel2);padding:3px 8px;border-radius:7px;border:1px solid var(--line)">📁 ${esc(curWd||"Не выбрана")}</code>
+        <span class="lbl">Режим:</span>
+        <span class="badge ready" style="font-size:11.5px">${esc(mInfo[0])} ${esc(mInfo[1])}</span>
+      </div>
+      <button type="button" class="primary mini" onclick="openNewModal()">📂 Сменить папку / режим чата</button>
+    </div>
+    <p>Пишите или диктуйте 🎤 сразу в поле ниже — или выберите режим работы для нового диалога:</p>
+    <div class="presets" id="wp"></div>
+  </div>`;
   const g=$("wp");
   const quickCards=[
     {mode:"auto",icon:"✨",label:"Умный Авто-режим",desc:"Сам выберет быстрый ответ или рой агентов под вашу задачу"},
-    {mode:"chat",icon:"💬",label:"Быстрый вопрос / Чат",desc:"Мгновенный диалог с одним агентом без лишних шагов"},
-    {mode:"cowork",icon:"🚀",label:"Разработка Роем (Cowork)",desc:"Архитектор + Кодеры + Ревьюер работают в команде над кодом"},
-    {mode:"heal",icon:"🩺",label:"Диагностика и Починка",desc:"Автоматический поиск багов, исправление ошибок и проверка тестов"}
+    {mode:"chat",icon:"💬",label:"Одиночный Чат",desc:"Быстрый диалог с одним агентом без лишних шагов"},
+    {mode:"cowork",icon:"🤝",label:"Разработка в Команде (Cowork)",desc:"Архитектор + Кодеры + Ревьюер работают сообща над кодом"},
+    {mode:"storm",icon:"⚡",label:"Параллельный Рой (Storm)",desc:"Декомпозиция задачи и параллельная работа в git worktrees"},
+    {mode:"architect",icon:"📐",label:"Архитектор и План",desc:"Проектирование архитектуры, оценка рисков и стратегии тестов"},
+    {mode:"heal",icon:"🩺",label:"Диагностика и Починка (Heal)",desc:"Автоматический поиск багов, исправление ошибок и проверка тестов"}
   ];
   for(const c of quickCards){const d=document.createElement("div");d.className="preset"+(sel.mode===c.mode?" on":"");d.innerHTML=`<b>${c.icon} ${esc(c.label)}</b><span>${esc(c.desc)}</span>`;d.onclick=()=>{sel.mode=c.mode;renderModes();showWelcome();$("prompt").focus();};g.appendChild(d);}}
-async function createSession(preset,wd){try{if(preset){sel.mode=preset.mode;sel.skills=new Set(preset.skills);}
+async function createSession(preset,wd,explicitMode){try{if(preset){sel.mode=preset.mode;sel.skills=new Set(preset.skills||[]);}else if(explicitMode){sel.mode=explicitMode;}
+  if(ST&&wd)ST.workdir=wd;
   const s=await api("/api/sessions",{method:"POST",body:JSON.stringify({workdir:wd,mode:sel.mode})});await refreshSessions();await openSession(s.id);$("newmodal").classList.remove("on");}catch(e){alert(e.message);}}
 async function openSession(id){if(ES)ES.close();toggleSidebar(false);const s=await api("/api/sessions/"+id);CUR=s;cards={};board=null;busy=false;lastId=0;busCount=0;$("buscount").textContent="";$("buslist").innerHTML="";resetBusTargets();resetThreads();usageBy={};snap=null;showUsage();ORB=orbInit(s.mode);$("stream").innerHTML="";
   ARTIFACTS=[];CURRENT_ART_IDX=-1;updateArtifactsCount();ATTACHED_IMAGES=[];renderImgPreviews();
-  $("composer").style.display="block";$("exportbtn").style.display="";$("title").textContent=s.title;$("wd").textContent=s.workdir;$("wd").title=s.workdir;
+  $("composer").style.display="block";$("exportbtn").style.display="";$("title").textContent=s.title;$("wd").textContent=formatWdBadge(s.workdir);$("wd").title="Рабочая папка: "+s.workdir+" (нажмите для смены)";
   sel.mode=s.mode;renderModes();updateSkillCount();for(const ev of s.events)apply(ev,true);if(!s.events.length)$("stream").innerHTML='<div class="sys">Чат готов — напишите или надиктуйте 🎤 задачу ниже.</div>';
   setBusy(busy);scrollDown(true);renderSessions();connect();loadFiles("");}
 function connect(){if(!CUR)return;const id=CUR.id;ES=new EventSource(`/api/sessions/${id}/events?token=${TOKEN}&after=${lastId}`);
@@ -2268,28 +2419,103 @@ function orbBoot(){const cv=$("orbcv");const rm=typeof window!=="undefined"&&win
   const pnl=$("orbpanel");try{if(localStorage.getItem("orbmin")!=="0")pnl.classList.add("min");}catch(e){}
   $("orbtoggle").textContent=pnl.classList.contains("min")?"⟩":"⟨";
   $("orbtoggle").onclick=()=>{pnl.classList.toggle("min");try{localStorage.setItem("orbmin",pnl.classList.contains("min")?"1":"0");}catch(e){}$("orbtoggle").textContent=pnl.classList.contains("min")?"⟩":"⟨";orbR.resize();};}
-// new-session modal
-$("newbtn").onclick=()=>{
+// new-session & working-directory modal
+let chosenNewMode="auto";
+const NEW_SESSION_MODES=[
+  {id:"auto",icon:"✨",label:"Умный Авто-режим",desc:"Сам выберет одиночный чат или рой агентов под задачу"},
+  {id:"chat",icon:"💬",label:"Одиночный Чат",desc:"Быстрый диалог с одним агентом в выбранной папке"},
+  {id:"cowork",icon:"🤝",label:"Команда (Cowork)",desc:"Архитектор → Кодер → Ревьюер работают сообща"},
+  {id:"storm",icon:"⚡",label:"Параллельный Рой (Storm)",desc:"Декомпозиция и параллельные агенты в git worktrees"},
+  {id:"architect",icon:"📐",label:"Архитектор (Blueprint)",desc:"Системный архитектор + тест-стратег → ТЗ и план"},
+  {id:"heal",icon:"🩺",label:"Самолечение (Heal)",desc:"Диагностика сбоев, исправление багов и проверка"},
+  {id:"best",icon:"🏆",label:"Турнир (Best of N)",desc:"N независимых решений → судья выбирает лучшее"},
+  {id:"debate",icon:"⚖️",label:"Совет (Debate)",desc:"Дебаты агентов (За / Против / Прагматик) → Вердикт"},
+  {id:"research",icon:"🔎",label:"Исследование",desc:"Параллельный поиск и сводный аналитический отчёт"},
+  {id:"review",icon:"🛡️",label:"Код-ревью",desc:"Многосторонний аудит безопасности, стиля и багов"}
+];
+function openNewModal(){
   const presets=(ST&&Array.isArray(ST.presets))?ST.presets:[];
-  chosenPreset=presets[0]||null;
+  chosenPreset=null;
+  chosenNewMode=sel.mode||"auto";
   $("nwd").value=CUR?CUR.workdir:(ST?ST.workdir:"");
+  renderNewModeGrid();
   renderPresetGrid();
   $("newmodal").classList.add("on");
   openPicker();
-};
-function renderPresetGrid(){
-  const g=$("presetgrid");if(!g)return;
+}
+$("newbtn").onclick=openNewModal;
+if($("wd"))$("wd").onclick=openNewModal;
+function renderNewModeGrid(){
+  const g=$("new_mode_grid");if(!g)return;
   g.innerHTML="";
-  const presets=(ST&&Array.isArray(ST.presets))?ST.presets:[];
-  for(const p of presets){
-    const d=document.createElement("div");d.className="preset"+(chosenPreset&&chosenPreset.id===p.id?" on":"");
-    d.innerHTML=`<b>${esc(modeInfo(p.mode)[0])} ${esc(p.label)}</b><span>${esc(p.description)}</span>`;
-    d.onclick=()=>{chosenPreset=p;renderPresetGrid();};
+  for(const m of NEW_SESSION_MODES){
+    const d=document.createElement("div");
+    d.className="new-mode-card"+((!chosenPreset&&chosenNewMode===m.id)?" on":"");
+    d.innerHTML=`<b><span>${m.icon}</span><span>${esc(m.label)}</span></b><span>${esc(m.desc)}</span>`;
+    d.onclick=()=>{chosenPreset=null;chosenNewMode=m.id;renderNewModeGrid();renderPresetGrid();};
     g.appendChild(d);
   }
 }
+function renderPresetGrid(){
+  const g=$("presetgrid"),sec=$("preset_sec");if(!g)return;
+  g.innerHTML="";
+  const presets=(ST&&Array.isArray(ST.presets))?ST.presets:[];
+  if(sec)sec.style.display=presets.length?"block":"none";
+  for(const p of presets){
+    const d=document.createElement("div");d.className="preset"+(chosenPreset&&chosenPreset.id===p.id?" on":"");
+    d.innerHTML=`<b>${esc(modeInfo(p.mode)[0])} ${esc(p.label)}</b><span>${esc(p.description)}</span>`;
+    d.onclick=()=>{chosenPreset=p;chosenNewMode=p.mode;renderNewModeGrid();renderPresetGrid();};
+    g.appendChild(d);
+  }
+}
+function renderQuickDirChips(d){
+  const box=$("new_quick_dirs");if(!box||!d)return;
+  box.innerHTML="";
+  const seen=new Set();
+  const list=[];
+  for(const s of (d.shortcuts||[])){if(s.path&&!seen.has(s.path)){seen.add(s.path);list.push({name:"📌 "+s.name,path:s.path});}}
+  for(const r of (d.recent||[]).slice(0,5)){if(r&&!seen.has(r)){seen.add(r);const nm=r.split("/").filter(Boolean).slice(-2).join("/")||r;list.push({name:"🕒 "+nm,path:r});}}
+  for(const it of list){
+    const b=document.createElement("button");
+    b.type="button";
+    b.className="qdir-chip"+(it.path===d.path?" on":"");
+    b.textContent=it.name;
+    b.title=it.path;
+    b.onclick=()=>{$("pkfilter").value="";browse(it.path);};
+    box.appendChild(b);
+  }
+}
 $("cancelnew").onclick=()=>$("newmodal").classList.remove("on");
-$("createnew").onclick=()=>createSession(chosenPreset,$("nwd").value.trim()||(ST?ST.workdir:""));
+$("createnew").onclick=()=>createSession(chosenPreset,$("nwd").value.trim()||(ST?ST.workdir:""),chosenNewMode);
+if($("applywdcurrent"))$("applywdcurrent").onclick=async()=>{
+  const targetWd=$("nwd").value.trim()||(ST?ST.workdir:"");
+  const targetMode=chosenPreset?chosenPreset.mode:(chosenNewMode||sel.mode||"auto");
+  try{
+    if(CUR){
+      const updated=await api(`/api/sessions/${CUR.id}`,{method:"PATCH",body:JSON.stringify({workdir:targetWd,mode:targetMode})});
+      CUR.workdir=updated.workdir;
+      CUR.mode=updated.mode;
+      sel.mode=updated.mode;
+      if(ST)ST.workdir=updated.workdir;
+      $("wd").textContent=formatWdBadge(updated.workdir);
+      $("wd").title="Рабочая папка: "+updated.workdir+" (нажмите для смены)";
+      renderModes();
+      await refreshSessions();
+      loadFiles("");
+      $("newmodal").classList.remove("on");
+      toast(`Папка и режим чата обновлены: ${updated.workdir}`);
+    }else{
+      if(ST)ST.workdir=targetWd;
+      sel.mode=targetMode;
+      $("wd").textContent=formatWdBadge(targetWd);
+      $("wd").title=targetWd;
+      renderModes();
+      showWelcome();
+      $("newmodal").classList.remove("on");
+      toast(`Выбрана рабочая папка: ${targetWd}`);
+    }
+  }catch(e){toast("Ошибка смены папки: "+e.message);}
+};
 // ---- folder picker (breadcrumbs, shortcuts, filter, Tab-completion, new folder, system dialog)
 let PK={d:null,hidden:false,sel:-1,t:null};
 try{PK.hidden=localStorage.getItem("pkhidden")==="1";}catch(e){}
@@ -2318,6 +2544,7 @@ async function browse(p,soft){
   catch(e){$("pkinfo").textContent="⚠ "+e.message;}}
 function renderPicker(){
   const d=PK.d;if(!d)return;
+  renderQuickDirChips(d);
   const side=$("pkside");side.innerHTML="";
   const addGroup=(title,items)=>{if(!items.length)return;const h=document.createElement("h6");h.textContent=title;side.appendChild(h);
     for(const it of items){const r=document.createElement("div");r.textContent=it.name;r.title=it.path;if(it.path===d.path)r.className="on";r.onclick=()=>{$("pkfilter").value="";browse(it.path);};side.appendChild(r);}};
@@ -2718,6 +2945,7 @@ async function openIntegModal(){
   try{
     const d=await api("/api/integrations");
     $("itg_enabled").checked=!!d.notify_telegram;
+    if($("itg_confirm"))$("itg_confirm").checked=d.telegram_require_confirmation!==false;
     $("itg_token").value=d.telegram_bot_token||"";
     $("itg_chat").value=d.telegram_chat_id||"";
     $("idc_enabled").checked=!!d.notify_discord;
@@ -2743,6 +2971,7 @@ $("integclose").onclick=()=>$("integmodal").classList.remove("on");
 $("integsave").onclick=async()=>{
   const payload={
     notify_telegram:$("itg_enabled").checked,
+    telegram_require_confirmation:$("itg_confirm")?$("itg_confirm").checked:true,
     telegram_bot_token:$("itg_token").value.trim(),
     telegram_chat_id:$("itg_chat").value.trim(),
     notify_discord:$("idc_enabled").checked,
@@ -3255,6 +3484,7 @@ async function refreshTgStatus(){
   try{
     const d=await api("/api/telegram/user/status");
     const dot=$("tg_status_dot"),txt=$("tg_status_text"),logoutBtn=$("tg_logout_btn"),loginForm=$("tg_login_form"),dialogsBox=$("tg_dialogs_box");
+    renderTgDrafts(d.pending_drafts||[]);
     if(d.active){
       dot.className="dot ok";
       const uName=(d.user&&(d.user.first_name||d.user.username))?`${d.user.first_name||""} ${d.user.last_name||""} ${d.user.username?"(@"+d.user.username+")":""}`.trim():(d.phone||"Пользователь");
@@ -3273,6 +3503,40 @@ async function refreshTgStatus(){
     }
   }catch(e){
     if($("tg_status_text"))$("tg_status_text").textContent="Ошибка связи с Telegram: "+e.message;
+  }
+}
+
+function renderTgDrafts(drafts){
+  const box=$("tg_drafts_box"),list=$("tg_drafts_list");
+  if(!box||!list)return;
+  if(!drafts||!drafts.length){
+    box.style.display="none";
+    list.innerHTML="";
+    return;
+  }
+  box.style.display="";
+  list.innerHTML="";
+  for(const dr of drafts){
+    const row=document.createElement("div");
+    row.className="krow";
+    row.innerHTML=`<div class="grow"><div style="font-size:11.5px;font-weight:700">Чат: ${esc(dr.chat_title||String(dr.chat_id))}</div><div class="lbl" style="color:var(--fg)">${esc(dr.text)}</div></div>`+
+      `<div class="row" style="gap:6px"><button class="primary mini tg-approve-draft">✔ Отправить</button><button class="danger mini tg-reject-draft">✕ Отклонить</button></div>`;
+    row.querySelector(".tg-approve-draft").onclick=async()=>{
+      try{
+        const r=await api("/api/telegram/user/drafts/approve",{method:"POST",body:JSON.stringify({draft_id:dr.id})});
+        if(r.ok&&r.sent){toast("Черновик подтверждён и отправлен ✔");}
+        else{toast(r.error||"Не удалось отправить");}
+        await refreshTgStatus();
+      }catch(e){toast(e.message);}
+    };
+    row.querySelector(".tg-reject-draft").onclick=async()=>{
+      try{
+        await api("/api/telegram/user/drafts/reject",{method:"POST",body:JSON.stringify({draft_id:dr.id})});
+        toast("Черновик удалён");
+        await refreshTgStatus();
+      }catch(e){toast(e.message);}
+    };
+    list.appendChild(row);
   }
 }
 
@@ -3409,16 +3673,43 @@ $("tg_suggest_btn").onclick=async()=>{
   }
 };
 
-$("tg_send_btn").onclick=async()=>{
+$("tg_send_btn").onclick=()=>{
   if(!TG_CURRENT_CHAT){toast("Выберите диалог");return;}
+  const text=($("tg_reply_input").value||"").trim();
+  if(!text){toast("Введите текст сообщения");return;}
+  const bar=$("tg_confirm_bar"),prev=$("tg_confirm_preview");
+  if(bar&&prev){
+    prev.textContent=`Получатель: "${TG_CURRENT_CHAT.title||TG_CURRENT_CHAT.id}" — Текст: "${text}"`;
+    bar.style.display="block";
+  }
+};
+$("tg_confirm_yes").onclick=async()=>{
+  if(!TG_CURRENT_CHAT)return;
   const text=($("tg_reply_input").value||"").trim();
   if(!text)return;
   try{
-    await api("/api/telegram/user/send",{method:"POST",body:JSON.stringify({chat_id:TG_CURRENT_CHAT.id,text})});
-    $("tg_reply_input").value="";
-    toast("Сообщение отправлено в Telegram ✔");
-    await tgLoadMessages(TG_CURRENT_CHAT.id);
+    const r=await api("/api/telegram/user/send",{
+      method:"POST",
+      body:JSON.stringify({
+        chat_id:TG_CURRENT_CHAT.id,
+        chat_title:TG_CURRENT_CHAT.title||"",
+        text:text,
+        confirmed:true
+      })
+    });
+    if($("tg_confirm_bar"))$("tg_confirm_bar").style.display="none";
+    if(r.ok&&r.sent){
+      $("tg_reply_input").value="";
+      toast("Сообщение подтверждено и отправлено в Telegram ✔");
+      await tgLoadMessages(TG_CURRENT_CHAT.id);
+    }else{
+      toast(r.error||"Сообщение сохранено в черновики (ожидает подтверждения)");
+      await refreshTgStatus();
+    }
   }catch(e){toast("Ошибка отправки: "+e.message);}
+};
+$("tg_confirm_no").onclick=()=>{
+  if($("tg_confirm_bar"))$("tg_confirm_bar").style.display="none";
 };
 $("tg_reply_input").addEventListener("keydown",e=>{
   if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("tg_send_btn").click();}
@@ -3477,7 +3768,7 @@ function applyFreeModel(modelId){
   loadFreeCatalog();
 }
 
-// Token Optimizer Analytics
+// Token Optimizer Analytics & Controls v2.0
 async function openOptimizerModal(){
   $("optimizermodal").classList.add("on");
   await refreshOptimizerStats();
@@ -3489,11 +3780,201 @@ async function refreshOptimizerStats(){
   try{
     const st=await api("/api/optimizer/stats");
     if($("opt_saved_chars"))$("opt_saved_chars").textContent=Number(st.saved_chars||0).toLocaleString();
+    if($("opt_saved_tokens"))$("opt_saved_tokens").textContent=Number(st.saved_tokens_est||0).toLocaleString();
     if($("opt_savings_pct"))$("opt_savings_pct").textContent=(st.savings_pct||0)+"%";
     if($("opt_cache_hits"))$("opt_cache_hits").textContent=String(st.cache_hits||0);
     if($("optbadge"))$("optbadge").textContent=(st.savings_pct||0)+"%";
+    if(st.settings){
+      if($("opt_mode_sel"))$("opt_mode_sel").value=st.settings.mode||"aggressive";
+      if($("opt_kv_prefix"))$("opt_kv_prefix").checked=st.settings.kv_prefix_align!==false;
+      if($("opt_llmlingua"))$("opt_llmlingua").checked=st.settings.llmlingua_prune!==false;
+      if($("opt_repomap"))$("opt_repomap").checked=st.settings.repo_skeleton!==false;
+      if($("opt_diff_first"))$("opt_diff_first").checked=st.settings.diff_only_output!==false;
+      if($("opt_sem_cache"))$("opt_sem_cache").checked=st.settings.semantic_cache!==false;
+    }
   }catch(e){}
 }
+
+$("opt_save_btn").onclick=async()=>{
+  try{
+    const payload={
+      mode:$("opt_mode_sel").value,
+      kv_prefix_align:$("opt_kv_prefix").checked,
+      llmlingua_prune:$("opt_llmlingua").checked,
+      repo_skeleton:$("opt_repomap").checked,
+      diff_only_output:$("opt_diff_first").checked,
+      semantic_cache:$("opt_sem_cache").checked
+    };
+    await api("/api/optimizer/settings",{method:"POST",body:JSON.stringify(payload)});
+    await refreshOptimizerStats();
+    toast("Настройки экономии токенов v2.0 сохранены ⚡");
+  }catch(e){toast(e.message);}
+};
+
+$("opt_reset_btn").onclick=async()=>{
+  try{
+    await api("/api/optimizer/reset",{method:"POST"});
+    await refreshOptimizerStats();
+    toast("Статистика оптимизатора сброшена");
+  }catch(e){toast(e.message);}
+};
+
+$("opt_build_repomap_btn").onclick=async()=>{
+  const prev=$("opt_repomap_preview");
+  if(!prev)return;
+  prev.style.display="block";
+  prev.textContent="Генерация AST/Regex карты репозитория…";
+  try{
+    const wd=(CUR&&CUR.workdir)?CUR.workdir:((ST&&ST.workdir)?ST.workdir:"");
+    const r=await api("/api/optimizer/repomap",{method:"POST",body:JSON.stringify({workdir:wd,max_files:30,max_chars:6000})});
+    prev.textContent=r.skeleton||"Файлы исходного кода не найдены в директории.";
+  }catch(e){prev.textContent="Ошибка: "+e.message;}
+};
+
+// Desktop App Automation (Computer Use Agent)
+async function openDesktopModal(){
+  $("desktopmodal").classList.add("on");
+  await refreshDesktopStatus();
+}
+if($("desktopbtn"))$("desktopbtn").onclick=openDesktopModal;
+$("desk_close").onclick=()=>$("desktopmodal").classList.remove("on");
+$("desk_refresh_btn").onclick=refreshDesktopStatus;
+
+async function refreshDesktopStatus(){
+  try{
+    const d=await api("/api/desktop/status");
+    if($("desk_confirm_toggle"))$("desk_confirm_toggle").checked=d.require_confirmation!==false;
+    const act=d.active_window||{};
+    if($("desk_active_lbl")){
+      $("desk_active_lbl").textContent=act.title?`${act.title} (${act.app_class||act.address||""})`:"Окно не определено";
+    }
+    renderDesktopPending(d.pending_actions||[]);
+    renderDesktopWindows(d.windows||[]);
+  }catch(e){
+    if($("desk_active_lbl"))$("desk_active_lbl").textContent="Ошибка: "+e.message;
+  }
+}
+
+$("desk_confirm_toggle").onchange=async()=>{
+  try{
+    await api("/api/desktop/settings",{
+      method:"POST",
+      body:JSON.stringify({require_confirmation:$("desk_confirm_toggle").checked})
+    });
+    toast($("desk_confirm_toggle").checked?"Подтверждение действий в приложениях включено 🛡️":"Автоматическое выполнение без подтверждения включено");
+  }catch(e){toast(e.message);}
+};
+
+function renderDesktopPending(actions){
+  const box=$("desk_pending_box"),list=$("desk_pending_list");
+  if(!box||!list)return;
+  if(!actions||!actions.length){
+    box.style.display="none";
+    list.innerHTML="";
+    return;
+  }
+  box.style.display="";
+  list.innerHTML="";
+  for(const act of actions){
+    const card=document.createElement("div");
+    card.className="desk-act-card";
+    card.innerHTML=`<div class="grow"><div style="font-weight:700;font-size:12px">${esc(act.description||act.kind)}</div><div class="lbl">Тип: <code>${esc(act.kind)}</code> ${act.target_window?`· Окно: <code>${esc(act.target_window)}</code>`:""} ${act.text?`· Значение: <code>${esc(act.text.slice(0,80))}</code>`:""}</div></div>`+
+      `<div class="row" style="gap:6px"><button class="primary mini desk-approve-btn">✔ Выполнить</button><button class="danger mini desk-reject-btn">✕ Отмена</button></div>`;
+    card.querySelector(".desk-approve-btn").onclick=async()=>{
+      try{
+        const r=await api("/api/desktop/approve",{method:"POST",body:JSON.stringify({action_id:act.id})});
+        if(r.ok)toast("Действие выполнено: "+(r.message||act.kind));
+        else toast("Ошибка: "+(r.error||"не удалось выполнить"));
+        await refreshDesktopStatus();
+      }catch(e){toast(e.message);}
+    };
+    card.querySelector(".desk-reject-btn").onclick=async()=>{
+      try{
+        await api("/api/desktop/reject",{method:"POST",body:JSON.stringify({action_id:act.id})});
+        toast("Действие отменено");
+        await refreshDesktopStatus();
+      }catch(e){toast(e.message);}
+    };
+    list.appendChild(card);
+  }
+}
+
+function renderDesktopWindows(windows){
+  const box=$("desk_windows_list");
+  if(!box)return;
+  if(!windows||!windows.length){
+    box.innerHTML='<div class="lbl" style="padding:10px;text-align:center">Открытые окна не найдены (проверьте hyprctl / wmctrl)</div>';
+    return;
+  }
+  box.innerHTML="";
+  for(const w of windows){
+    const row=document.createElement("div");
+    row.className="desk-win-row";
+    const targetKey=w.app_class||w.title||w.address||"";
+    row.innerHTML=`<div class="grow" style="min-width:0"><div style="font-weight:600;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(w.title||"Без названия")}</div><div class="lbl" style="font-size:11px">Класс: <code>${esc(w.app_class||"—")}</code> · WS: ${esc(String(w.workspace||"1"))} ${w.pid?`· PID: ${w.pid}`:""}</div></div>`+
+      `<div class="row" style="gap:4px"><button class="mini desk-win-pick" title="Выбрать как цель">🎯 Выбрать</button><button class="mini desk-win-focus" title="Переключить фокус">👁 Фокус</button><button class="mini desk-win-shot" title="Скриншот окна">📸 Снимок</button></div>`;
+    row.querySelector(".desk-win-pick").onclick=()=>{
+      if($("desk_act_target"))$("desk_act_target").value=targetKey;
+      toast(`Цель выбрана: ${targetKey}`);
+    };
+    row.querySelector(".desk-win-focus").onclick=async()=>{
+      try{
+        const r=await api("/api/desktop/action",{method:"POST",body:JSON.stringify({kind:"focus_window",target_window:targetKey,confirmed:true})});
+        toast(r.ok?`Фокус переключён на ${targetKey}`:(r.error||"Ошибка"));
+      }catch(e){toast(e.message);}
+    };
+    row.querySelector(".desk-win-shot").onclick=async()=>{
+      try{
+        const r=await api("/api/desktop/action",{method:"POST",body:JSON.stringify({kind:"screenshot_window",target_window:targetKey,confirmed:true})});
+        toast(r.ok?`Снимок сохранён: ${r.path||"OK"}`:(r.error||"Ошибка снимка"));
+      }catch(e){toast(e.message);}
+    };
+    box.appendChild(row);
+  }
+}
+
+$("desk_assist_btn").onclick=async()=>{
+  const goal=($("desk_goal_input").value||"").trim();
+  if(!goal){toast("Опишите задачу для выполнения в приложении");return;}
+  const target=($("desk_act_target").value||"").trim();
+  try{
+    const r=await api("/api/desktop/assist",{method:"POST",body:JSON.stringify({goal,target_window:target})});
+    if(r.ok){
+      $("desk_goal_input").value="";
+      toast(`Сформировано действий в очереди подтверждения: ${(r.queued_actions||[]).length}`);
+      await refreshDesktopStatus();
+    }else{
+      toast(r.error||"Не удалось спланировать действия");
+    }
+  }catch(e){toast(e.message);}
+};
+
+$("desk_act_run_btn").onclick=async()=>{
+  const kind=$("desk_act_type").value;
+  const target=($("desk_act_target").value||"").trim();
+  const val=($("desk_act_val").value||"").trim();
+  const needConfirm=$("desk_confirm_toggle")?$("desk_confirm_toggle").checked:true;
+  try{
+    const r=await api("/api/desktop/action",{
+      method:"POST",
+      body:JSON.stringify({
+        kind:kind,
+        target_window:target,
+        text:val,
+        shortcut:kind==="send_shortcut"?val:"",
+        confirmed:!needConfirm
+      })
+    });
+    if(r.requires_confirmation){
+      toast("Действие добавлено в очередь подтверждения 🛡️");
+    }else if(r.ok){
+      toast("Выполнено: "+(r.message||kind));
+    }else{
+      toast("Ошибка: "+(r.error||"не удалось выполнить"));
+    }
+    await refreshDesktopStatus();
+  }catch(e){toast(e.message);}
+};
 
 /* SWARM PET & COMPANION ENGINE */
 const PET_CONFIG = {
@@ -4228,6 +4709,7 @@ function initPet(){
 // Slash Command Palette (Claude Code / Antigravity style)
 const SLASH_COMMANDS=[
   {cmd:"/pet",desc:"Open Screen Pet & Desktop Companion settings",run:async()=>{openPetModal();return true;}},
+  {cmd:"/desktop",desc:"Open Desktop App Automation (work inside open apps on your behalf)",run:async()=>{await openDesktopModal();return true;}},
   {cmd:"/auto",desc:"Switch to ✨ Auto intelligent dispatch mode",run:async()=>{sel.mode="auto";renderModes();toast("Mode → ✨ Auto");return true;}},
   {cmd:"/telegram",desc:"Open Telegram Userbot Assistant (read chats & suggest replies)",run:async()=>{await openTelegramModal();return true;}},
   {cmd:"/free",desc:"Open Free AI Models Catalog (OpenCode, Kilo, Gemini, Groq)",run:async()=>{await openFreeModelsModal();return true;}},

@@ -220,8 +220,8 @@ class WebApp:
         if summary.failed:
             summary_text += f"Failed: {', '.join(summary.failed)}\n"
 
-        if integ.telegram_enabled and integ.telegram_bot_token and integ.telegram_chat_id:
-            asyncio.create_task(send_telegram(integ.telegram_bot_token, integ.telegram_chat_id, summary_text))
+        if integ.telegram_enabled and integ.telegram_bot_token and integ.telegram_chat_id and not getattr(integ, "telegram_require_confirmation", True):
+            asyncio.create_task(send_telegram(integ.telegram_bot_token, integ.telegram_chat_id, summary_text, confirmed=True))
         if integ.discord_enabled and integ.discord_webhook_url:
             fields = [
                 {"name": "Mode", "value": summary.mode, "inline": True},
@@ -724,6 +724,8 @@ class WebApp:
             return await self.integrations_route(method, parts[1:], js, writer)
         if parts and parts[0] == "telegram":
             return await self.telegram_user_route(method, parts[1:], q, js, writer)
+        if parts and parts[0] == "desktop":
+            return await self.desktop_route(method, parts[1:], q, js, writer)
         if parts and parts[0] == "optimizer":
             return await self.optimizer_route(method, parts[1:], js, writer)
         if parts and parts[0] == "free-models":
@@ -840,10 +842,28 @@ class WebApp:
                 s.load_events()
                 return await _json(writer, {**s.meta(), "events": s.events[-20000:]})
             if not rest and method in ("PATCH", "PUT"):
-                title = str(js.get("title", "")).strip()
-                if not title:
-                    raise HttpError(400, "title must not be empty")
-                s.title = title[:80]
+                changed = False
+                if "title" in js:
+                    title = str(js.get("title", "")).strip()
+                    if not title:
+                        raise HttpError(400, "title must not be empty")
+                    s.title = title[:80]
+                    changed = True
+                if "workdir" in js and js.get("workdir"):
+                    new_wd = Path(str(js.get("workdir"))).expanduser().resolve()
+                    if not new_wd.is_dir():
+                        raise HttpError(400, f"{new_wd} is not a directory")
+                    if not path_allowed(self.cfg, new_wd):
+                        raise HttpError(403, f"{new_wd} is outside security.allowed_roots")
+                    s.workdir = new_wd
+                    changed = True
+                if "mode" in js and js.get("mode"):
+                    new_mode = str(js.get("mode"))
+                    if self.valid_mode(new_mode):
+                        s.mode = new_mode
+                        changed = True
+                if not changed:
+                    raise HttpError(400, "title, workdir, or mode must be provided")
                 s.save_meta()
                 return await _json(writer, s.meta())
             if rest == ["export"] and method == "GET":
@@ -1439,10 +1459,89 @@ class WebApp:
         raise HttpError(404, "unknown endpoint")
 
     async def optimizer_route(self, method: str, rest: list[str], js: dict[str, Any], writer: asyncio.StreamWriter) -> None:
-        from .optimizer import get_optimizer_stats
+        from .optimizer import (
+            build_repo_skeleton,
+            get_optimizer_stats,
+            optimize_prompt_for_model,
+            reset_optimizer_stats,
+            update_optimizer_settings,
+        )
         if (not rest or rest == ["stats"]) and method == "GET":
             return await _json(writer, get_optimizer_stats())
+        if rest == ["settings"] and method == "POST":
+            return await _json(writer, update_optimizer_settings(js))
+        if rest == ["reset"] and method == "POST":
+            reset_optimizer_stats()
+            return await _json(writer, get_optimizer_stats())
+        if rest == ["repomap"] and method in ("GET", "POST"):
+            wd_str = str(js.get("workdir") or self.workdir)
+            wd = Path(wd_str).expanduser().resolve()
+            skeleton = build_repo_skeleton(wd if wd.is_dir() else self.workdir)
+            return await _json(writer, {"ok": True, "skeleton": skeleton, "chars": len(skeleton), "stats": get_optimizer_stats()})
+        if rest == ["compress"] and method == "POST":
+            raw = str(js.get("text", ""))
+            comp = optimize_prompt_for_model(raw, role=str(js.get("role", "chat")))
+            return await _json(writer, {
+                "ok": True,
+                "original_chars": len(raw),
+                "compressed_chars": len(comp),
+                "saved_chars": max(0, len(raw) - len(comp)),
+                "compressed": comp,
+                "stats": get_optimizer_stats(),
+            })
         raise HttpError(404, "unknown endpoint in optimizer api")
+
+    async def desktop_route(self, method: str, rest: list[str], q: dict[str, list[str]], js: dict[str, Any], writer: asyncio.StreamWriter) -> None:
+        from .desktop_agent import get_desktop_agent
+        agent = get_desktop_agent(self.workdir)
+        if (not rest or rest == ["status"]) and method == "GET":
+            return await _json(writer, agent.status())
+        if rest == ["windows"] and method == "GET":
+            return await _json(writer, {"ok": True, "windows": agent.list_windows(), "active": agent.get_active_window()})
+        if rest == ["settings"] and method == "POST":
+            if "require_confirmation" in js:
+                agent.require_confirmation = bool(js["require_confirmation"])
+            return await _json(writer, agent.status())
+        if rest == ["action"] and method == "POST":
+            act = str(js.get("action") or js.get("kind") or "").strip()
+            if not act:
+                raise HttpError(400, "Укажите тип действия (action)")
+            target = str(js.get("target") or js.get("target_window") or "").strip()
+            value = str(js.get("value") or js.get("shortcut") or js.get("text") or "")
+            confirmed = bool(js.get("confirmed", False))
+            desc = str(js.get("description", "")).strip()
+            res = agent.execute_action(action=act, target=target, value=value, confirmed=confirmed, description=desc)
+            return await _json(writer, res)
+        if rest == ["approve"] and method == "POST":
+            aid = str(js.get("id") or js.get("action_id") or "").strip()
+            if not aid:
+                raise HttpError(400, "Укажите id действия")
+            try:
+                return await _json(writer, agent.approve_action(aid))
+            except Exception as exc:
+                raise HttpError(400, str(exc))
+        if rest == ["reject"] and method == "POST":
+            aid = str(js.get("id") or js.get("action_id") or "").strip()
+            rej = agent.reject_action(aid)
+            return await _json(writer, {"ok": rej.get("ok", False), "pending": agent.list_pending()})
+        if rest == ["assist"] and method == "POST":
+            goal = str(js.get("goal", "")).strip()
+            target_win = str(js.get("target_window") or js.get("target") or "").strip()
+            if not goal:
+                raise HttpError(400, "Опишите задачу для выполнения в приложении")
+
+            async def _run_llm(p: str) -> str:
+                try:
+                    from .runner import OpenCodeRunner
+                    runner = OpenCodeRunner(self.cfg, self.workdir, "desktop_assist", "chat", self.cfg.roles.coder)
+                    res = await runner.run(p)
+                    return res.clean_output
+                except Exception:
+                    return ""
+
+            planned = await agent.plan_actions_for_goal(goal, runner_fn=_run_llm, target_window=target_win)
+            return await _json(writer, {"ok": True, "planned": planned, "queued_actions": planned, "pending": agent.list_pending()})
+        raise HttpError(404, "unknown endpoint in desktop api")
 
     def free_models_catalog(self) -> dict[str, Any]:
         return {
@@ -1522,7 +1621,7 @@ class WebApp:
             limit = int((q.get("limit") or ["20"])[0])
             try:
                 res = await mgr.get_dialogs(limit=min(50, max(1, limit)))
-                return await _json(writer, {"dialogs": res})
+                return await _json(writer, {"ok": True, "dialogs": res})
             except Exception as exc:
                 raise HttpError(400, f"Ошибка загрузки чатов: {exc}")
 
@@ -1533,7 +1632,7 @@ class WebApp:
             limit = int((q.get("limit") or ["15"])[0])
             try:
                 res = await mgr.get_messages(chat_id, limit=min(50, max(1, limit)))
-                return await _json(writer, {"messages": res})
+                return await _json(writer, {"ok": True, "messages": res})
             except Exception as exc:
                 raise HttpError(400, f"Ошибка загрузки сообщений: {exc}")
 
@@ -1554,20 +1653,40 @@ class WebApp:
 
             try:
                 replies = await mgr.suggest_reply(chat_id, hint, runner_fn=_run_llm)
-                return await _json(writer, {"suggestions": replies})
+                return await _json(writer, {"ok": True, "suggestions": replies})
             except Exception as exc:
                 raise HttpError(400, f"Ошибка генерации ответов: {exc}")
 
         if rest == ["user", "send"] and method == "POST":
             chat_id = js.get("chat_id")
             text = str(js.get("text", "")).strip()
+            confirmed = bool(js.get("confirmed", False))
+            chat_title = str(js.get("chat_title", "")).strip()
             if not chat_id or not text:
                 raise HttpError(400, "chat_id и text обязательны")
             try:
-                res = await mgr.send_message(chat_id, text)
+                res = await mgr.send_message(chat_id, text, confirmed=confirmed, chat_title=chat_title)
                 return await _json(writer, res)
             except Exception as exc:
                 raise HttpError(400, f"Ошибка отправки сообщения: {exc}")
+
+        if rest == ["user", "drafts"] and method == "GET":
+            return await _json(writer, {"ok": True, "drafts": mgr.list_drafts(), "require_confirmation": mgr.require_confirmation})
+
+        if rest == ["user", "drafts", "approve"] and method == "POST":
+            did = str(js.get("id") or js.get("draft_id") or "").strip()
+            if not did:
+                raise HttpError(400, "Укажите id черновика")
+            try:
+                res = await mgr.approve_draft(did)
+                return await _json(writer, res)
+            except Exception as exc:
+                raise HttpError(400, f"Ошибка подтверждения черновика: {exc}")
+
+        if rest == ["user", "drafts", "reject"] and method == "POST":
+            did = str(js.get("id") or js.get("draft_id") or "").strip()
+            ok = mgr.reject_draft(did)
+            return await _json(writer, {"ok": ok, "drafts": mgr.list_drafts()})
 
         if rest == ["user", "logout"] and method == "POST":
             ok = await mgr.logout()

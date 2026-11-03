@@ -29,6 +29,7 @@ class IntegrationSettings:
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
     telegram_enabled: bool = False
+    telegram_require_confirmation: bool = True
 
     discord_webhook_url: str = ""
     discord_enabled: bool = False
@@ -47,6 +48,7 @@ class IntegrationSettings:
             "telegram_bot_token": self.telegram_bot_token,
             "telegram_chat_id": self.telegram_chat_id,
             "telegram_enabled": self.telegram_enabled,
+            "telegram_require_confirmation": self.telegram_require_confirmation,
             "notify_telegram": self.telegram_enabled,
             "discord_webhook_url": self.discord_webhook_url,
             "discord_enabled": self.discord_enabled,
@@ -68,6 +70,7 @@ class IntegrationSettings:
             telegram_bot_token=str(data.get("telegram_bot_token", "")),
             telegram_chat_id=str(data.get("telegram_chat_id", "")),
             telegram_enabled=bool(data.get("telegram_enabled", data.get("notify_telegram", False))),
+            telegram_require_confirmation=bool(data.get("telegram_require_confirmation", True)),
             discord_webhook_url=str(data.get("discord_webhook_url", "")),
             discord_enabled=bool(data.get("discord_enabled", data.get("notify_discord", False))),
             smtp_host=str(data.get("smtp_host", "")),
@@ -81,9 +84,9 @@ class IntegrationSettings:
         )
 
 
-async def send_telegram(token: str, chat_id: str, text: str, parse_mode: str = "HTML") -> bool:
-    """Send a notification message to Telegram."""
-    if not token or not chat_id:
+async def send_telegram(token: str, chat_id: str, text: str, parse_mode: str = "HTML", confirmed: bool = True) -> bool:
+    """Send a notification message to Telegram (only if confirmed=True)."""
+    if not token or not chat_id or not confirmed:
         return False
 
     def _sync():

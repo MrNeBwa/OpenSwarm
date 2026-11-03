@@ -1,4 +1,6 @@
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from openswarm.optimizer import (
@@ -10,8 +12,14 @@ from openswarm.optimizer import (
     optimize_prompt_for_model,
     get_optimizer_stats,
     reset_optimizer_stats,
+    skeletonize_code,
+    build_repo_skeleton,
+    update_optimizer_settings,
+    get_token_saving_directive,
 )
 from openswarm.telegram_user import TelegramUserManager, get_telegram_user_manager
+from openswarm.integrations import IntegrationSettings, send_telegram
+from openswarm.desktop_agent import DesktopAgentManager
 
 
 class TestOptimizer(unittest.TestCase):
@@ -41,7 +49,6 @@ class TestOptimizer(unittest.TestCase):
             {"role": "user", "content": "Recent prompt for review."},
         ]
         pruned = prune_history_context(turns, max_verbatim_turns=2)
-        # Old messages are condensed into summary bullet points
         self.assertIn("Краткий контекст предыдущих сообщений:", pruned)
         self.assertIn("Recent prompt for review.", pruned)
 
@@ -54,6 +61,13 @@ class TestOptimizer(unittest.TestCase):
         stats = get_optimizer_stats()
         self.assertEqual(stats["cache_hits"], 1)
         self.assertEqual(stats["cache_size"], 1)
+        self.assertIn("saved_tokens_est", stats)
+        self.assertIn("savings_pct", stats)
+
+    def test_semantic_normalized_cache(self):
+        k1 = make_cache_key("Please   explain   how  KV-cache works!", "coder", "m1")
+        k2 = make_cache_key("please explain how kv-cache works", "coder", "m1")
+        self.assertEqual(k1, k2)
 
     def test_optimize_prompt_for_model(self):
         p = "System instruction\n\n\n\nUser query\n" + "\n".join(f"diff line {i}" for i in range(120))
@@ -61,6 +75,35 @@ class TestOptimizer(unittest.TestCase):
         self.assertIn("User query", opt)
         st = get_optimizer_stats()
         self.assertGreater(st["saved_chars"], 0)
+
+    def test_skeletonize_code_and_repo_skeleton(self):
+        py_src = (
+            "import os\n"
+            "class Service:\n"
+            "    '''Docstring here'''\n"
+            "    def compute(self, x: int) -> int:\n"
+            "        a = x + 1\n"
+            "        b = a * 2\n"
+            "        return b\n"
+        )
+        skel = skeletonize_code(py_src, "service.py")
+        self.assertIn("class Service:", skel)
+        self.assertIn("def compute(self, x: int) -> int: ...", skel)
+        self.assertNotIn("b = a * 2", skel)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir) / "app.py"
+            p.write_text(py_src, encoding="utf-8")
+            repo_map = build_repo_skeleton(tmpdir)
+            self.assertIn("app.py", repo_map)
+            self.assertIn("class Service:", repo_map)
+
+    def test_optimizer_settings_and_directive(self):
+        s = update_optimizer_settings({"mode": "ultra", "diff_only_output": True})
+        self.assertEqual(s["mode"], "ultra")
+        directive = get_token_saving_directive("coder")
+        self.assertIn("ECONOMY", directive)
+        update_optimizer_settings({"mode": "aggressive"})
 
 
 class TestTelegramUserManager(unittest.IsolatedAsyncioTestCase):
@@ -71,6 +114,58 @@ class TestTelegramUserManager(unittest.IsolatedAsyncioTestCase):
         self.assertIn("active", st)
         self.assertFalse(st["active"])
         self.assertEqual(st["status"], "disconnected")
+        self.assertTrue(st["require_confirmation"])
+
+    async def test_send_message_blocks_without_confirmation(self):
+        mgr = TelegramUserManager()
+        res = await mgr.send_message("12345", "Hello world", confirmed=False, chat_title="Test Chat")
+        self.assertFalse(res["ok"])
+        self.assertFalse(res["sent"])
+        self.assertTrue(res["requires_confirmation"])
+        self.assertEqual(len(mgr.list_drafts()), 1)
+        draft_id = res["draft"]["id"]
+        rej = mgr.reject_draft(draft_id)
+        self.assertTrue(rej)
+        self.assertEqual(len(mgr.list_drafts()), 0)
+
+    async def test_integration_telegram_blocks_unconfirmed(self):
+        cfg = IntegrationSettings(
+            telegram_enabled=True,
+            telegram_require_confirmation=True,
+            telegram_bot_token="fake-token",
+            telegram_chat_id="123",
+        )
+        # Must NOT send if confirmed=False
+        self.assertFalse(await send_telegram(cfg.telegram_bot_token, cfg.telegram_chat_id, "Test alert", confirmed=False))
+
+
+class TestDesktopAgentManager(unittest.IsolatedAsyncioTestCase):
+    def test_desktop_action_confirmation_queue(self):
+        mgr = DesktopAgentManager()
+        mgr.require_confirmation = True
+        res = mgr.execute_action(
+            kind="paste_text",
+            target_window="code",
+            text="print('hi')",
+            confirmed=False,
+        )
+        self.assertFalse(res["ok"])
+        self.assertTrue(res["requires_confirmation"])
+        pending = mgr.list_pending()
+        self.assertEqual(len(pending), 1)
+        act_id = pending[0]["id"]
+        rej = mgr.reject_action(act_id)
+        self.assertTrue(rej["ok"])
+        self.assertEqual(len(mgr.list_pending()), 0)
+
+    async def test_plan_actions_for_goal(self):
+        mgr = DesktopAgentManager()
+        planned = await mgr.plan_actions_for_goal('Вставь "hello world" и сохрани', target_window="code")
+        self.assertGreaterEqual(len(planned), 2)
+        kinds = [p["kind"] for p in planned]
+        self.assertIn("focus_window", kinds)
+        self.assertIn("type_text", kinds)
+        self.assertIn("send_shortcut", kinds)
 
 
 if __name__ == "__main__":

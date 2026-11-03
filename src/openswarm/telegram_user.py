@@ -1,8 +1,13 @@
 """Telegram User Account Integration for OpenSwarm.
 
 Allows connecting a user's personal Telegram account via Telethon so OpenSwarm
-can read recent messages, understand incoming conversations, and draft/send
-intelligent contextual replies as a personal AI assistant.
+can read recent messages, understand incoming conversations, and draft
+contextual replies as a personal AI assistant.
+
+SAFETY GUARANTEE:
+All outgoing messages are strictly gated by `require_confirmation=True`.
+No message is ever transmitted to Telegram without explicit user confirmation
+(`confirmed=True` or explicit approval of a queued draft).
 """
 
 from __future__ import annotations
@@ -11,7 +16,9 @@ import asyncio
 import json
 import logging
 import os
-import shutil
+import re
+import time
+import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -47,7 +54,7 @@ class TelegramUserProfile:
 
 
 class TelegramUserManager:
-    """Manages an active Telethon client session for a personal Telegram account."""
+    """Manages an active Telethon client session with strict confirmation-gated sending."""
 
     def __init__(self) -> None:
         self.client: Any = None
@@ -56,6 +63,41 @@ class TelegramUserManager:
         self._api_id: int = DEFAULT_API_ID
         self._api_hash: str = DEFAULT_API_HASH
         self._lock = asyncio.Lock()
+        # Mandatory confirmation guard: never send without explicit user approval
+        self.require_confirmation: bool = True
+        self._pending_drafts: dict[str, dict[str, Any]] = {}
+
+    def create_draft(self, chat_id: int | str, text: str, chat_title: str = "") -> dict[str, Any]:
+        """Stores a message in the local pending queue awaiting explicit user confirmation."""
+        draft_id = f"tg_draft_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+        draft = {
+            "id": draft_id,
+            "chat_id": chat_id,
+            "chat_title": chat_title or str(chat_id),
+            "text": text.strip(),
+            "status": "pending_confirmation",
+            "created_at": time.time(),
+        }
+        self._pending_drafts[draft_id] = draft
+        return draft
+
+    def list_drafts(self) -> list[dict[str, Any]]:
+        """Returns all drafts waiting for user approval."""
+        return sorted(self._pending_drafts.values(), key=lambda x: x["created_at"], reverse=True)
+
+    def reject_draft(self, draft_id: str) -> bool:
+        """Discards a pending draft without sending."""
+        return self._pending_drafts.pop(draft_id, None) is not None
+
+    async def approve_draft(self, draft_id: str) -> dict[str, Any]:
+        """Explicitly approves and sends a pending draft."""
+        draft = self._pending_drafts.get(draft_id)
+        if not draft:
+            raise ValueError(f"Черновик {draft_id} не найден или уже удалён")
+        res = await self.send_message(draft["chat_id"], draft["text"], confirmed=True, chat_title=draft.get("chat_title", ""))
+        if res.get("ok"):
+            self._pending_drafts.pop(draft_id, None)
+        return res
 
     async def _ensure_client(self, api_id: int | None = None, api_hash: str | None = None) -> Any:
         try:
@@ -77,17 +119,30 @@ class TelegramUserManager:
         return self.client
 
     async def get_status(self) -> dict[str, Any]:
-        """Returns whether user account is authorized and basic user profile."""
+        """Returns whether user account is authorized, profile, and confirmation guard state."""
+        base_meta = {
+            "require_confirmation": self.require_confirmation,
+            "pending_drafts": self.list_drafts(),
+        }
         try:
-            from telethon import TelegramClient
+            from telethon import TelegramClient  # noqa: F401
         except ImportError:
-            return {"installed": False, "connected": False, "authorized": False, "error": "telethon_missing"}
+            return {
+                **base_meta,
+                "installed": False,
+                "connected": False,
+                "authorized": False,
+                "active": False,
+                "status": "disconnected",
+                "error": "telethon_missing",
+            }
 
         sess_path = Path(_session_file() + ".session")
         has_session = sess_path.exists()
 
         if not has_session and (self.client is None or not self.client.is_connected()):
             return {
+                **base_meta,
                 "installed": True,
                 "connected": False,
                 "authorized": False,
@@ -104,6 +159,7 @@ class TelegramUserManager:
                 is_auth = await client.is_user_authorized()
                 if not is_auth:
                     return {
+                        **base_meta,
                         "installed": True,
                         "connected": True,
                         "authorized": False,
@@ -123,6 +179,7 @@ class TelegramUserManager:
                 )
                 p_dict = profile.to_dict()
                 return {
+                    **base_meta,
                     "installed": True,
                     "connected": True,
                     "authorized": True,
@@ -135,6 +192,7 @@ class TelegramUserManager:
             except Exception as exc:
                 logger.warning("Error getting Telegram user status: %s", exc)
                 return {
+                    **base_meta,
                     "installed": True,
                     "connected": False,
                     "authorized": False,
@@ -241,19 +299,43 @@ class TelegramUserManager:
                 })
             return out
 
-    async def send_message(self, chat_id: int | str, text: str) -> dict[str, Any]:
-        """Sends a text message to chat."""
+    async def send_message(
+        self,
+        chat_id: int | str,
+        text: str,
+        confirmed: bool = False,
+        chat_title: str = "",
+    ) -> dict[str, Any]:
+        """Sends a text message to chat ONLY if `confirmed=True` (when confirmation is required).
+
+        If `confirmed=False`, queues the message as a pending draft and blocks network transmission.
+        """
+        clean_text = (text or "").strip()
+        if not clean_text:
+            raise ValueError("Текст сообщения не может быть пустым")
+
+        if self.require_confirmation and not confirmed:
+            draft = self.create_draft(chat_id, clean_text, chat_title=chat_title)
+            logger.info("Blocked unconfirmed Telegram message to %s; created draft %s", chat_id, draft["id"])
+            return {
+                "ok": False,
+                "sent": False,
+                "requires_confirmation": True,
+                "draft": draft,
+                "error": "Отправка без подтверждения запрещена. Подтвердите отправку сообщения.",
+            }
+
         async with self._lock:
             client = await self._ensure_client()
             if not await client.is_user_authorized():
                 raise RuntimeError("Пользователь Telegram не авторизован")
 
             entity = await client.get_entity(int(chat_id) if str(chat_id).lstrip("-").isdigit() else chat_id)
-            msg = await client.send_message(entity, text.strip())
-            return {"ok": True, "message_id": msg.id}
+            msg = await client.send_message(entity, clean_text)
+            return {"ok": True, "sent": True, "message_id": msg.id}
 
     async def suggest_reply(self, chat_id: int | str, prompt_hint: str = "", runner_fn: Any = None) -> list[str]:
-        """Reads recent conversation and drafts 2-3 contextual replies."""
+        """Reads recent conversation and drafts 2-3 contextual replies (never sends automatically)."""
         msgs = await self.get_messages(chat_id, limit=8)
         if not msgs:
             return ["Привет! Чем могу помочь?", "Здравствуйте! Да, на связи.", "Спасибо, принято!"]
@@ -274,7 +356,6 @@ class TelegramUserManager:
 
         if runner_fn:
             raw = await runner_fn(prompt)
-            # Try parsing JSON array
             try:
                 match = re.search(r"\[\s*\".*?\"\s*\]", raw, re.DOTALL)
                 if match:
@@ -283,8 +364,7 @@ class TelegramUserManager:
                         return [str(x) for x in parsed[:3]]
             except Exception:
                 pass
-            # Fallback: split lines
-            lines = [l.strip().lstrip("123.-*• ") for l in raw.splitlines() if l.strip()]
+            lines = [ln.strip().lstrip("123.-*• ") for ln in raw.splitlines() if ln.strip()]
             if lines:
                 return lines[:3]
 
@@ -297,6 +377,7 @@ class TelegramUserManager:
     async def logout(self) -> bool:
         """Disconnects and deletes session files."""
         async with self._lock:
+            self._pending_drafts.clear()
             if self.client is not None:
                 try:
                     if self.client.is_connected() and await self.client.is_user_authorized():
@@ -307,7 +388,6 @@ class TelegramUserManager:
                     pass
                 self.client = None
 
-            # Remove session files
             sess_dir = _session_dir()
             for p in sess_dir.glob("user_session*"):
                 try:
