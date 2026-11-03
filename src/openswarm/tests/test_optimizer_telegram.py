@@ -108,13 +108,15 @@ class TestOptimizer(unittest.TestCase):
 
 class TestTelegramUserManager(unittest.IsolatedAsyncioTestCase):
     async def test_status_disconnected_by_default(self):
-        mgr = TelegramUserManager()
-        st = await mgr.get_status()
-        self.assertIn("installed", st)
-        self.assertIn("active", st)
-        self.assertFalse(st["active"])
-        self.assertEqual(st["status"], "disconnected")
-        self.assertTrue(st["require_confirmation"])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch.dict("os.environ", {"XDG_CONFIG_HOME": tmpdir}):
+                mgr = TelegramUserManager()
+                st = await mgr.get_status()
+                self.assertIn("installed", st)
+                self.assertIn("active", st)
+                self.assertFalse(st["active"])
+                self.assertEqual(st["status"], "disconnected")
+                self.assertTrue(st["require_confirmation"])
 
     async def test_send_message_blocks_without_confirmation(self):
         mgr = TelegramUserManager()

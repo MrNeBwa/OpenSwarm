@@ -5,21 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenSwarm</title>
 <style>
-:root,html[data-theme="claude"]{--bg:#191815;--panel:#21201C;--panel2:#2A2823;--line:#36332C;--text:#ECE8DE;--dim:#9E988B;--accent:#D97757;--accent2:#C96442;--ok:#4E9F6E;--warn:#D49B38;--bad:#D95858;--code:#131210;--glow:217,119,87;--serif:ui-serif,Georgia, Cambria, "Times New Roman", Times, serif;color-scheme:dark}
+:root,html[data-theme="claude"]{--bg:#191715;--panel:#221F1C;--panel2:#2C2824;--line:#3A342E;--text:#F2EDE4;--dim:#A69E92;--accent:#E58565;--accent2:#D46B48;--ok:#56B37A;--warn:#E0A642;--bad:#E06363;--code:#141210;--glow:229,133,101;--serif:ui-serif,Georgia, Cambria, "Times New Roman", Times, serif;color-scheme:dark}
+html[data-theme="sakura"]{--bg:#1B1518;--panel:#251D21;--panel2:#31262C;--line:#46353E;--text:#FAF0F5;--dim:#BFA3B0;--accent:#F472B6;--accent2:#EC4899;--ok:#4ADE80;--warn:#FBBF24;--bad:#FB7185;--code:#130E11;--glow:244,114,182;--serif:ui-serif,Georgia, Cambria, "Times New Roman", Times, serif;color-scheme:dark}
 html[data-theme="oled"]{--bg:#090A0F;--panel:#11131C;--panel2:#191C28;--line:#262A3B;--text:#F1F5F9;--dim:#8E96AA;--accent:#818CF8;--accent2:#6366F1;--ok:#34D399;--warn:#FBBF24;--bad:#F87171;--code:#050609;--glow:99,102,241;--serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;color-scheme:dark}
 html[data-theme="nord"]{--bg:#1E222A;--panel:#252A34;--panel2:#2E3440;--line:#3B4252;--text:#ECEFF4;--dim:#9AA5B8;--accent:#88C0D0;--accent2:#5E81AC;--ok:#A3BE8C;--warn:#EBCB8B;--bad:#BF616A;--code:#181B22;--glow:136,192,208;--serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;color-scheme:dark}
 html[data-theme="emerald"]{--bg:#0C1410;--panel:#121E18;--panel2:#192921;--line:#243B30;--text:#E6F4ED;--dim:#87A696;--accent:#34D399;--accent2:#10B981;--ok:#34D399;--warn:#FBBF24;--bad:#F87171;--code:#080E0B;--glow:16,185,129;--serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;color-scheme:dark}
 html[data-theme="light"]{--bg:#FAF8F4;--panel:#F2EEE6;--panel2:#E8E2D7;--line:#DCD5C7;--text:#1F1E1B;--dim:#706B60;--accent:#C96442;--accent2:#B85534;--ok:#2E7D4F;--warn:#B7791F;--bad:#C53030;--code:#EFECE4;--glow:201,100,66;--serif:ui-serif,Georgia, Cambria, "Times New Roman", Times, serif;color-scheme:light}
 *{box-sizing:border-box}html,body{height:100%;margin:0}
-body{font:14.5px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;background:radial-gradient(1200px 700px at 8% -10%,rgba(var(--glow),.08),transparent 60%),radial-gradient(900px 600px at 100% 110%,rgba(78,159,110,.04),transparent 55%),var(--bg);color:var(--text);display:flex;-webkit-font-smoothing:antialiased}
+body{font:14.5px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;background:radial-gradient(1200px 700px at 8% -10%,rgba(var(--glow),.11),transparent 62%),radial-gradient(900px 600px at 100% 110%,rgba(86,179,122,.05),transparent 55%),var(--bg);color:var(--text);display:flex;-webkit-font-smoothing:antialiased}
 button,select,input,textarea{font:inherit;color:inherit}
-button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:6px 13px;font-weight:500;font-size:13px;transition:border-color .15s,background .15s,transform .1s,box-shadow .15s}
-button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--panel2) 86%,var(--accent))}
-button.primary{background:var(--accent2);border-color:var(--accent2);color:#fff;box-shadow:0 2px 10px -2px rgba(201,100,66,.45)}
-button.primary:hover{background:var(--accent);border-color:var(--accent)}
-button.danger{background:var(--bad);border-color:var(--bad);color:#fff}button:disabled{opacity:.45;cursor:default}
-button:active{transform:translateY(1px)}
-select,input[type=text],textarea{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;outline:none;transition:border-color .15s,box-shadow .15s}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:6px 13px;font-weight:500;font-size:13px;transition:border-color .16s,background .16s,transform .14s cubic-bezier(0.34,1.56,0.64,1),box-shadow .16s}
+button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--panel2) 84%,var(--accent));transform:translateY(-1px)}
+button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:var(--accent);color:#fff;box-shadow:0 4px 14px -3px rgba(var(--glow),.45)}
+button.primary:hover{filter:brightness(1.06);border-color:var(--accent)}
+button.danger{background:var(--bad);border-color:var(--bad);color:#fff}button:disabled{opacity:.45;cursor:default;transform:none}
+button:active{transform:translateY(1px) scale(.98)}
+select,input[type=text],input[type=password],textarea{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:6px 11px;outline:none;transition:border-color .15s,box-shadow .15s}
 select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--glow),.15)}
 #side{width:276px;background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 92%,black));border-right:1px solid var(--line);display:flex;flex-direction:column;flex:none}
 #brand{padding:18px 16px 14px;font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:-.01em;display:flex;gap:8px;align-items:center}
@@ -255,17 +256,21 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
 .free-name{font-weight:600;font-size:13px}
 .free-meta{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--dim);flex-wrap:wrap}
 .free-pick-btn{margin-top:6px;padding:3px 9px;font-size:11.5px;border-radius:6px}
-.tg-chat-item{padding:8px 10px;border-radius:8px;cursor:pointer;margin-bottom:4px;display:flex;flex-direction:column;gap:2px}
+.tg-chat-item{padding:8px 10px;border-radius:10px;cursor:pointer;margin-bottom:4px;display:flex;flex-direction:column;gap:2px;transition:background .14s}
 .tg-chat-item:hover,.tg-chat-item.on{background:color-mix(in srgb,var(--accent) 18%,var(--panel))}
 .tg-chat-top{display:flex;align-items:center;gap:6px}
 .tg-chat-name{font-weight:600;font-size:12.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tg-badge{background:var(--accent);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px;margin-left:auto}
 .tg-last{font-size:11.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tg-msg{padding:6px 10px;border-radius:10px;max-width:85%;font-size:12.5px;margin-bottom:4px}
-.tg-msg.out{align-self:flex-end;background:color-mix(in srgb,var(--accent2) 30%,var(--panel2));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
-.tg-msg.in{align-self:flex-start;background:var(--panel2);border:1px solid var(--line)}
-.tg-sug-item{padding:6px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;font-size:12px;transition:all .12s}
+.tg-msg{padding:7px 11px;border-radius:12px;max-width:85%;font-size:12.5px;margin-bottom:4px;line-height:1.45}
+.tg-msg.out{align-self:flex-end;background:color-mix(in srgb,var(--accent2) 30%,var(--panel2));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-bottom-right-radius:4px}
+.tg-msg.in{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.tg-sug-item{padding:6px 10px;border-radius:9px;background:var(--panel);border:1px solid var(--line);cursor:pointer;font-size:12px;transition:all .12s}
 .tg-sug-item:hover{border-color:var(--accent);background:var(--panel2)}
+.tg-sheet{max-width:880px;width:95vw;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;padding:16px 20px}
+.tg-split-grid{flex:1;min-height:240px;max-height:calc(84vh - 210px);display:grid;grid-template-columns:240px 1fr;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+.tg-composer-bar{flex-shrink:0;display:flex;gap:8px;align-items:center;padding-top:8px;border-top:1px solid var(--line);margin-top:auto;background:var(--panel)}
+@media(max-width:680px){.tg-split-grid{grid-template-columns:1fr;grid-template-rows:130px 1fr}}
 
 /* Image Attachments & Vision */
 .img-previews{display:flex;gap:8px;padding:4px 0 6px;overflow-x:auto;align-items:center}
@@ -458,6 +463,16 @@ body.pet-mode #pet-standalone-view{
 .pet-stand-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--glow),0.2)}
 .pet-stand-input-wrap input{flex:1;border:none;background:transparent;outline:none;font-size:12.5px;color:var(--text);padding:5px 2px}
 
+/* Cute Companion Sidebar Card & Detach Controls */
+.side-pet-card{margin:4px 10px 6px;padding:9px 11px;border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--panel2)),var(--panel2));border:1px solid color-mix(in srgb,var(--accent) 38%,var(--line));display:flex;align-items:center;gap:9px;box-shadow:0 4px 14px -4px rgba(0,0,0,.25);transition:border-color .16s,transform .16s}
+.side-pet-card:hover{border-color:var(--accent)}
+.side-pet-mini{width:38px;height:38px;border-radius:12px;background:color-mix(in srgb,var(--panel) 80%,transparent);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;padding:3px}
+.side-pet-mini svg{width:100%;height:100%}
+.side-pet-info{flex:1;min-width:0;cursor:pointer}
+.side-pet-title{font-weight:700;font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:4px}
+.side-pet-sub{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-pet-detach{padding:4px 9px;font-size:11.5px;border-radius:10px;font-weight:600;white-space:nowrap}
+
 /* Workspace Directory Pill & Launchpad */
 .wd-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:11.5px;color:var(--muted);cursor:pointer;max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:border-color .15s,color .15s,background .15s}
 .wd-pill:hover{border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
@@ -522,6 +537,14 @@ body.pet-mode #pet-standalone-view{
   <div id="sessions"></div>
   <div id="orbpanel" class="min" aria-live="polite"><div id="orbhead"><span id="orbmode">OpenSwarm</span><button id="orbtoggle" title="Collapse / expand">⟩</button></div>
     <canvas id="orbcv" width="480" height="480" aria-label="Activity sphere"></canvas><div id="orbphase"></div><div id="orbdetail"></div><div id="orbtool"></div><div id="orbtime"></div><div id="orbagents"></div></div>
+  <div id="side-pet-card" class="side-pet-card">
+    <div id="side-pet-mini" class="side-pet-mini" title="Нажмите, чтобы настроить или погладить питомца"></div>
+    <div id="side-pet-info" class="side-pet-info" title="Открыть настройки питомца">
+      <div class="side-pet-title"><span id="side-pet-name">Кибер-Лис</span> <span>✨</span></div>
+      <div id="side-pet-status" class="side-pet-sub">Рядом в окне 🐾</div>
+    </div>
+    <button type="button" id="side-pet-detach-btn" class="primary side-pet-detach" title="Вынести агента за пределы окна приложения на рабочий стол">🚀 За окно</button>
+  </div>
   <div id="sidefoot">
     <div class="sfhead">Провайдеры</div>
     <button id="kilobtn" class="sfitem" title="Kilo Gateway: бесплатные модели без ключа (≈200 запросов/час)"><span class="sfic">🟣</span><span class="sft">Kilo Gateway</span><span id="kilobadge" class="badge ready">FREE</span></button>
@@ -547,6 +570,7 @@ body.pet-mode #pet-standalone-view{
     <span style="flex:1"></span>
     <span id="usage" class="lbl"></span><span id="runstate" class="lbl"></span>
     <input type="text" id="msgsearch" placeholder="Поиск в чате…" title="Фильтр сообщений в текущем диалоге">
+    <button id="petdetachbtn" class="tbtn" title="Вынести агента-питомца за пределы окна на рабочий стол (или вернуть обратно)">🐾<span class="tl"> За окно</span></button>
     <button id="artbtn" class="tbtn" title="Claude Artifacts — интерактивные виджеты, код, SVG и превью">🎨<span class="tl"> Артефакты</span> <span id="artcount" class="lbl">(0)</span></button>
     <button id="busbtn" class="tbtn" title="Swarm Room — live inter-agent chat &amp; non-blocking questions">💬<span class="tl"> Команда</span> <span id="buscount" class="lbl"></span></button>
     <button id="filesbtn" class="tbtn" title="Файлы рабочей папки">📁<span class="tl"> Файлы</span></button>
@@ -572,7 +596,8 @@ body.pet-mode #pet-standalone-view{
         <button id="exportbtn" title="Экспорт переписки в Markdown" style="display:none">⬇ Экспорт (.md)</button>
         <div class="mphead">Оформление</div>
         <select id="themesel" title="Стиль оформления интерфейса">
-          <option value="claude">🪵 Claude Warm</option>
+          <option value="claude">🪵 Claude Warm (Тёплый)</option>
+          <option value="sakura">🌸 Cozy Sakura (Милый розовый)</option>
           <option value="oled">🌌 Midnight OLED</option>
           <option value="nord">🌲 Nord Frost</option>
           <option value="emerald">🌿 Emerald Matrix</option>
@@ -726,8 +751,9 @@ body.pet-mode #pet-standalone-view{
   <div class="pet-bubble" id="pet-bubble" style="display:none">
     <div class="pet-bubble-text" id="pet-bubble-text">Привет! Я твой ассистент 🐾</div>
     <div class="pet-bubble-actions">
-      <button type="button" class="pet-act-btn" id="pet-act-focus">Поднять окно ↗</button>
-      <button type="button" class="pet-act-btn" id="pet-act-feed">Дать задачу 🍖</button>
+      <button type="button" class="pet-act-btn" id="pet-act-detach" title="Вынести агента за пределы приложения в отдельное окно">🚀 За окно</button>
+      <button type="button" class="pet-act-btn" id="pet-act-focus">Поднять ↗</button>
+      <button type="button" class="pet-act-btn" id="pet-act-feed">Задача 🍖</button>
       <button type="button" class="pet-close-btn" id="pet-act-close">✕</button>
     </div>
   </div>
@@ -735,30 +761,31 @@ body.pet-mode #pet-standalone-view{
     <input type="text" id="pet-prompt-input" placeholder="Покормить задачей… (Enter)">
     <button type="button" id="pet-prompt-send" class="primary">➤</button>
   </div>
-  <div class="pet-avatar" id="pet-avatar" title="Нажмите, чтобы погладить или поднять окно. Перетащите в любое место!">
+  <div class="pet-avatar" id="pet-avatar" title="Нажмите, чтобы погладить. Перетащите к краю окна или нажмите «За окно», чтобы вынести за пределы приложения!">
     <div class="pet-sprite" id="pet-sprite"></div>
     <div class="pet-hearts" id="pet-hearts"></div>
   </div>
 </div>
 <div id="pet-standalone-view">
-  <header class="pet-stand-head">
+  <header class="pet-stand-head" id="pet-stand-head">
     <span style="font-size:18px">🐾</span>
     <b style="font-size:13.5px;font-family:var(--serif);flex:1">OpenSwarm Pet</b>
-    <span class="badge ready" id="pet-stand-badge" style="font-size:10.5px">● Онлайн</span>
+    <span class="badge ready" id="pet-stand-badge" style="font-size:10.5px">● На экране</span>
     <button type="button" id="pet-stand-pin-btn" class="cicon active" title="Поверх всех окон (Always on Top)">📌</button>
     <button type="button" id="pet-stand-screen-btn" class="cicon" title="Снимок экрана и анализ (Look at screen)">👁️</button>
-    <button type="button" id="pet-stand-full-btn" class="cicon" title="Открыть полное окно OpenSwarm">🗖</button>
+    <button type="button" id="pet-stand-dock-btn" class="cicon" title="Вернуть агента обратно внутрь окна приложения">↙</button>
+    <button type="button" id="pet-stand-full-btn" class="cicon" title="Поднять главное окно OpenSwarm">🗖</button>
     <button type="button" id="pet-stand-cfg-btn" class="cicon" title="Настройки питомца">⚙</button>
   </header>
   <div class="pet-stand-stage" id="pet-stand-stage">
-    <div id="pet-stand-bubble" class="pet-bubble" style="position:static;transform:none;margin:0 auto 14px;max-width:94%">
-      <div id="pet-stand-bubble-text">Привет! Я твой ассистент на экране. Ожидаю задач 🐾</div>
+    <div id="pet-stand-bubble" class="pet-bubble" style="position:static;transform:none;margin:0 auto 12px;max-width:94%">
+      <div id="pet-stand-bubble-text">Я гуляю отдельно от приложения! Перетаскивай меня куда угодно ✨🐾</div>
     </div>
-    <div class="pet-avatar pet-idle" id="pet-stand-avatar" style="width:96px;height:96px;cursor:pointer">
+    <div class="pet-avatar pet-idle" id="pet-stand-avatar" style="width:96px;height:96px;cursor:grab" title="Кликните, чтобы погладить, или перетащите в любое место экрана!">
       <div class="pet-sprite" id="pet-stand-sprite" style="width:84px;height:84px"></div>
       <div class="pet-hearts" id="pet-stand-hearts"></div>
     </div>
-    <div id="pet-stand-state-lbl" class="lbl" style="margin-top:10px;text-align:center">Отдыхает над рабочим столом</div>
+    <div id="pet-stand-state-lbl" class="lbl" style="margin-top:8px;text-align:center">Гуляет поверх приложений 🐾</div>
   </div>
   <div class="pet-stand-foot">
     <div class="pet-stand-input-wrap">
@@ -1256,63 +1283,69 @@ body.pet-mode #pet-standalone-view{
 </div></div>
 
 <!-- Telegram Userbot Modal -->
-<div class="modal" id="telegrammodal"><div class="sheet" style="max-width:880px">
-  <div class="row"><b style="flex:1;font-size:17px;display:flex;align-items:center;gap:8px"><span>📱</span> Личный Telegram ассистент</b><span class="badge ready" title="Без вашего подтверждения ни одно сообщение не будет отправлено">🔒 Только с подтверждением</span><button id="tgclose">✕</button></div>
-  <div class="lbl">Подключите личный аккаунт Telegram. OpenSwarm сможет читать входящие сообщения и предлагать варианты ответов. <b>Ни одно сообщение никогда не отправляется автоматически без вашего явного подтверждения.</b></div>
+<div class="modal" id="telegrammodal"><div class="sheet tg-sheet">
+  <div class="row" style="margin:0 0 4px;flex-shrink:0">
+    <b style="flex:1;font-size:16.5px;display:flex;align-items:center;gap:8px;font-family:var(--serif)"><span>📱</span> Личный Telegram ассистент</b>
+    <span class="badge ready" title="Без вашего подтверждения ни одно сообщение не будет отправлено">🔒 Только с подтверждением</span>
+    <button id="tgclose">✕</button>
+  </div>
+  <div class="lbl" style="flex-shrink:0;margin-bottom:8px">Чтение чатов и умные подсказки ответов. <b>Ни одно сообщение никогда не отправляется без нажатия вами кнопки подтверждения.</b></div>
   
-  <div id="tg_auth_box" style="margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)">
-    <div id="tg_status_banner" class="row" style="margin-bottom:12px">
+  <div id="tg_auth_box" style="flex-shrink:0;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)">
+    <div id="tg_status_banner" class="row" style="margin:0;flex-wrap:wrap;gap:8px">
       <span class="dot" id="tg_status_dot"></span>
-      <span id="tg_status_text" style="font-weight:600">Проверка подключения…</span>
+      <span id="tg_status_text" style="font-weight:600;font-size:13px">Проверка подключения…</span>
       <button id="tg_logout_btn" class="danger mini" style="display:none;margin-left:auto">Выйти из аккаунта</button>
     </div>
     
-    <div id="tg_login_form" style="display:none">
-      <div class="row">
-        <span class="lbl" style="width:110px">Номер телефона:</span>
-        <input type="text" id="tg_phone" placeholder="+7 999 123-45-67" style="flex:1">
-        <button id="tg_send_code_btn" class="primary">Получить код</button>
+    <div id="tg_login_form" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
+      <div class="row" style="margin:0;flex-wrap:wrap;gap:8px">
+        <span class="lbl" style="font-weight:600">Телефон:</span>
+        <input type="text" id="tg_phone" placeholder="+7 999 123-45-67" style="flex:1;min-width:160px;padding:5px 10px">
+        <button type="button" id="tg_send_code_btn" class="primary">📱 Получить код</button>
       </div>
-      <div id="tg_code_row" class="row" style="display:none;margin-top:8px">
-        <span class="lbl" style="width:110px">Код Telegram:</span>
-        <input type="text" id="tg_code" placeholder="12345" style="width:110px">
-        <input type="password" id="tg_2fa" placeholder="2FA пароль (если включён)" style="flex:1">
-        <button id="tg_signin_btn" class="primary">Войти</button>
+      <div id="tg_code_row" class="row" style="display:none;margin:8px 0 0;flex-wrap:wrap;gap:8px">
+        <span class="lbl" style="font-weight:600">Код из TG:</span>
+        <input type="text" id="tg_code" placeholder="12345" style="width:100px;padding:5px 10px">
+        <input type="password" id="tg_2fa" placeholder="Пароль 2FA (если есть)" style="flex:1;min-width:140px;padding:5px 10px">
+        <button type="button" id="tg_signin_btn" class="primary">🔑 Войти в аккаунт</button>
       </div>
-      <div id="tg_auth_msg" class="lbl" style="margin-top:8px;color:var(--accent)"></div>
+      <div id="tg_auth_msg" class="lbl" style="margin-top:6px;color:var(--accent)"></div>
     </div>
   </div>
 
-  <div id="tg_drafts_box" style="display:none;margin-top:12px;padding:10px 12px;border:1px solid var(--accent);border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,var(--panel2))">
-    <div class="row" style="margin:0 0 6px"><b style="font-size:13px;color:var(--accent)">⏳ Сообщения, ожидающие вашего подтверждения:</b></div>
-    <div id="tg_drafts_list" style="display:flex;flex-direction:column;gap:6px"></div>
+  <div id="tg_drafts_box" style="display:none;flex-shrink:0;max-height:110px;overflow-y:auto;margin-top:8px;padding:8px 12px;border:1px solid var(--accent);border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,var(--panel2))">
+    <div class="row" style="margin:0 0 4px"><b style="font-size:12.5px;color:var(--accent)">⏳ Черновики, ожидающие вашего подтверждения:</b></div>
+    <div id="tg_drafts_list" style="display:flex;flex-direction:column;gap:5px"></div>
   </div>
 
-  <div id="tg_dialogs_box" style="display:none;margin-top:16px">
-    <div class="row" style="justify-content:space-between">
-      <b style="font-size:14px">Недавние диалоги</b>
-      <button id="tg_refresh_dialogs_btn">↻ Обновить чаты</button>
+  <div id="tg_dialogs_box" style="flex:1;min-height:0;display:flex;flex-direction:column;margin-top:10px;overflow:hidden">
+    <div class="row" style="margin:0 0 6px;justify-content:space-between;flex-shrink:0">
+      <b style="font-size:13.5px">💬 Диалоги и сообщения</b>
+      <button type="button" id="tg_refresh_dialogs_btn" class="mini">↻ Обновить чаты</button>
     </div>
-    <div style="display:grid;grid-template-columns:260px 1fr;gap:12px;margin-top:10px;height:420px;border:1px solid var(--line);border-radius:12px;overflow:hidden">
-      <div id="tg_dialogs_list" style="overflow:auto;border-right:1px solid var(--line);padding:6px;background:var(--panel2)"></div>
-      <div id="tg_chat_view" style="display:flex;flex-direction:column;height:100%;padding:10px;background:var(--panel)">
-        <div id="tg_chat_hdr" style="font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:13.5px">Выберите диалог слева</div>
-        <div id="tg_messages_stream" style="flex:1;overflow:auto;padding:8px 0;display:flex;flex-direction:column;gap:6px"></div>
-        <div id="tg_suggestions_box" style="display:none;padding:8px;background:var(--panel2);border:1px solid var(--accent);border-radius:10px;margin-bottom:8px">
-          <div style="font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px">🤖 Предложенные ответы ИИ (кликните, чтобы подставить в черновик — без авто-отправки):</div>
+    <div class="tg-split-grid">
+      <div id="tg_dialogs_list" style="min-height:0;overflow-y:auto;border-right:1px solid var(--line);padding:6px;background:var(--panel2)"></div>
+      <div id="tg_chat_view" style="min-height:0;height:100%;overflow:hidden;display:flex;flex-direction:column;padding:10px 12px;background:var(--panel)">
+        <div id="tg_chat_hdr" style="flex-shrink:0;font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:13.5px">Выберите диалог слева</div>
+        <div id="tg_messages_stream" style="flex:1;min-height:80px;overflow-y:auto;padding:8px 2px;display:flex;flex-direction:column;gap:6px">
+          <div class="lbl" style="text-align:center;padding:18px">Подключите аккаунт выше или выберите чат слева, чтобы читать сообщения и генерировать ответы с помощью ИИ.</div>
+        </div>
+        <div id="tg_suggestions_box" style="display:none;flex-shrink:0;max-height:110px;overflow-y:auto;padding:7px 10px;background:var(--panel2);border:1px solid var(--accent);border-radius:10px;margin-bottom:6px">
+          <div style="font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:4px">🤖 Предложенные ответы ИИ (кликните для подстановки в черновик):</div>
           <div id="tg_suggestions_list" style="display:flex;flex-direction:column;gap:4px"></div>
         </div>
-        <div id="tg_confirm_bar" style="display:none;padding:8px 10px;background:color-mix(in srgb,var(--warn) 16%,var(--panel2));border:1px solid var(--warn);border-radius:10px;margin-bottom:8px;font-size:12.5px">
+        <div id="tg_confirm_bar" style="display:none;flex-shrink:0;padding:8px 10px;background:color-mix(in srgb,var(--warn) 16%,var(--panel2));border:1px solid var(--warn);border-radius:10px;margin-bottom:6px;font-size:12.5px">
           <div id="tg_confirm_preview" style="margin-bottom:6px;word-break:break-word"></div>
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button type="button" id="tg_confirm_no" class="mini">✕ Отмена</button>
             <button type="button" id="tg_confirm_yes" class="primary mini">✓ Подтвердить и отправить</button>
           </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <button id="tg_suggest_btn" class="primary" title="ИИ проанализирует сообщения и предложит 3 варианта ответа">🤖 Предложить ответ</button>
-          <input type="text" id="tg_reply_input" placeholder="Черновик сообщения в Telegram (требуется подтверждение)…" style="flex:1">
-          <button id="tg_send_btn" class="primary" title="Проверить и подтвердить отправку в Telegram">✈</button>
+        <div class="tg-composer-bar">
+          <button type="button" id="tg_suggest_btn" class="primary" title="ИИ проанализирует сообщения и предложит 3 варианта ответа">🤖 Предложить ответ</button>
+          <input type="text" id="tg_reply_input" placeholder="Черновик сообщения в Telegram (требуется подтверждение)…" style="flex:1;min-width:120px">
+          <button type="button" id="tg_send_btn" class="primary" title="Проверить и подтвердить отправку в Telegram">✈ Отправить</button>
         </div>
       </div>
     </div>
@@ -3485,21 +3518,22 @@ async function refreshTgStatus(){
     const d=await api("/api/telegram/user/status");
     const dot=$("tg_status_dot"),txt=$("tg_status_text"),logoutBtn=$("tg_logout_btn"),loginForm=$("tg_login_form"),dialogsBox=$("tg_dialogs_box");
     renderTgDrafts(d.pending_drafts||[]);
+    if(dialogsBox)dialogsBox.style.display="flex";
     if(d.active){
       dot.className="dot ok";
       const uName=(d.user&&(d.user.first_name||d.user.username))?`${d.user.first_name||""} ${d.user.last_name||""} ${d.user.username?"(@"+d.user.username+")":""}`.trim():(d.phone||"Пользователь");
       txt.textContent=`Подключён: ${uName}`;
       logoutBtn.style.display="";
       loginForm.style.display="none";
-      dialogsBox.style.display="";
       await tgLoadDialogs();
     }else{
       dot.className="dot bad";
-      txt.textContent="Аккаунт Telegram не подключён";
+      txt.textContent="Аккаунт Telegram не подключён — введите номер телефона ниже:";
       logoutBtn.style.display="none";
       loginForm.style.display="";
-      dialogsBox.style.display="none";
       if(d.phone&&$("tg_phone"))$("tg_phone").value=d.phone;
+      const listEl=$("tg_dialogs_list");
+      if(listEl)listEl.innerHTML='<div class="lbl" style="padding:14px 10px;text-align:center">📱 Введите телефон выше и нажмите <b>Получить код</b>, чтобы загрузить ваши чаты</div>';
     }
   }catch(e){
     if($("tg_status_text"))$("tg_status_text").textContent="Ошибка связи с Telegram: "+e.message;
@@ -4166,6 +4200,15 @@ function getPetSVG(skin, state){
   }
 }
 
+const PET_SKIN_NAMES = {
+  fox: "Кибер-Лис",
+  cat: "Нейро-Котик",
+  robot: "Спарк-Бот",
+  corgi: "Кодер-Корги",
+  shark: "Дипсик-Акула"
+};
+let PET_DETACHED = false;
+
 function setPetState(state){
   PET_STATE = state;
   const petEl = $("swarm-pet");
@@ -4180,18 +4223,98 @@ function setPetState(state){
     const ssp = $("pet-stand-sprite");
     if(ssp) ssp.innerHTML = getPetSVG(PET_CONFIG.skin, state);
   }
+  const sideMini = $("side-pet-mini");
+  if(sideMini){
+    sideMini.innerHTML = getPetSVG(PET_CONFIG.skin, state);
+  }
+  if($("side-pet-name")){
+    $("side-pet-name").textContent = PET_SKIN_NAMES[PET_CONFIG.skin] || "Кибер-Лис";
+  }
+  const desc = {
+    idle: "Отдыхает в ожидании задачи",
+    walking: "Гуляет по экрану 🐾",
+    working: "Агенты в работе… ⚙️",
+    celebrating: "Задача завершена! 🎉",
+    question: "Требуется ответ / подтверждение ❓",
+    sleeping: "Спит zZz…"
+  };
   const lbl = $("pet-stand-state-lbl");
   if(lbl){
-    const desc = {
-      idle: "Отдыхает в ожидании задачи",
-      walking: "Гуляет по экрану 🐾",
-      working: "Агенты в работе… ⚙️",
-      celebrating: "Задача завершена! 🎉",
-      question: "Требуется ответ / подтверждение ❓",
-      sleeping: "Спит zZz…"
-    };
     lbl.textContent = desc[state] || "Готов к работе";
   }
+  updatePetDetachedUI();
+}
+
+function updatePetDetachedUI(){
+  const isStandalone = document.body.classList.contains("pet-mode");
+  const petEl = $("swarm-pet");
+  if(petEl && !isStandalone){
+    petEl.style.display = (PET_CONFIG.enabled && !PET_DETACHED) ? "block" : "none";
+  }
+  if($("side-pet-status")){
+    $("side-pet-status").textContent = PET_DETACHED ? "Гуляет вне приложения 🚀" : "Рядом в окне 🐾";
+  }
+  if($("side-pet-detach-btn")){
+    $("side-pet-detach-btn").textContent = PET_DETACHED ? "↙ В окно" : "🚀 За окно";
+    $("side-pet-detach-btn").title = PET_DETACHED
+      ? "Вернуть агента обратно внутрь окна приложения"
+      : "Вынести агента за пределы приложения в отдельное плавающее окно";
+  }
+  if($("petdetachbtn")){
+    $("petdetachbtn").innerHTML = PET_DETACHED ? '🐾<span class="tl"> В окно</span>' : '🐾<span class="tl"> За окно</span>';
+  }
+  if($("pet-popout-btn")){
+    $("pet-popout-btn").textContent = PET_DETACHED ? "↙ Вернуть агента в приложение" : "🚀 Вынести за пределы приложения";
+  }
+}
+
+async function detachPetToDesktop(){
+  try{
+    const r = await api("/api/pet/detach", {
+      method: "POST",
+      body: JSON.stringify({ontop: PET_CONFIG.alwaysOnTop, overlay: PET_CONFIG.overlay})
+    });
+    if(r.ok && r.detached){
+      PET_DETACHED = true;
+      updatePetDetachedUI();
+      toast("🐾 Агент вынесен за пределы приложения! Теперь он гуляет поверх всех окон");
+      return;
+    }
+  }catch(e){}
+  // Fallback for browser environment if native launcher unavailable
+  const ontopFlag = PET_CONFIG.alwaysOnTop ? "1" : "0";
+  const overlayFlag = PET_CONFIG.overlay ? "1" : "0";
+  window.open(window.location.pathname + "?token=" + TOKEN + "&pet=1&ontop=" + ontopFlag + "&overlay=" + overlayFlag, "OpenSwarmPet", "width=340,height=420,menubar=no,toolbar=no");
+  PET_DETACHED = true;
+  updatePetDetachedUI();
+}
+
+async function attachPetToWindow(){
+  try{
+    await api("/api/pet/attach", {method: "POST"});
+  }catch(e){}
+  PET_DETACHED = false;
+  updatePetDetachedUI();
+  toast("🐾 Агент вернулся внутрь главного окна приложения!");
+}
+
+async function togglePetDetach(){
+  if(PET_DETACHED){
+    await attachPetToWindow();
+  }else{
+    await detachPetToDesktop();
+  }
+}
+
+async function syncPetDetachStatus(){
+  if(document.body.classList.contains("pet-mode")) return;
+  try{
+    const r = await api("/api/pet/status");
+    if(typeof r.detached === "boolean" && r.detached !== PET_DETACHED){
+      PET_DETACHED = r.detached;
+      updatePetDetachedUI();
+    }
+  }catch(e){}
 }
 
 function playPetChime(type="done"){
@@ -4488,6 +4611,11 @@ function initPetDrag(){
     } else {
       const rect = petEl.getBoundingClientRect();
       localStorage.setItem("openswarm_pet_pos", JSON.stringify({x: rect.left, y: rect.top}));
+      const clientX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : e.clientX;
+      const clientY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : e.clientY;
+      if(clientX <= 6 || clientX >= window.innerWidth - 6 || clientY <= 6 || clientY >= window.innerHeight - 6){
+        detachPetToDesktop();
+      }
     }
   }
   
@@ -4660,16 +4788,19 @@ function initPet(){
   setPetState("idle");
   initPetDrag();
   startPetWanderLoop();
+  syncPetDetachStatus();
+  setInterval(syncPetDetachStatus, 4000);
   
   if($("petbtn")) $("petbtn").onclick = openPetModal;
+  if($("petdetachbtn")) $("petdetachbtn").onclick = togglePetDetach;
+  if($("side-pet-detach-btn")) $("side-pet-detach-btn").onclick = togglePetDetach;
+  if($("side-pet-mini")) $("side-pet-mini").onclick = ()=> petHeartAnim("pet-hearts");
+  if($("side-pet-info")) $("side-pet-info").onclick = openPetModal;
   if($("closepetmodal")) $("closepetmodal").onclick = ()=> $("petmodal").classList.remove("on");
   if($("savepetmodal")) $("savepetmodal").onclick = savePetSettings;
-  if($("pet-popout-btn")) $("pet-popout-btn").onclick = ()=>{
-    const ontopFlag = PET_CONFIG.alwaysOnTop ? "1" : "0";
-    const overlayFlag = PET_CONFIG.overlay ? "1" : "0";
-    window.open(window.location.pathname + "?token=" + TOKEN + "&pet=1&ontop=" + ontopFlag + "&overlay=" + overlayFlag, "OpenSwarmPet", "width=340,height=420,menubar=no,toolbar=no");
-  };
+  if($("pet-popout-btn")) $("pet-popout-btn").onclick = togglePetDetach;
   
+  if($("pet-act-detach")) $("pet-act-detach").onclick = detachPetToDesktop;
   if($("pet-act-focus")) $("pet-act-focus").onclick = ()=> raiseAppWindow("Пользователь нажал Поднять окно");
   if($("pet-act-feed")) $("pet-act-feed").onclick = togglePetQuickInput;
   if($("pet-act-close")) $("pet-act-close").onclick = hidePetBubble;
@@ -4687,12 +4818,35 @@ function initPet(){
   if($("pet-stand-screen-btn")) $("pet-stand-screen-btn").onclick = captureAndAskScreen;
   if($("pet-stand-voice")) $("pet-stand-voice").onclick = togglePetVoice;
   if($("pet-stand-cfg-btn")) $("pet-stand-cfg-btn").onclick = openPetModal;
-  if($("pet-stand-full-btn")) $("pet-stand-full-btn").onclick = ()=>{
-    const u = new URL(window.location.href);
-    u.searchParams.delete("pet");
-    window.location.href = u.toString();
+  if($("pet-stand-dock-btn")) $("pet-stand-dock-btn").onclick = async ()=>{
+    await api("/api/window/raise", {method:"POST"}).catch(()=>{});
+    await api("/api/pet/attach", {method:"POST"}).catch(()=>{});
+    try{ window.close(); }catch(e){}
   };
-  if($("pet-stand-avatar")) $("pet-stand-avatar").onclick = ()=> petHeartAnim("pet-stand-hearts");
+  if($("pet-stand-full-btn")) $("pet-stand-full-btn").onclick = async ()=>{
+    await api("/api/window/raise", {method:"POST"}).catch(()=>{});
+  };
+  if($("pet-stand-avatar")){
+    let stDrag = null;
+    $("pet-stand-avatar").addEventListener("mousedown", e => {
+      stDrag = {x: e.screenX, y: e.screenY, moved: false};
+    });
+    window.addEventListener("mousemove", e => {
+      if(!stDrag) return;
+      const dx = e.screenX - stDrag.x;
+      const dy = e.screenY - stDrag.y;
+      if(Math.abs(dx) > 4 || Math.abs(dy) > 4){
+        stDrag.moved = true;
+        stDrag.x = e.screenX;
+        stDrag.y = e.screenY;
+        api("/api/pet/move", {method:"POST", body:JSON.stringify({dx, dy})}).catch(()=>{});
+      }
+    });
+    window.addEventListener("mouseup", () => {
+      if(stDrag && !stDrag.moved) petHeartAnim("pet-stand-hearts");
+      stDrag = null;
+    });
+  }
   
   const skinCards = document.querySelectorAll(".pet-skin-card");
   skinCards.forEach(card =>{

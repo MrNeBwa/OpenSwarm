@@ -160,5 +160,42 @@ class PetTests(Env):
             self.assertIn('captureAndAskScreen', html)
             self.assertIn('togglePetStandPin', html)
             self.assertIn('togglePetVoice', html)
+            self.assertIn('detachPetToDesktop', html)
+            self.assertIn('attachPetToWindow', html)
+            self.assertIn('id="side-pet-card"', html)
+        finally:
+            h.stop()
+
+    def test_pet_detach_attach_and_move_endpoints(self):
+        h = gui.start_server(self.cfg, self.plain("wd"), token="tok")
+        port = int(h.url.split(":")[2].split("/")[0])
+        try:
+            st, raw = get(port, "/api/pet/status")
+            self.assertEqual(st, 200)
+            res = json.loads(raw.decode("utf-8"))
+            self.assertTrue(res.get("ok"))
+            self.assertFalse(res.get("detached"))
+
+            fake_proc = mock.MagicMock()
+            fake_proc.poll.return_value = None
+            fake_proc.pid = 42424
+
+            with mock.patch("subprocess.Popen", return_value=fake_proc), \
+                 mock.patch("shutil.which", return_value=None):
+                st, res_d = post_json(port, "/api/pet/detach", {"overlay": True})
+                self.assertEqual(st, 200)
+                self.assertTrue(res_d.get("ok"))
+                self.assertTrue(res_d.get("detached"))
+                self.assertEqual(res_d.get("pid"), 42424)
+
+                st, res_m = post_json(port, "/api/pet/move", {"dx": 10, "dy": -5})
+                self.assertEqual(st, 200)
+                self.assertTrue(res_m.get("ok"))
+
+                st, res_a = post_json(port, "/api/pet/attach", {})
+                self.assertEqual(st, 200)
+                self.assertTrue(res_a.get("ok"))
+                self.assertFalse(res_a.get("detached"))
+                fake_proc.terminate.assert_called()
         finally:
             h.stop()

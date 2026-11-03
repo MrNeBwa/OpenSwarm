@@ -25,6 +25,7 @@ from .state import apply_state, load_state
 from .web import WebApp, _open_app_window
 
 APP_ID = "dev.openswarm.app"
+PET_APP_ID = "dev.openswarm.pet"
 ICON = Path(__file__).with_name("openswarm.svg")
 
 
@@ -119,13 +120,14 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, 
     from gi.repository import Gdk, Gio, GLib, Gtk, WebKit
 
     base = url.split("/?")[0]
-    app = Gtk.Application(application_id=APP_ID, flags=Gio.ApplicationFlags.NON_UNIQUE)
+    app_id = PET_APP_ID if pet else APP_ID
+    app = Gtk.Application(application_id=app_id, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def activate(application: "Gtk.Application") -> None:
-        title = f"OpenSwarm v{__version__} Pet" if pet else f"OpenSwarm v{__version__}"
+        title = f"OpenSwarm Pet" if pet else f"OpenSwarm v{__version__}"
         win = Gtk.ApplicationWindow(application=application, title=title)
         if pet:
-            win.set_default_size(340, 420)
+            win.set_default_size(330, 410)
             if overlay:
                 win.set_decorated(False)
                 try:
@@ -258,19 +260,22 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, 
                 return
             if shutil.which("hyprctl"):
                 try:
-                    subprocess.run(["hyprctl", "dispatch", "setfloating", f"class:{APP_ID}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    subprocess.run(["hyprctl", "dispatch", "pin", f"class:{APP_ID}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    subprocess.run(["hyprctl", "setprop", f"class:{APP_ID}", "pinned", "1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    for sel in (f"class:{PET_APP_ID}", "title:OpenSwarm Pet"):
+                        subprocess.run(["hyprctl", "dispatch", "setfloating", sel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        subprocess.run(["hyprctl", "dispatch", "pin", sel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        subprocess.run(["hyprctl", "setprop", sel, "pinned", "1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        subprocess.run(["hyprctl", "setprop", sel, "noborder", "1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        subprocess.run(["hyprctl", "setprop", sel, "noshadow", "1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 except Exception:
                     pass
             if shutil.which("swaymsg"):
                 try:
-                    subprocess.run(["swaymsg", f'[app_id="{APP_ID}"] floating enable, sticky enable'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    subprocess.run(["swaymsg", f'[app_id="{PET_APP_ID}"] floating enable, sticky enable, border none'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 except Exception:
                     pass
             if shutil.which("wmctrl"):
                 try:
-                    subprocess.run(["wmctrl", "-r", "OpenSwarm", "-b", "add,above,sticky"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    subprocess.run(["wmctrl", "-r", "OpenSwarm Pet", "-b", "add,above,sticky"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 except Exception:
                     pass
 
@@ -334,6 +339,7 @@ def gui_main(argv: list[str]) -> int:
     p.add_argument("--safe-render", action="store_true", help="(default now) WebKit: software rendering, fixes blank/grey windows")
     p.add_argument("--gpu", action="store_true", help="WebKit: allow GPU compositing (faster, but a grey window on some drivers)")
     p.add_argument("--pet", action="store_true", help="Launch compact floating desktop companion / pet mode")
+    p.add_argument("--pet-url", type=str, default="", help="Attach standalone pet window to an already-running OpenSwarm server URL")
     p.add_argument("--overlay", action="store_true", default=True, help="Run pet in frameless transparent overlay mode floating over other apps")
     p.add_argument("--no-overlay", dest="overlay", action="store_false", help="Run pet in standard window")
     p.add_argument("--ontop", action="store_true", default=True, help="Keep pet pinned always above other desktop applications")
@@ -345,6 +351,22 @@ def gui_main(argv: list[str]) -> int:
         print(f"  gtk4+webkitgtk : {'available' if gtk_available() else 'missing  (sudo pacman -S python-gobject gtk4 webkitgtk-6.0; venv needs --system-site-packages)'}")
         print(f"  chromium app   : {'available' if chromium_available() else 'missing  (sudo pacman -S chromium)'}")
         print(f"  browser        : always (webbrowser module)\n  -> would use: {choose_backend(a.backend)}")
+        return 0
+    if a.pet_url:
+        backend = choose_backend(a.backend)
+        target_url = a.pet_url
+        if backend == "gtk":
+            try:
+                run_gtk(target_url, gpu=a.gpu, pet=True, ontop=getattr(a, "ontop", True), overlay=getattr(a, "overlay", True))
+                return 0
+            except Exception as exc:  # noqa: BLE001
+                print(f"GTK pet window failed ({exc!r}); falling back", flush=True)
+                backend = "chromium" if chromium_available() else "browser"
+        if backend == "chromium":
+            proc = _open_app_window(target_url, size=(330, 410))
+            wait_for_process_or_ctrl_c(proc)
+            return 0
+        webbrowser.open(target_url)
         return 0
     workdir = a.dir.resolve()
     try:
@@ -396,4 +418,7 @@ def gui_main(argv: list[str]) -> int:
     finally:
         handle.stop()
     return 0
-    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(gui_main(sys.argv[1:]))

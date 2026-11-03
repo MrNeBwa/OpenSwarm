@@ -20,6 +20,7 @@ import re
 import secrets
 import shutil
 import subprocess
+import sys
 import time
 import uuid
 import webbrowser
@@ -166,6 +167,7 @@ class WebApp:
         self.integrations = self._load_integrations()
         self.scheduler = TaskScheduler(dispatch_fn=self._dispatch_scheduled_task)
         self.scheduler.start()
+        self._pet_proc: subprocess.Popen | None = None
         try:
             for mp in sorted(sessions_dir().glob("*.json")):
                 m = json.loads(mp.read_text(encoding="utf-8"))
@@ -448,6 +450,11 @@ class WebApp:
 
     async def shutdown(self) -> None:
         self.scheduler.stop()
+        if self._pet_proc and self._pet_proc.poll() is None:
+            try:
+                self._pet_proc.terminate()
+            except Exception:
+                pass
         for s in self.sessions.values():
             if s.task:
                 s.task.cancel()
@@ -732,6 +739,8 @@ class WebApp:
             return await _json(writer, self.free_models_catalog())
         if parts and parts[0] == "scheduled":
             return await self.scheduled_route(method, parts[1:], js, writer)
+        if parts and parts[0] == "pet":
+            return await self.pet_window_route(method, parts[1:], js, writer)
         if parts == ["window", "raise"] and method == "POST":
             raised = False
             cmds = [
@@ -1490,6 +1499,79 @@ class WebApp:
                 "stats": get_optimizer_stats(),
             })
         raise HttpError(404, "unknown endpoint in optimizer api")
+
+    async def pet_window_route(self, method: str, rest: list[str], js: dict[str, Any], writer: asyncio.StreamWriter) -> None:
+        is_running = self._pet_proc is not None and self._pet_proc.poll() is None
+        if (not rest or rest == ["status"]) and method == "GET":
+            return await _json(writer, {
+                "ok": True,
+                "detached": is_running,
+                "pid": self._pet_proc.pid if is_running and self._pet_proc else None,
+            })
+        if rest == ["detach"] and method == "POST":
+            ontop = bool(js.get("ontop", True))
+            overlay = bool(js.get("overlay", True))
+            pet_url = (
+                f"http://127.0.0.1:{self.port}/?token={self.token}"
+                f"&pet=1&ontop={'1' if ontop else '0'}&overlay={'1' if overlay else '0'}"
+            )
+            if not is_running:
+                env = os.environ.copy()
+                src_root = str(Path(__file__).resolve().parent.parent)
+                prev_pp = env.get("PYTHONPATH", "")
+                env["PYTHONPATH"] = f"{src_root}:{prev_pp}" if prev_pp else src_root
+                cmd = [sys.executable, "-m", "openswarm.gui", "--pet-url", pet_url]
+                if not ontop:
+                    cmd.append("--no-ontop")
+                if not overlay:
+                    cmd.append("--no-overlay")
+                try:
+                    self._pet_proc = subprocess.Popen(
+                        cmd,
+                        env=env,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        start_new_session=True,
+                    )
+                    is_running = True
+                except Exception as exc:
+                    raise HttpError(500, f"Не удалось запустить отдельное окно питомца: {exc}")
+            else:
+                if shutil.which("hyprctl"):
+                    subprocess.run(["hyprctl", "dispatch", "focuswindow", "class:dev.openswarm.pet"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return await _json(writer, {
+                "ok": True,
+                "detached": is_running,
+                "pid": self._pet_proc.pid if self._pet_proc else None,
+                "url": pet_url,
+            })
+        if rest == ["attach"] and method == "POST":
+            if self._pet_proc and self._pet_proc.poll() is None:
+                try:
+                    self._pet_proc.terminate()
+                except Exception:
+                    pass
+            self._pet_proc = None
+            if shutil.which("hyprctl"):
+                subprocess.run(["hyprctl", "dispatch", "closewindow", "class:dev.openswarm.pet"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return await _json(writer, {"ok": True, "detached": False})
+        if rest == ["move"] and method == "POST":
+            dx = int(float(js.get("dx", 0)))
+            dy = int(float(js.get("dy", 0)))
+            moved = False
+            if shutil.which("hyprctl") and (dx or dy):
+                for sel in ("class:dev.openswarm.pet", "title:OpenSwarm Pet"):
+                    r = subprocess.run(
+                        ["hyprctl", "dispatch", "movewindowpixel", f"{dx} {dy},{sel}"],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        timeout=1.0,
+                    )
+                    if r.returncode == 0:
+                        moved = True
+                        break
+            return await _json(writer, {"ok": True, "moved": moved})
+        raise HttpError(404, "unknown endpoint in pet api")
 
     async def desktop_route(self, method: str, rest: list[str], q: dict[str, list[str]], js: dict[str, Any], writer: asyncio.StreamWriter) -> None:
         from .desktop_agent import get_desktop_agent
