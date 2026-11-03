@@ -37,9 +37,19 @@ import yaml
 DSH_VERSION = "0.2.1-rc.2"
 DSH_USER_AGENT = f"deepseek-harness/{DSH_VERSION} (+https://github.com/deepseek-ai/deepseek-harness)"
 DSH_ANTHROPIC_BASE_URL = "https://api.deepseek.com/anthropic/v1"
+DSH_OPENAI_BASE_URL = "https://api.deepseek.com/v1"
 DSH_PLATFORM_BASE_URL = "https://platform.deepseek.com"
 DSH_PROVIDER_ID = "deepseek-harness"
 DSH_FREE_FALLBACK_MODEL = "opencode/deepseek-v4.1-flash-free"
+
+# Resilient cascade of free-tier models when IP quota or rate limits hit:
+DSH_FREE_MODELS_CASCADE: list[str] = [
+    "opencode/deepseek-v4.1-flash-free",
+    "kilo/kilo-auto/free",
+    "kilo/nvidia/nemotron-3.5-super-vl:free",
+    "kilo/poolside/laguna-s-2.1:free",
+    "openrouter/openrouter/free",
+]
 
 DSH_MODELS: dict[str, dict[str, Any]] = {
     "deepseek-flash": {
@@ -49,6 +59,14 @@ DSH_MODELS: dict[str, dict[str, Any]] = {
     "deepseek-v4-pro": {
         "name": "DeepSeek-V4-Pro (DeepSeek Harness 1M)",
         "limit": {"context": 1048576, "output": 256000},
+    },
+    "deepseek-chat": {
+        "name": "DeepSeek-Chat (DeepSeek V3)",
+        "limit": {"context": 128000, "output": 8192},
+    },
+    "deepseek-reasoner": {
+        "name": "DeepSeek-Reasoner (DeepSeek R1)",
+        "limit": {"context": 128000, "output": 8192},
     },
 }
 
@@ -281,12 +299,23 @@ def dsh_provider_config() -> dict[str, Any] | None:
     token = str(creds.get("token") or "").strip()
     if not token or creds.get("mode") == "free_gateway":
         return None
+    kind = str(creds.get("kind") or "account").lower()
+    if kind == "apikey":
+        # DeepSeek Platform API key (sk-...) -> OpenAI-compatible API at https://api.deepseek.com/v1
+        return {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "DeepSeek Platform API",
+            "options": {
+                "baseURL": DSH_OPENAI_BASE_URL,
+                "apiKey": token,
+            },
+            "models": DSH_MODELS,
+        }
     headers: dict[str, str] = {
         "User-Agent": DSH_USER_AGENT,
         "x-deepseek-harness-user-id": anonymous_user_id(),
+        "x-dsh-auth-token": token,
     }
-    if creds.get("kind") == "account":
-        headers["x-dsh-auth-token"] = token
     return {
         "npm": "@ai-sdk/anthropic",
         "name": "DeepSeek Harness",
@@ -297,6 +326,15 @@ def dsh_provider_config() -> dict[str, Any] | None:
         },
         "models": DSH_MODELS,
     }
+
+
+def next_free_fallback_model(current_model: str, tried: set[str] | None = None) -> str | None:
+    """Return the next available healthy free-tier model in the cascade when quota or rate limits hit."""
+    tried_set = set(tried or ())
+    for cand in DSH_FREE_MODELS_CASCADE:
+        if cand not in tried_set and cand != current_model:
+            return cand
+    return None
 
 
 def dsh_status() -> dict[str, Any]:

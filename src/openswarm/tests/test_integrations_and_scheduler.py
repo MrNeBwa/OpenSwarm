@@ -195,6 +195,7 @@ class DeepSeekHarnessAndApkTests(unittest.TestCase):
         from openswarm.dsh import (
             DSH_FREE_FALLBACK_MODEL,
             clear_dsh_credentials,
+            next_free_fallback_model,
             resolve_dsh_model,
             save_dsh_credentials,
         )
@@ -203,6 +204,16 @@ class DeepSeekHarnessAndApkTests(unittest.TestCase):
         self.assertFalse(model_supports_variant("deepseek-harness/deepseek-flash"))
         cfg = default_config()
         self.assertIn("deepseek-harness/deepseek-flash", cfg.model_ids())
+
+        # Test free fallback cascade
+        self.assertEqual(
+            next_free_fallback_model("opencode/deepseek-v4.1-flash-free"),
+            "kilo/kilo-auto/free",
+        )
+        self.assertEqual(
+            next_free_fallback_model("kilo/kilo-auto/free", {"opencode/deepseek-v4.1-flash-free"}),
+            "kilo/nvidia/nemotron-3.5-super-vl:free",
+        )
 
         with tempfile.TemporaryDirectory() as tmp:
             old_xdg = os.environ.get("XDG_CONFIG_HOME")
@@ -233,6 +244,16 @@ class DeepSeekHarnessAndApkTests(unittest.TestCase):
                     prov["models"]["deepseek-flash"]["limit"]["context"],
                     1048576,
                 )
+
+                # Direct API key (sk-...) -> OpenAI-compatible API
+                save_dsh_credentials("sk-test-deepseek-api-key-12345", kind="apikey", mode="auto")
+                inline_api = json.loads(inline_model_config(cfg, "deepseek-harness/deepseek-flash"))
+                prov_api = inline_api["provider"]["deepseek-harness"]
+                self.assertEqual(prov_api["npm"], "@ai-sdk/openai-compatible")
+                self.assertEqual(prov_api["options"]["baseURL"], "https://api.deepseek.com/v1")
+                self.assertEqual(prov_api["options"]["apiKey"], "sk-test-deepseek-api-key-12345")
+                self.assertIn("deepseek-chat", prov_api["models"])
+                self.assertIn("deepseek-reasoner", prov_api["models"])
             finally:
                 if old_xdg is None:
                     os.environ.pop("XDG_CONFIG_HOME", None)

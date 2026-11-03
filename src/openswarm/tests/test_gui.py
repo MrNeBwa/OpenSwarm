@@ -58,4 +58,11 @@ class Gui(Env):
                 rc = gui.gui_main(["--dir", str(self.plain("wd2")), "--no-memory"])
         self.assertEqual(rc, 0); self.assertEqual(len(opened), 1); self.assertIn("?token=", opened[0])
         self.assertIn("falling back", buf.getvalue())
+
+    def test_gui_main_version_flag(self):
+        with redirect_stdout(io.StringIO()) as buf:
+            with self.assertRaises(SystemExit) as cm:
+                gui.gui_main(["--version"])
+            self.assertEqual(cm.exception.code, 0)
+        self.assertIn("1.1.0", buf.getvalue())
         self.assertFalse(any(t.name == "openswarm-server" and t.is_alive() for t in threading.enumerate()))

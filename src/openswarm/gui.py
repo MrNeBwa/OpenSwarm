@@ -122,7 +122,7 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
     app = Gtk.Application(application_id=APP_ID, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def activate(application: "Gtk.Application") -> None:
-        title = "OpenSwarm Pet" if pet else "OpenSwarm"
+        title = f"OpenSwarm v{__version__} Pet" if pet else f"OpenSwarm v{__version__}"
         win = Gtk.ApplicationWindow(application=application, title=title)
         if pet:
             win.set_default_size(320, 390)
@@ -132,12 +132,26 @@ def run_gtk(url: str, gpu: bool = False, pet: bool = False) -> None:
             Gtk.Window.set_default_icon_name("openswarm")
         except Exception:  # noqa: BLE001
             pass
+        try:
+            gtk_settings = Gtk.Settings.get_default()
+            if gtk_settings:
+                gtk_settings.set_property("gtk-application-prefer-dark-theme", True)
+        except Exception:  # noqa: BLE001
+            pass
         settings = WebKit.Settings()
         if not gpu:
             try:
                 settings.set_hardware_acceleration_policy(WebKit.HardwareAccelerationPolicy.NEVER)
             except Exception:  # noqa: BLE001 - older WebKitGTK
                 pass
+        try:
+            settings.set_javascript_can_access_clipboard(True)
+            settings.set_enable_smooth_scrolling(True)
+            settings.set_enable_developer_extras(True)
+            settings.set_enable_webaudio(True)
+            settings.set_enable_media_stream(True)
+        except Exception:  # noqa: BLE001
+            pass
         view = WebKit.WebView(settings=settings)
         try:  # never a grey/white flash: paint the app's own background until the page is drawn
             bg = Gdk.RGBA()
@@ -247,6 +261,7 @@ def install_desktop() -> list[Path]:
 # --------------------------------------------------------------------------------- CLI
 def gui_main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(prog="openswarm gui", description="OpenSwarm as a native desktop window")
+    p.add_argument("--version", action="version", version=f"openswarm gui {__version__}")
     p.add_argument("--dir", "--repo", dest="dir", type=Path, default=Path.cwd(), help="default working directory")
     p.add_argument("--config", type=Path, default=None)
     p.add_argument("--port", type=int, default=0)

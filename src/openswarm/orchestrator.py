@@ -468,7 +468,7 @@ class Orchestrator:
             raise BudgetExceeded(f"max_agents_per_run ({self.cfg.max_agents_per_run}) reached")
         await self._announce(agent_id, title, role)
         await self._set_status(agent_id, RUNNING)
-        from .dsh import DSH_FREE_FALLBACK_MODEL, is_dsh_model, resolve_dsh_model
+        from .dsh import DSH_FREE_FALLBACK_MODEL, is_dsh_model, next_free_fallback_model, resolve_dsh_model
         from .kilo import KILO_FALLBACK_FREE_MODEL, is_kilo_model, normalize_kilo_model
         from .runner import is_soft_success
         oc = self.cfg.opencode
@@ -496,7 +496,7 @@ class Orchestrator:
                                                    {**bus_env, **(keyrun.env if keyrun else {})})
                 if api_res is None:
                     break
-                res, done_api = api_res, True
+                res, done_api = api_res, api_res.ok
                 if keyrun and not res.ok and await keyrun.failed(res.errors + "\n" + res.output):
                     self._line_cb(agent_id, "-> OpenRouter key switched, repeating the request", True)
                     sid = self._api_session or sid  # resume the session the failed attempt created
@@ -530,7 +530,7 @@ class Orchestrator:
         rate_re = re.compile(oc.rate_limit_pattern, re.I) if oc.rate_limit_pattern else None
         caps = await get_caps(self.cfg)
         att_flag = caps.attach_flag(oc)
-        use_server = bool(self.pool and oc.use_server and not done_api and att_flag)
+        use_server = bool(self.pool and oc.use_server and not done_api and att_flag and not is_kilo_model(mdl) and not is_dsh_model(mdl))
         auto = "auto_approve" in self.sel.skills and caps.can_auto(oc)
         extra_rw = [self.git.root / ".git"] if self.git.is_git else []
         if self.git.swarm_dir.exists():
@@ -650,22 +650,28 @@ class Orchestrator:
                 use_server = False
                 continue
             if not res.ok:
-                if is_dsh_model(mdl) and DSH_FREE_FALLBACK_MODEL not in tried_models:
-                    old_mdl = mdl
-                    mdl = DSH_FREE_FALLBACK_MODEL
-                    tried_models.add(mdl)
-                    model_switches += 1
-                    self._line_cb(agent_id, f"🔄 DeepSeek Harness fallback: {old_mdl} -> {mdl} (free unlimited)", True)
-                    await self._log(f"{title}: DeepSeek Harness direct call failed -> switched to {mdl}")
-                    continue
-                if is_kilo_model(mdl) and KILO_FALLBACK_FREE_MODEL not in tried_models:
-                    old_mdl = mdl
-                    mdl = KILO_FALLBACK_FREE_MODEL
-                    tried_models.add(mdl)
-                    model_switches += 1
-                    self._line_cb(agent_id, f"🔄 Kilo Gateway fallback: {old_mdl} -> {mdl}", True)
-                    await self._log(f"{title}: Kilo Gateway model {old_mdl} failed -> switched to {mdl}")
-                    continue
+                is_free_quota_exceeded = bool(
+                    re.search(r"Free usage limit reached|FreeUsageLimitError", text, re.I)
+                )
+                should_fallback_free = is_free_quota_exceeded or (
+                    is_dsh_model(mdl) or is_kilo_model(mdl)
+                ) or (attempt >= oc.retries and bool(rate_re and rate_re.search(text)))
+
+                if should_fallback_free:
+                    next_free = next_free_fallback_model(mdl, tried_models)
+                    if next_free:
+                        old_mdl = mdl
+                        mdl = next_free
+                        tried_models.add(mdl)
+                        model_switches += 1
+                        self._line_cb(
+                            agent_id,
+                            f"🔄 Лимит бесплатного тарифа или сбой модели {old_mdl} -> переключение на {mdl}",
+                            True,
+                        )
+                        await self._log(f"{title}: free limit/failure on {old_mdl} -> switched to {mdl}")
+                        use_server = False
+                        continue
                 diag = analyze_error(text[-3000:])
                 router.record_failure(mdl, diag["snippet"], diag["kind"])
                 if diag["kind"] != "unknown":
