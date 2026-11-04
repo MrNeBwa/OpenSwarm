@@ -44,11 +44,11 @@ DSH_FREE_FALLBACK_MODEL = "kilo/nvidia/nemotron-3.5-super-vl:free"
 
 # Resilient cascade of free-tier models when IP quota or rate limits hit:
 DSH_FREE_MODELS_CASCADE: list[str] = [
+    "opencode/deepseek-v4.1-flash-free",
+    "kilo/kilo-auto/free",
     "kilo/nvidia/nemotron-3.5-super-vl:free",
     "kilo/cohere/north-mini-code:free",
     "kilo/reflection/beam-free",
-    "kilo/kilo-auto/free",
-    "opencode/deepseek-v4.1-flash-free",
     "openrouter/openrouter/free",
 ]
 

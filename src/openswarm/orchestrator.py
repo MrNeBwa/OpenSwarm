@@ -343,8 +343,9 @@ class Orchestrator:
             output_guide = "\n## Presentation\n- Answer concisely and directly. Use fenced code blocks for code.\n" + eco_dir
         else:
             proactive_guidance = (
-                "\n## Rules\n"
+                "\n## Interaction & Proactive Clarification\n"
                 "- If requirements are ambiguous, state assumptions briefly and ask clarifying questions.\n"
+                "- Subagent delegation: Decompose complex subtasks when appropriate.\n"
                 "- Do NOT output internal chain-of-thought, `Thinking:` prefixes, or `<think>` blocks in your response.\n"
             ) + boundary
             output_guide = (
@@ -726,7 +727,7 @@ class Orchestrator:
                     and not model
                     and not keyrun
                     and model_switches < 2
-                    and diag["kind"] in ("model_broken", "auth_error", "rate_limit")
+                    and diag["kind"] in ("model_broken", "auth_error")
                 ):
                     alt = router.fallback_model(self.cfg, role, mdl, self.sel.priority or self.cfg.priority, tried_models)
                     if alt and alt != mdl:
