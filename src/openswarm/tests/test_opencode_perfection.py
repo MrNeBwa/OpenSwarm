@@ -175,3 +175,45 @@ $ git status --short; git log --oneline -1
 
         ok_code2, _ = is_soft_success(sample_out, "", 2)
         self.assertFalse(ok_code2)
+
+    def test_strip_reasoning_and_free_limit_bypass(self) -> None:
+        from openswarm.dsh import (
+            is_opencode_free_limited,
+            is_opencode_free_model,
+            mark_opencode_free_limited,
+            next_free_fallback_model,
+            resolve_dsh_model,
+        )
+        from openswarm.kilo import normalize_kilo_model
+        from openswarm.runner import RunResult, strip_reasoning
+
+        raw_out = (
+            "\x1b[32m> build · nemotron-3.5-super-vl:free\x1b[0m\n"
+            "Thinking: Пользователь спрашивает простой вопрос.\n"
+            "<think>Internal reasoning steps...</think>\n\n"
+            "Готовый чистый ответ."
+        )
+        res = RunResult(0, output=raw_out)
+        self.assertEqual(res.clean_output, "Готовый чистый ответ.")
+        self.assertEqual(strip_reasoning(raw_out), "Готовый чистый ответ.")
+
+        # Legacy Laguna S 2.1 model transparently maps to working North Mini Code model
+        self.assertEqual(
+            normalize_kilo_model("kilo/poolside/laguna-s-2.1:free"),
+            "kilo/cohere/north-mini-code:free",
+        )
+
+        # Free limit bypass cooldown tracking
+        self.assertTrue(is_opencode_free_model("opencode/deepseek-v4.1-flash-free"))
+        mark_opencode_free_limited(cooldown_s=60.0)
+        self.assertTrue(is_opencode_free_limited())
+        self.assertEqual(
+            resolve_dsh_model("opencode/deepseek-v4.1-flash-free"),
+            "kilo/nvidia/nemotron-3.5-super-vl:free",
+        )
+        self.assertEqual(
+            next_free_fallback_model("opencode/deepseek-v4.1-flash-free"),
+            "kilo/kilo-auto/free",
+        )
+        mark_opencode_free_limited(cooldown_s=-1.0)
+        self.assertFalse(is_opencode_free_limited())
