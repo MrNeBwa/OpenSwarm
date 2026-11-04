@@ -108,7 +108,19 @@ class Session:
         self.loaded = True
         try:
             with self.log_path.open(encoding="utf-8") as fh:
-                self.events = [json.loads(ln) for ln in fh if ln.strip()][-50_000:]
+                raw_lines = [ln for ln in fh if ln.strip()][-3000:]
+            parsed = [json.loads(ln) for ln in raw_lines]
+            # Keep all structural events (user, result, done, agent, status, tool, etc.)
+            # and cap raw terminal `line` events to the latest 300 so UI loading stays instantaneous.
+            line_ids = {ev.get("id") for ev in parsed if ev.get("type") == "line"}
+            if len(line_ids) > 300:
+                keep_line_ids = set(sorted(i for i in line_ids if isinstance(i, int))[-300:])
+                self.events = [
+                    ev for ev in parsed
+                    if ev.get("type") != "line" or ev.get("id") in keep_line_ids
+                ][-1500:]
+            else:
+                self.events = parsed[-1500:]
         except (OSError, ValueError):
             self.events = []
 
@@ -864,7 +876,7 @@ class WebApp:
             rest = parts[2:]
             if not rest and method == "GET":
                 s.load_events()
-                return await _json(writer, {**s.meta(), "events": s.events[-20000:]})
+                return await _json(writer, {**s.meta(), "events": s.events[-1200:]})
             if not rest and method in ("PATCH", "PUT"):
                 changed = False
                 if "title" in js:
@@ -1689,12 +1701,13 @@ class WebApp:
                     ]
                 },
                 {
-                    "title": "Kilo AI Gateway (Бесплатно, без API ключей)",
+                    "title": "Kilo AI Gateway (Бесплатно, без API ключей · Работают без лимитов)",
                     "desc": "Анонимный доступ к пулу моделей через Kilo Gateway (~200 запросов/час на IP)",
                     "models": [
-                        {"id": "kilo/poolside/laguna-s-2.1:free", "name": "Laguna S 2.1 Free", "role": "Кодер / Аналитик", "badge": "Kilo Free", "speed": "Быстро", "context": "64k"},
-                        {"id": "kilo/cohere/north-mini-code:free", "name": "North Mini Code Free", "role": "Кодинг / Скрипты", "badge": "Kilo Free", "speed": "Очень быстро", "context": "32k"},
-                        {"id": "kilo/kilo-auto/free", "name": "Kilo Auto Router", "role": "Авто-маршрутизация", "badge": "Умный выбор", "speed": "Быстро", "context": "64k"},
+                        {"id": "kilo/nvidia/nemotron-3.5-super-vl:free", "name": "Nemotron 3.5 Super VL Free (1M)", "role": "Кодер / Чат / Зрение", "badge": "100% Работает · 1M", "speed": "Быстро", "context": "1M"},
+                        {"id": "kilo/cohere/north-mini-code:free", "name": "North Mini Code Free", "role": "Кодинг / Скрипты", "badge": "100% Работает · Код", "speed": "Очень быстро", "context": "256k"},
+                        {"id": "kilo/reflection/beam-free", "name": "Reflection Beam 1.0 Free (1M)", "role": "Архитектор / План", "badge": "Kilo Free · 1M", "speed": "Быстро", "context": "1M"},
+                        {"id": "kilo/kilo-auto/free", "name": "Kilo Auto Router", "role": "Авто-маршрутизация", "badge": "Умный выбор", "speed": "Быстро", "context": "256k"},
                     ]
                 },
                 {

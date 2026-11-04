@@ -106,8 +106,8 @@ def score_model_capabilities(model_id: str, spec_free: bool = False) -> dict[str
         reasoning = max(50, reasoning - 10)
         coding = max(52, coding - 8)
 
-    # Provider reliability bonus for native opencode/* and deepseek-harness/* models
-    if m.startswith(("opencode/", "deepseek-harness/")):
+    # Provider reliability bonus for native opencode/*, kilo/* and deepseek-harness/* models
+    if m.startswith(("opencode/", "deepseek-harness/", "kilo/")):
         coding = min(98, coding + (6 if free else 4))
         reasoning = min(98, reasoning + (6 if free else 4))
         speed = min(98, speed + 4)
@@ -242,6 +242,9 @@ class ModelRouter:
                 score -= 22.0
 
         # Live telemetry adjustments
+        from .dsh import is_opencode_free_limited, is_opencode_free_model
+        if is_opencode_free_limited() and is_opencode_free_model(model_id):
+            score -= 90.0
         if hlth["ok"] > 0:
             score += min(8.0, hlth["ok"] * 1.2)
         if hlth["avg_s"] > 0 and priority == "fast":

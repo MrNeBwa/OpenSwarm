@@ -77,10 +77,20 @@ async def edge_server(server, settings):
                           "keepalive": p.persistent_keepalive, "mtu": p.mtu},
                   credentials={"private_key": p.private_key})
 
+def _valid_server(s):
+    proto = getattr(s.protocol, "value", str(s.protocol)).lower()
+    if proto == "vless":
+        creds = getattr(s, "credentials", {}) or {}
+        params = getattr(s, "params", {}) or {}
+        uid = creds.get("uuid") or creds.get("id") or params.get("uuid") or params.get("id") or ""
+        if not str(uid).strip():
+            return False
+    return True
+
 def main():
     r = repo()
     if sys.argv[1] == "list":
-        print(json.dumps([public(s) for s in r.servers]))
+        print(json.dumps([public(s) for s in r.servers if _valid_server(s)]))
         return
     sid, socks, http = sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
     server = r.get(sid)
@@ -143,13 +153,23 @@ def _native_bridge(args: list[str]) -> str:
                 pass
 
     if args[0] == "list":
+        def _valid(s):
+            proto = getattr(s.protocol, "value", str(s.protocol)).lower()
+            if proto == "vless":
+                creds = getattr(s, "credentials", {}) or {}
+                params = getattr(s, "params", {}) or {}
+                uid = creds.get("uuid") or creds.get("id") or params.get("uuid") or params.get("id") or ""
+                if not str(uid).strip():
+                    return False
+            return True
+
         def public(s):
             return {
                 "id": s.id, "name": s.name, "country": s.country, "country_code": s.country_code, "city": s.city,
                 "protocol": getattr(s.protocol, "value", str(s.protocol)), "premium": bool(s.premium),
                 "edge": s.params.get("provider") == "ninja-edge"
             }
-        return json.dumps([public(s) for s in r.servers])
+        return json.dumps([public(s) for s in r.servers if _valid(s)])
 
     if args[0] == "config":
         sid, socks, http = args[1], int(args[2]), int(args[3])
@@ -282,6 +302,31 @@ def _port_open(port: int, timeout: float = 0.3) -> bool:
             return True
     except OSError:
         return False
+
+
+def _reap_stale_opencode_service() -> int:
+    """Terminate background `opencode serve --service` daemons that bypass per-process HTTP_PROXY."""
+    uid = os.getuid()
+    killed = 0
+    proc_root = Path("/proc")
+    if not proc_root.is_dir():
+        return 0
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            if entry.stat().st_uid != uid:
+                continue
+            cmd = (entry / "cmdline").read_bytes().decode("utf-8", "replace")
+        except OSError:
+            continue
+        if "opencode" in cmd and "serve" in cmd and "--service" in cmd:
+            try:
+                os.kill(int(entry.name), signal.SIGTERM)
+                killed += 1
+            except OSError:
+                pass
+    return killed
 
 
 def _reap_stale_xray(port: int) -> None:
@@ -458,6 +503,8 @@ class VpnManager:
         if not self._bridge_fn:
             _reap_stale_xray(self.s.http_port)
             actions.append("reaped_stale_xray")
+            if _reap_stale_opencode_service():
+                actions.append("reaped_opencode_service_daemon")
 
         now = self._clock()
         expired = [k for k, v in list(self.cooldown.items()) if v <= now]
@@ -651,6 +698,8 @@ class VpnManager:
             if not on:
                 self.stop()
                 return True
+            if not self._bridge_fn:
+                _reap_stale_opencode_service()
             return self.ensure()
 
     def set_auto_switch(self, on: bool) -> bool:

@@ -40,16 +40,37 @@ DSH_ANTHROPIC_BASE_URL = "https://api.deepseek.com/anthropic/v1"
 DSH_OPENAI_BASE_URL = "https://api.deepseek.com/v1"
 DSH_PLATFORM_BASE_URL = "https://platform.deepseek.com"
 DSH_PROVIDER_ID = "deepseek-harness"
-DSH_FREE_FALLBACK_MODEL = "opencode/deepseek-v4.1-flash-free"
+DSH_FREE_FALLBACK_MODEL = "kilo/nvidia/nemotron-3.5-super-vl:free"
 
 # Resilient cascade of free-tier models when IP quota or rate limits hit:
 DSH_FREE_MODELS_CASCADE: list[str] = [
-    "opencode/deepseek-v4.1-flash-free",
-    "kilo/kilo-auto/free",
     "kilo/nvidia/nemotron-3.5-super-vl:free",
-    "kilo/poolside/laguna-s-2.1:free",
+    "kilo/cohere/north-mini-code:free",
+    "kilo/reflection/beam-free",
+    "kilo/kilo-auto/free",
+    "opencode/deepseek-v4.1-flash-free",
     "openrouter/openrouter/free",
 ]
+
+# Track when OpenCode's zen/v1 free quota is exhausted so we bypass it immediately:
+_OPENCODE_FREE_LIMITED_UNTIL: float = 0.0
+
+
+def mark_opencode_free_limited(cooldown_s: float = 1800.0) -> None:
+    """Mark OpenCode's built-in `opencode/*-free` models as quota-limited so subsequent calls bypass them."""
+    global _OPENCODE_FREE_LIMITED_UNTIL
+    _OPENCODE_FREE_LIMITED_UNTIL = time.time() + cooldown_s
+
+
+def is_opencode_free_limited() -> bool:
+    """Return True if OpenCode's built-in `opencode/*-free` models recently hit `Free usage limit reached`."""
+    return time.time() < _OPENCODE_FREE_LIMITED_UNTIL
+
+
+def is_opencode_free_model(model: str) -> bool:
+    """Return True if `model` is one of OpenCode's built-in `opencode/*` free models."""
+    raw = (model or "").split("#", 1)[0].strip().lower()
+    return raw.startswith("opencode/") and (raw.endswith("-free") or raw == "opencode/big-pickle")
 
 DSH_MODELS: dict[str, dict[str, Any]] = {
     "deepseek-flash": {
@@ -284,12 +305,14 @@ def has_direct_dsh_auth() -> bool:
 
 
 def resolve_dsh_model(model: str) -> str:
-    """Resolve `deepseek-harness/*` to either direct DSH 1M or the zero-config free unlimited gateway."""
+    """Resolve `deepseek-harness/*` (or quota-limited `opencode/*-free`) to a working model."""
+    if is_opencode_free_model(model) and is_opencode_free_limited():
+        return DSH_FREE_FALLBACK_MODEL
     if not is_dsh_model(model):
         return model
     if has_direct_dsh_auth():
         return model
-    # Zero-config fallback: use opencode's built-in free unlimited DeepSeek-V4.1-Flash!
+    # Zero-config fallback: use verified working 1M-context free gateway model
     return DSH_FREE_FALLBACK_MODEL
 
 
@@ -331,7 +354,10 @@ def dsh_provider_config() -> dict[str, Any] | None:
 def next_free_fallback_model(current_model: str, tried: set[str] | None = None) -> str | None:
     """Return the next available healthy free-tier model in the cascade when quota or rate limits hit."""
     tried_set = set(tried or ())
+    oc_limited = is_opencode_free_limited()
     for cand in DSH_FREE_MODELS_CASCADE:
+        if oc_limited and is_opencode_free_model(cand):
+            continue
         if cand not in tried_set and cand != current_model:
             return cand
     return None

@@ -373,13 +373,20 @@ mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:v
   border-radius:14px;
   padding:10px 14px;
   width:max-content;
-  max-width:270px;
+  max-width:310px;
   box-shadow:0 12px 32px rgba(0,0,0,0.55);
   font-size:12.5px;
   line-height:1.45;
   color:var(--text);
   pointer-events:auto;
   animation:pop .2s cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+}
+.pet-bubble-text,#pet-stand-bubble-text{
+  max-height:190px;
+  overflow-y:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  padding-right:4px;
 }
 .pet-bubble::after{
   content:'';
@@ -751,17 +758,18 @@ body.pet-mode #pet-standalone-view{
   <div class="pet-bubble" id="pet-bubble" style="display:none">
     <div class="pet-bubble-text" id="pet-bubble-text">Привет! Я твой ассистент 🐾</div>
     <div class="pet-bubble-actions">
+      <button type="button" class="pet-act-btn" id="pet-act-copy" title="Скопировать ответ" style="display:none">📋 Копировать</button>
+      <button type="button" class="pet-act-btn" id="pet-act-feed">💬 Спросить</button>
       <button type="button" class="pet-act-btn" id="pet-act-detach" title="Вынести агента за пределы приложения в отдельное окно">🚀 За окно</button>
-      <button type="button" class="pet-act-btn" id="pet-act-focus">Поднять ↗</button>
-      <button type="button" class="pet-act-btn" id="pet-act-feed">Задача 🍖</button>
+      <button type="button" class="pet-act-btn" id="pet-act-focus">↗</button>
       <button type="button" class="pet-close-btn" id="pet-act-close">✕</button>
     </div>
   </div>
   <div class="pet-quick-input" id="pet-quick-input" style="display:none">
-    <input type="text" id="pet-prompt-input" placeholder="Покормить задачей… (Enter)">
+    <input type="text" id="pet-prompt-input" placeholder="Спросить или дать задачу… (Enter)">
     <button type="button" id="pet-prompt-send" class="primary">➤</button>
   </div>
-  <div class="pet-avatar" id="pet-avatar" title="Нажмите, чтобы погладить. Перетащите к краю окна или нажмите «За окно», чтобы вынести за пределы приложения!">
+  <div class="pet-avatar" id="pet-avatar" title="Кликните, чтобы спросить или погладить. Перетащите к краю окна или нажмите «За окно», чтобы вынести поверх всех окон!">
     <div class="pet-sprite" id="pet-sprite"></div>
     <div class="pet-hearts" id="pet-hearts"></div>
   </div>
@@ -778,14 +786,18 @@ body.pet-mode #pet-standalone-view{
     <button type="button" id="pet-stand-cfg-btn" class="cicon" title="Настройки питомца">⚙</button>
   </header>
   <div class="pet-stand-stage" id="pet-stand-stage">
-    <div id="pet-stand-bubble" class="pet-bubble" style="position:static;transform:none;margin:0 auto 12px;max-width:94%">
-      <div id="pet-stand-bubble-text">Я гуляю отдельно от приложения! Перетаскивай меня куда угодно ✨🐾</div>
+    <div id="pet-stand-bubble" class="pet-bubble" style="position:static;transform:none;margin:0 auto 10px;width:94%;max-width:96%">
+      <div id="pet-stand-bubble-text">Я готов! Напишите вопрос или задачу внизу — ответ появится прямо здесь ✨🐾</div>
+      <div class="pet-bubble-actions" id="pet-stand-actions" style="display:none;margin-top:8px">
+        <button type="button" class="pet-act-btn" id="pet-stand-copy-btn">📋 Копировать ответ</button>
+        <button type="button" class="pet-act-btn" id="pet-stand-open-chat-btn">🗖 Открыть чат</button>
+      </div>
     </div>
-    <div class="pet-avatar pet-idle" id="pet-stand-avatar" style="width:96px;height:96px;cursor:grab" title="Кликните, чтобы погладить, или перетащите в любое место экрана!">
-      <div class="pet-sprite" id="pet-stand-sprite" style="width:84px;height:84px"></div>
+    <div class="pet-avatar pet-idle" id="pet-stand-avatar" style="width:86px;height:86px;cursor:grab" title="Кликните, чтобы погладить, или перетащите в любое место экрана!">
+      <div class="pet-sprite" id="pet-stand-sprite" style="width:76px;height:76px"></div>
       <div class="pet-hearts" id="pet-stand-hearts"></div>
     </div>
-    <div id="pet-stand-state-lbl" class="lbl" style="margin-top:8px;text-align:center">Гуляет поверх приложений 🐾</div>
+    <div id="pet-stand-state-lbl" class="lbl" style="margin-top:6px;text-align:center">Гуляет поверх приложений 🐾</div>
   </div>
   <div class="pet-stand-foot">
     <div class="pet-stand-input-wrap">
@@ -1814,7 +1826,25 @@ function renderSkillsHub() {
   });
 }
 
+function cleanModelText(raw){
+  if(!raw) return "";
+  let s = String(raw).replace(ANSI, "");
+  s = s.replace(/<(?:think|thinking|reasoning|thought)\b[^>]*>[\s\S]*?<\/(?:think|thinking|reasoning|thought)>/gi, "");
+  s = s.replace(/^\s*>\s+\S+\s+·\s+\S+.*$/gm, "");
+  const lines = s.split("\n");
+  const filtered = lines.filter(ln => !/^\s*Thinking:\s*/i.test(ln));
+  if(filtered.some(ln => ln.trim().length > 0)){
+    s = filtered.join("\n");
+  }
+  if(/<(?:think|thinking|reasoning|thought)\b/i.test(s)){
+    const stripped = s.replace(/<(?:think|thinking|reasoning|thought)\b[^>]*>[\s\S]*$/i, "").trim();
+    if(stripped) s = stripped;
+  }
+  return s.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function md(src){
+  src = cleanModelText(src);
   const blocks=[];
   src=String(src).replace(/<artifact(?:\s+identifier="([^"]*)")?(?:\s+title="([^"]*)")?(?:\s+type="([^"]*)")?>([\s\S]*?)<\/artifact>/gi,(m,id,title,type,content)=>{
     const artId = id || ("art-" + (ARTIFACTS.length + 1));
@@ -1889,9 +1919,17 @@ let ST={
   sandbox:false,bwrap:false,models:[],roles:{planner:"",coder:"",reviewer:""},skills:[],presets:[],native_skills:[],sessions:[]
 };
 let CUR=null, ES=null, lastId=0, cards={}, board=null, busy=false, busCount=0, curThread="all", sel={mode:"auto",priority:"balanced",effort:"medium",models:{},skills:new Set(),parallel:8,sandbox:false}, chosenPreset=null, viewPath="", usageBy={}, snap=null;
-let AGENT_DATA={}, CURRENT_INSPECT_AGENT=null;
+let AGENT_DATA={}, CURRENT_INSPECT_AGENT=null, _scrollRaf=0;
 function toast(t){const d=document.createElement("div");d.className="sys";d.textContent="⚠ "+t;$("stream").appendChild(d);scrollDown();}
-function scrollDown(force){const c=$("conv");if(force||c.scrollHeight-c.scrollTop-c.clientHeight<160)c.scrollTop=c.scrollHeight;}
+function scrollDown(force){
+  if(force){const c=$("conv");if(c)c.scrollTop=c.scrollHeight;return;}
+  if(_scrollRaf)return;
+  _scrollRaf=requestAnimationFrame(()=>{
+    _scrollRaf=0;
+    const c=$("conv");
+    if(c&&(c.scrollHeight-c.scrollTop-c.clientHeight<180))c.scrollTop=c.scrollHeight;
+  });
+}
 async function loadState(){
   try{
     const st=await api("/api/state");
@@ -2138,7 +2176,7 @@ async function retryFailedAgents(failedList){
 function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev);const S=$("stream");const empty=S.querySelector(".sys");if(empty&&empty.textContent.startsWith("Empty session"))empty.remove();
   switch(ev.type){
   case"user":{
-    lastUserPrompt=ev.text||lastUserPrompt;board=null;busy=true;
+    lastUserPrompt=ev.text||lastUserPrompt;board=null;busy=true;hasPetResultInRun=false;
     const d=document.createElement("div");d.className="msg user";
     const b=document.createElement("div");b.className="bubble";
     b.textContent=ev.text;
@@ -2156,33 +2194,40 @@ function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev)
     d.appendChild(b);S.appendChild(d);
     if(!replay)setBusy(true);break;
   }
-  case"agent":mkCard(ev.agent,ev.title,ev.role);if(!replay)notifyPetWorking("Запустил агента "+(ev.title||ev.agent)+"… ⚙️");break;
+  case"agent":mkCard(ev.agent,ev.title,ev.role);if(!replay)notifyPetWorking("Работает "+(ev.title||ev.agent)+"… ⚙️");break;
   case"status":{if(ev.agent&&AGENT_DATA[ev.agent])AGENT_DATA[ev.agent].status=ev.status;const c=cards[ev.agent];if(c){const stEl=c.querySelector(".st");stEl.textContent=ev.status;const snip=c.querySelector(".agent-card-snippet");if(snip)snip.textContent=ev.status==="Done"?"✔ Ответ сформирован":ev.status==="Failed"?"✘ Ошибка выполнения":(ev.status||"Выполняется…");if(ev.status==="Failed"){const rb=document.createElement("button");rb.textContent="↻ Повторить";rb.style.cssText="margin-left:6px;padding:1px 7px;font-size:11px";rb.onclick=e=>{e.stopPropagation();retryFailedAgents([ev.agent]);};stEl.appendChild(rb);}const d=c.querySelector(".dot");d.className="dot "+(ev.status==="Running"||ev.status==="Merging"?"run":ev.status==="Done"?"ok":ev.status==="Failed"?"bad":"");}break;}
-  case"line":{const clean=ev.text.replace(ANSI,"");if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].logs.push((ev.err?"[err] ":"")+clean);if(AGENT_DATA[ev.agent].logs.length>1000)AGENT_DATA[ev.agent].logs.shift();}const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip&&clean.trim())snip.textContent=clean.trim().slice(0,90);const p=c.querySelector("pre.log");if(p){const sp=document.createElement("span");if(ev.err)sp.className="e";sp.textContent=clean+"\n";p.appendChild(sp);while(p.childNodes.length>1500)p.removeChild(p.firstChild);if(!replay)p.scrollTop=p.scrollHeight;}}break;}
+  case"line":{const clean=ev.text.replace(ANSI,"");if(/^\s*(?:Thinking:|>\s+\S+\s+·\s+\S+)/i.test(clean))break;if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].logs.push((ev.err?"[err] ":"")+clean);if(AGENT_DATA[ev.agent].logs.length>300)AGENT_DATA[ev.agent].logs.shift();}const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip&&clean.trim()&&!clean.startsWith("$ "))snip.textContent=clean.trim().slice(0,90);const p=c.querySelector("pre.log");if(p&&p.style.display!=="none"){const sp=document.createElement("span");if(ev.err)sp.className="e";sp.textContent=clean+"\n";p.appendChild(sp);while(p.childNodes.length>250)p.removeChild(p.firstChild);if(!replay)p.scrollTop=p.scrollHeight;}}if(!replay&&!ev.err&&clean.trim()&&!clean.startsWith("$ "))updatePetLiveSnippet(clean.trim());break;}
   case"log":{const d=document.createElement("div");d.className="sys";d.textContent=ev.text;S.appendChild(d);break;}
   case"bus":renderBusEvent(ev,replay);if(!replay&&(ev.kind==="question"||(ev.text&&ev.text.includes("?"))))notifyPetQuestion("Агент задал вопрос команде! ❓");break;
-  case"result":{if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].result=ev.text;const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip)snip.textContent="Готово. Нажмите чтобы посмотреть.";}}
+  case"result":{
+    const cleanedRes=cleanModelText(ev.text);
+    if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].result=cleanedRes;const c=cards[ev.agent];if(c){const snip=c.querySelector(".agent-card-snippet");if(snip)snip.textContent="Готово. Нажмите чтобы посмотреть.";}}
+    if(cleanedRes){
+      hasPetResultInRun=true;
+      lastPetAnswer=cleanedRes;
+      if(!replay)notifyPetAnswer(cleanedRes);
+    }
     const d=document.createElement("div");d.className="msg assistant";const b=document.createElement("div");b.className="bubble";
     const asstHdr=document.createElement("div");asstHdr.className="asst-hdr";
     const agTitle=(ev.agent&&cards[ev.agent])?(cards[ev.agent].querySelector(".n")?cards[ev.agent].querySelector(".n").textContent:ev.agent):"Ассистент";
     asstHdr.innerHTML=`<span>🤖 ${esc(agTitle)}</span>${ev.agent?`<button type="button" class="open-btn" style="margin-left:auto;font-size:12px;color:var(--accent);cursor:pointer;background:none;border:none">Окно инспектора ↗</button>`:""}`;
     if(ev.agent){const btn=asstHdr.querySelector(".open-btn");if(btn)btn.onclick=()=>openModelInspector(ev.agent);}
     b.appendChild(asstHdr);
-    const bodyDiv=document.createElement("div");bodyDiv.className="res-body";bodyDiv.innerHTML=md(ev.text);b.appendChild(bodyDiv);
+    const bodyDiv=document.createElement("div");bodyDiv.className="res-body";bodyDiv.innerHTML=md(cleanedRes);b.appendChild(bodyDiv);
     const t=document.createElement("div");t.className="tools";
-    const cp=document.createElement("button");cp.textContent="Копировать";cp.onclick=()=>{navigator.clipboard.writeText(ev.text);toast("Скопировано в буфер");};
-    const dl=document.createElement("button");dl.textContent="Скачать .md";dl.onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([ev.text],{type:"text/markdown"}));a.download=(ev.kind||"result")+".md";a.click();};
+    const cp=document.createElement("button");cp.textContent="Копировать";cp.onclick=()=>{navigator.clipboard.writeText(cleanedRes);toast("Скопировано в буфер");};
+    const dl=document.createElement("button");dl.textContent="Скачать .md";dl.onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([cleanedRes],{type:"text/markdown"}));a.download=(ev.kind||"result")+".md";a.click();};
     const tgBtn=document.createElement("button");tgBtn.textContent="В Telegram ↗";tgBtn.title="Отправить этот ответ в Telegram диалог";
-    tgBtn.onclick=()=>{openTelegramModal();const inp=$("tg_reply_input");if(inp)inp.value=ev.text;};
+    tgBtn.onclick=()=>{openTelegramModal();const inp=$("tg_reply_input");if(inp)inp.value=cleanedRes;};
     t.append(cp,dl,tgBtn);b.appendChild(t);d.appendChild(b);S.appendChild(d);break;}
   case"tool":{if(ev.agent&&AGENT_DATA[ev.agent]){AGENT_DATA[ev.agent].tools.push({tool:ev.tool,status:ev.status,summary:ev.summary,output:ev.output,tid:ev.tid});}
     const c=cards[ev.agent];if(c){let box=c.querySelector(".toolrows");if(!box){box=document.createElement("div");box.className="toolrows";c.insertBefore(box,c.querySelector("pre.log"));}
     let row=null;for(const r of box.children)if(r.dataset.t===ev.tid)row=r;if(!row){row=document.createElement("div");row.dataset.t=ev.tid;box.appendChild(row);}
     row.className="tool "+ev.status;row.textContent="🔧 "+ev.tool+" · "+ev.status+(ev.summary?" · "+ev.summary:"");row.title=ev.output||"";}break;}
   case"thinking":{if(ev.agent&&AGENT_DATA[ev.agent])AGENT_DATA[ev.agent].thinking=ev.text;
-    const c=cards[ev.agent];if(c){let th=c.querySelector(".thinking");if(!th){th=document.createElement("details");th.className="thinking";th.open=true;th.innerHTML='<summary>🧠 Thinking process</summary><div class="thinkbody"></div>';c.insertBefore(th,c.querySelector("pre.log"));}th.querySelector(".thinkbody").textContent=ev.text;}break;}
+    const c=cards[ev.agent];if(c){let th=c.querySelector(".thinking");if(!th){th=document.createElement("details");th.className="thinking";th.open=false;th.innerHTML='<summary>🧠 Thinking process</summary><div class="thinkbody"></div>';c.insertBefore(th,c.querySelector("pre.log"));}th.querySelector(".thinkbody").textContent=ev.text;}break;}
   case"thinking_delta":{if(ev.agent&&AGENT_DATA[ev.agent])AGENT_DATA[ev.agent].thinking=(AGENT_DATA[ev.agent].thinking||"")+ev.delta;
-    const c=cards[ev.agent];if(c){let th=c.querySelector(".thinking");if(!th){th=document.createElement("details");th.className="thinking";th.open=true;th.innerHTML='<summary>🧠 Thinking process</summary><div class="thinkbody"></div>';c.insertBefore(th,c.querySelector("pre.log"));}th.querySelector(".thinkbody").textContent+=ev.delta;}break;}
+    const c=cards[ev.agent];if(c){let th=c.querySelector(".thinking");if(!th){th=document.createElement("details");th.className="thinking";th.open=false;th.innerHTML='<summary>🧠 Thinking process</summary><div class="thinkbody"></div>';c.insertBefore(th,c.querySelector("pre.log"));}if(th.open)th.querySelector(".thinkbody").textContent+=ev.delta;}break;}
   case"usage":{usageBy[ev.agent]=ev;showUsage();break;}
   case"snapshot":snap={id:ev.tid,dir:ev.dir};break;
   case"permission":{const r=ev.req;const d=document.createElement("div");d.className="msg";d.id="perm-"+r.id;d.innerHTML='<div class="bubble perm"><b>🔐 Permission requested</b><div></div><code></code><div class="tools"></div></div>';
@@ -2191,7 +2236,7 @@ function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev)
       b.onclick=async()=>{try{await api(`/api/sessions/${CUR.id}/permission`,{method:"POST",body:JSON.stringify({id:r.id,response:val})});}catch(e){toast(e.message);}};t.appendChild(b);}
     S.appendChild(d);if(!replay)notifyPetPermission("Требуется подтверждение действия! ⚠️");break;}
   case"permission_resolved":{const d=document.getElementById("perm-"+ev.pid);if(d){d.querySelector(".tools").textContent="→ "+({once:"allowed once",always:"always allowed",reject:"denied"}[ev.decision]||ev.decision);}break;}
-  case"done":{busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);refreshOptimizerStats().catch(()=>{});if(ev.ok){notifyPetDone("Задача успешно завершена! ✨");}else{notifyPetAttention("Завершено с замечаниями ⚠️");}}
+  case"done":{busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);refreshOptimizerStats().catch(()=>{});if(ev.ok){notifyPetDone(hasPetResultInRun?"":"Задача успешно завершена! ✨",hasPetResultInRun);}else{notifyPetAttention("Завершено с замечаниями ⚠️");}}
     const d=document.createElement("div");d.className="sys";d.textContent=(ev.ok?"✔ finished":"✘ finished with problems")+(ev.failed&&ev.failed.length?" — "+ev.failed.join(", "):"")+(ev.usage&&ev.usage.tokens?` · ${ev.usage.tokens.input}→${ev.usage.tokens.output} tokens`+(ev.usage.cost?` · $${Number(ev.usage.cost).toFixed(4)}`:""):"");
     if(!ev.ok||(ev.failed&&ev.failed.length)){const rb=document.createElement("button");rb.className="primary";rb.textContent="▶ Продолжить ответ (перезапустить fail)";rb.style.marginLeft="8px";rb.onclick=()=>retryFailedAgents(ev.failed||[]);d.appendChild(rb);}
     if(ev.snapshot){const b=document.createElement("button");b.textContent="↩ Undo this run";b.style.marginLeft="8px";b.onclick=()=>undo(ev.snapshot);d.appendChild(b);}
@@ -2452,12 +2497,14 @@ function orbPanel(){const s=orbSummary(ORB,Date.now(),orbLang(),(()=>{const i=mo
   $("orbmode").textContent=s.mode;$("orbphase").textContent=s.phase;$("orbdetail").textContent=s.detail;$("orbtool").textContent=s.tool;$("orbtool").title=s.tool;$("orbtime").textContent=s.time;
   const box=$("orbagents");box.innerHTML="";const col={Running:"var(--warn)",Merging:"var(--accent)",Done:"var(--ok)",Failed:"var(--bad)"};
   for(const a of s.agents){const d=document.createElement("div");const dot=document.createElement("span");dot.className="dot";dot.style.background=col[a.status]||"var(--dim)";const t=document.createElement("span");t.textContent=a.title;d.append(dot,t);box.appendChild(d);}}
-function orbBoot(){const cv=$("orbcv");const rm=typeof window!=="undefined"&&window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  orbR=new OrbRenderer(cv,()=>ORB,{reduceMotion:rm,paused:()=>document.hidden});orbR.start();addEventListener("resize",()=>orbR.resize());
-  setInterval(orbPanel,500);orbPanel();
+function orbBoot(){const cv=$("orbcv");if(!cv||document.body.classList.contains("pet-mode"))return;
   const pnl=$("orbpanel");try{if(localStorage.getItem("orbmin")!=="0")pnl.classList.add("min");}catch(e){}
+  const rm=typeof window!=="undefined"&&window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  orbR=new OrbRenderer(cv,()=>ORB,{reduceMotion:rm,paused:()=>document.hidden||pnl.classList.contains("min")||document.body.classList.contains("pet-mode")});
+  orbR.start();addEventListener("resize",()=>{if(!pnl.classList.contains("min"))orbR.resize();});
+  setInterval(()=>{if(!document.hidden&&!pnl.classList.contains("min"))orbPanel();},1000);orbPanel();
   $("orbtoggle").textContent=pnl.classList.contains("min")?"⟩":"⟨";
-  $("orbtoggle").onclick=()=>{pnl.classList.toggle("min");try{localStorage.setItem("orbmin",pnl.classList.contains("min")?"1":"0");}catch(e){}$("orbtoggle").textContent=pnl.classList.contains("min")?"⟩":"⟨";orbR.resize();};}
+  $("orbtoggle").onclick=()=>{pnl.classList.toggle("min");try{localStorage.setItem("orbmin",pnl.classList.contains("min")?"1":"0");}catch(e){}$("orbtoggle").textContent=pnl.classList.contains("min")?"⟩":"⟨";if(!pnl.classList.contains("min")){orbR.resize();orbPanel();}};}
 // new-session & working-directory modal
 let chosenNewMode="auto";
 const NEW_SESSION_MODES=[
@@ -4423,17 +4470,51 @@ async function raiseAppWindow(reason=""){
   }
 }
 
-function showPetBubble(text, duration=5000){
+let lastPetAnswer = "";
+let hasPetResultInRun = false;
+let _lastPetSnipAt = 0;
+
+function showPetBubble(text, duration=5000, isAnswer=false){
   if(petBubbleTimer) clearTimeout(petBubbleTimer);
   const b = $("pet-bubble");
   const t = $("pet-bubble-text");
   if(t) t.textContent = text;
   if(b) b.style.display = "block";
+  const copyBtn = $("pet-act-copy");
+  if(copyBtn) copyBtn.style.display = (isAnswer || lastPetAnswer) ? "inline-flex" : "none";
   const stText = $("pet-stand-bubble-text");
   if(stText) stText.textContent = text;
-  if(duration > 0){
+  const stActs = $("pet-stand-actions");
+  if(stActs) stActs.style.display = (isAnswer || lastPetAnswer) ? "flex" : "none";
+  if(duration > 0 && !document.body.classList.contains("pet-mode")){
     petBubbleTimer = setTimeout(hidePetBubble, duration);
   }
+}
+
+function updatePetLiveSnippet(line){
+  const now = Date.now();
+  if(now - _lastPetSnipAt < 650 || hasPetResultInRun) return;
+  _lastPetSnipAt = now;
+  const shortLine = line.length > 140 ? line.slice(0, 140) + "…" : line;
+  const stText = $("pet-stand-bubble-text");
+  if(stText && PET_STATE === "working"){
+    stText.textContent = "⏳ " + shortLine;
+  }
+}
+
+function notifyPetAnswer(answerText){
+  const clean = cleanModelText(answerText);
+  if(!clean) return;
+  lastPetAnswer = clean;
+  hasPetResultInRun = true;
+  const display = clean.length > 900 ? clean.slice(0, 900) + "\n… (полный ответ в чате)" : clean;
+  showPetBubble(display, 24000, true);
+}
+
+function copyPetAnswer(){
+  const txt = lastPetAnswer || ($("pet-stand-bubble-text")?.textContent) || ($("pet-bubble-text")?.textContent) || "";
+  if(!txt) return;
+  navigator.clipboard.writeText(txt).then(()=>toast("Ответ скопирован в буфер обмена! 📋")).catch(()=>{});
 }
 
 function hidePetBubble(){
@@ -4533,17 +4614,19 @@ async function submitPetTask(promptText){
 
 function notifyPetWorking(msg){
   setPetState("working");
-  showPetBubble(msg || "Запустил агентов! Работаем 🚀", 4000);
+  showPetBubble(msg || "Запустил агентов! Работаем 🚀", 6000);
 }
 
-function notifyPetDone(msg){
+function notifyPetDone(msg, keepAnswer=false){
   setPetState("celebrating");
-  showPetBubble(msg || "Всё готово! Результаты проверены ✨", 6000);
+  if(!keepAnswer){
+    showPetBubble(msg || "Всё готово! Результаты проверены ✨", 8000);
+  }
   playPetChime("done");
-  if(PET_CONFIG.autoRaise) raiseAppWindow("Задача завершена!");
+  if(PET_CONFIG.autoRaise && !document.body.classList.contains("pet-mode")) raiseAppWindow("Задача завершена!");
   setTimeout(()=>{
     if(PET_STATE === "celebrating") setPetState("idle");
-  }, 7500);
+  }, 6500);
 }
 
 function notifyPetAttention(msg){
@@ -4647,6 +4730,12 @@ function initPetDrag(){
     petEl.classList.remove("dragging");
     if(!petDragStart.moved){
       petHeartAnim("pet-hearts");
+      const qBox = $("pet-quick-input");
+      if(qBox && qBox.style.display === "none"){
+        qBox.style.display = "flex";
+        const inp = $("pet-prompt-input");
+        if(inp) inp.focus();
+      }
     } else {
       const rect = petEl.getBoundingClientRect();
       localStorage.setItem("openswarm_pet_pos", JSON.stringify({x: rect.left, y: rect.top}));
@@ -4828,7 +4917,7 @@ function initPet(){
   initPetDrag();
   startPetWanderLoop();
   syncPetDetachStatus();
-  setInterval(syncPetDetachStatus, 4000);
+  setInterval(()=>{if(!document.hidden)syncPetDetachStatus();}, 7000);
   
   if($("petbtn")) $("petbtn").onclick = openPetModal;
   if($("petdetachbtn")) $("petdetachbtn").onclick = togglePetDetach;
@@ -4839,6 +4928,7 @@ function initPet(){
   if($("savepetmodal")) $("savepetmodal").onclick = savePetSettings;
   if($("pet-popout-btn")) $("pet-popout-btn").onclick = togglePetDetach;
   
+  if($("pet-act-copy")) $("pet-act-copy").onclick = copyPetAnswer;
   if($("pet-act-detach")) $("pet-act-detach").onclick = detachPetToDesktop;
   if($("pet-act-focus")) $("pet-act-focus").onclick = ()=> raiseAppWindow("Пользователь нажал Поднять окно");
   if($("pet-act-feed")) $("pet-act-feed").onclick = togglePetQuickInput;
@@ -4852,6 +4942,10 @@ function initPet(){
   if($("pet-stand-send")) $("pet-stand-send").onclick = ()=> submitPetTask($("pet-stand-input")?.value);
   if($("pet-stand-input")) $("pet-stand-input").onkeydown = e =>{
     if(e.key === "Enter" && !e.isComposing){ e.preventDefault(); submitPetTask(e.target.value); }
+  };
+  if($("pet-stand-copy-btn")) $("pet-stand-copy-btn").onclick = copyPetAnswer;
+  if($("pet-stand-open-chat-btn")) $("pet-stand-open-chat-btn").onclick = async ()=>{
+    await api("/api/window/raise", {method:"POST"}).catch(()=>{});
   };
   if($("pet-stand-pin-btn")) $("pet-stand-pin-btn").onclick = togglePetStandPin;
   if($("pet-stand-screen-btn")) $("pet-stand-screen-btn").onclick = captureAndAskScreen;
@@ -4970,11 +5064,13 @@ $("prompt").addEventListener("input",updateSlashPop);
     refreshKiloStatus();
     refreshHealBadge();
     initPet();
-    setInterval(refreshSessions,5000);
+    setInterval(()=>{if(!document.hidden)refreshSessions();},10000);
     const urlParams=new URLSearchParams(window.location.search);
     const targetSess=urlParams.get("session");
     if(targetSess){
       openSession(targetSess);
+    } else if(urlParams.get("pet")==="1" && ST && Array.isArray(ST.sessions) && ST.sessions.length){
+      openSession(ST.sessions[0].id);
     }
   }catch(e){
     console.error("Init warning:", e);

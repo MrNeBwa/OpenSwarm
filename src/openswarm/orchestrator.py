@@ -339,21 +339,19 @@ class Orchestrator:
         eco_dir = get_token_saving_directive(role)
 
         if opt_cfg.mode == "ultra":
-            proactive_guidance = f"\n## Rules\n- Ask clarifying questions if ambiguous.\n{boundary}"
-            output_guide = "\n## Presentation\n- Start with a brief summary, use H2 headers and fenced code blocks.\n" + eco_dir
+            proactive_guidance = f"\n## Rules\n- Ask clarifying questions if ambiguous. Do not output internal reasoning/thinking.\n{boundary}"
+            output_guide = "\n## Presentation\n- Answer concisely and directly. Use fenced code blocks for code.\n" + eco_dir
         else:
             proactive_guidance = (
-                "\n## Interaction & Proactive Clarification\n"
-                "- Proactively ask the user questions: If specifications or architecture choices are ambiguous, DO NOT guess silently. State your current assumptions and ask clarifying questions.\n"
-                "- Subagent delegation: Decompose complex subtasks and spawn targeted subagents when appropriate.\n"
+                "\n## Rules\n"
+                "- If requirements are ambiguous, state assumptions briefly and ask clarifying questions.\n"
+                "- Do NOT output internal chain-of-thought, `Thinking:` prefixes, or `<think>` blocks in your response.\n"
             ) + boundary
             output_guide = (
-                "\n## Правила оформления ответа (Clean Presentation):\n"
-                "- **Структура**: Начинай с краткого, емкого резюме (1-3 предложения), затем приводи структурированное решение.\n"
-                "- **Оформление**: Используй понятные заголовки (H2), маркированные списки, акценты жирным шрифтом и таблицы там, где это уместно.\n"
-                "- **Блоки кода**: Любой программный код или команды оформляй в блоки с указанием языка (```python, ```bash, ```json и т.д.).\n"
-                "- **Чистота вывода**: Не дублируй в финальном ответе сырые логи и промежуточные вызовы инструментов — давай готовый, чистый результат для пользователя.\n"
-                "- **Итог**: Завершай ответ блоком ключевых выводов или рекомендацией следующих шагов (Key Takeaways / Next Steps).\n"
+                "\n## Правила ответа:\n"
+                "- Отвечай кратко, чётко и сразу по сути вопроса, без длинных вступлений, воды и лишних секций.\n"
+                "- Не выводи внутренние рассуждения (`Thinking:`, `<think>`) и сырые логи — только готовый ответ.\n"
+                "- Код и команды оформляй в блоки с указанием языка (```python, ```bash и т.д.).\n"
             ) + eco_dir
 
         adaptive = get_adaptive_instructions(
@@ -363,13 +361,10 @@ class Orchestrator:
             role=role,
         )
 
-        if role == "chat":  # plain conversation: leave opencode's own system prompt in charge
+        if role == "chat":  # plain conversation: keep prompt lightweight & natural
             hints = [s.prompt_hint for s in self.skills if s.prompt_hint]
             hint_sfx = ("\n\n[OpenSwarm guidance: " + " ".join(hints) + "]") if hints else ""
-            if opt_cfg.kv_prefix_align:
-                raw = f"{proactive_guidance}{output_guide}{adaptive}{hint_sfx}{bus_block}\n## User Request\n{body}"
-            else:
-                raw = body + bus_block + proactive_guidance + output_guide + adaptive + hint_sfx
+            raw = f"{body}{bus_block}{adaptive}{output_guide}{hint_sfx}"
             return optimize_prompt_for_model(raw, role="chat")
         hints = [s.prompt_hint for s in self.skills if s.prompt_hint]
         if extra_hints:
@@ -478,7 +473,14 @@ class Orchestrator:
             raise BudgetExceeded(f"max_agents_per_run ({self.cfg.max_agents_per_run}) reached")
         await self._announce(agent_id, title, role)
         await self._set_status(agent_id, RUNNING)
-        from .dsh import DSH_FREE_FALLBACK_MODEL, is_dsh_model, next_free_fallback_model, resolve_dsh_model
+        from .dsh import (
+            DSH_FREE_FALLBACK_MODEL,
+            is_dsh_model,
+            is_opencode_free_model,
+            mark_opencode_free_limited,
+            next_free_fallback_model,
+            resolve_dsh_model,
+        )
         from .kilo import KILO_FALLBACK_FREE_MODEL, is_kilo_model, normalize_kilo_model
         from .runner import is_soft_success
         oc = self.cfg.opencode
@@ -495,7 +497,16 @@ class Orchestrator:
         if vpn.enabled and not vpn.running():
             await asyncio.to_thread(vpn.ensure)
         bus_env = {"OPENSWARM_DB": str(self.git.swarm_dir / "swarm.db"), "OPENSWARM_RUN_ID": self._run_id}
-        if role == "chat" and oc.use_api and oc.use_server and self.pool and not self.pool.api_bad:
+        if (
+            role == "chat"
+            and oc.use_api
+            and oc.use_server
+            and self.pool
+            and not self.pool.api_bad
+            and not vpn.enabled
+            and not is_kilo_model(mdl)
+            and not is_dsh_model(mdl)
+        ):
             sid = session_id
             api_vpn_rotations = 0
             while True:
@@ -507,7 +518,13 @@ class Orchestrator:
                 if api_res is None:
                     break
                 res, done_api = api_res, api_res.ok
-                if keyrun and not res.ok and await keyrun.failed(res.errors + "\n" + res.output):
+                err_combo = res.errors + "\n" + res.output
+                if not res.ok and re.search(r"Free usage limit reached|FreeUsageLimitError|QuotaExceeded", err_combo, re.I):
+                    if is_opencode_free_model(mdl):
+                        mark_opencode_free_limited()
+                    done_api = False
+                    break
+                if keyrun and not res.ok and await keyrun.failed(err_combo):
                     self._line_cb(agent_id, "-> OpenRouter key switched, repeating the request", True)
                     sid = self._api_session or sid  # resume the session the failed attempt created
                     continue
@@ -515,7 +532,7 @@ class Orchestrator:
                     not res.ok
                     and vpn.enabled
                     and vpn.auto_switch_on_limits
-                    and vpn.is_limit(res.errors + "\n" + res.output)
+                    and vpn.is_limit(err_combo)
                     and api_vpn_rotations < self.cfg.vpn.max_rotations_per_request
                 ):
                     api_vpn_rotations += 1
@@ -537,10 +554,19 @@ class Orchestrator:
                         sid = self._api_session or sid
                         continue
                 break
+        mdl = normalize_kilo_model(resolve_dsh_model(mdl))
         rate_re = re.compile(oc.rate_limit_pattern, re.I) if oc.rate_limit_pattern else None
         caps = await get_caps(self.cfg)
         att_flag = caps.attach_flag(oc)
-        use_server = bool(self.pool and oc.use_server and not done_api and att_flag and not is_kilo_model(mdl) and not is_dsh_model(mdl))
+        use_server = bool(
+            self.pool
+            and oc.use_server
+            and not done_api
+            and att_flag
+            and not vpn.enabled
+            and not is_kilo_model(mdl)
+            and not is_dsh_model(mdl)
+        )
         auto = "auto_approve" in self.sel.skills and caps.can_auto(oc)
         extra_rw = [self.git.root / ".git"] if self.git.is_git else []
         if self.git.swarm_dir.exists():
@@ -555,6 +581,7 @@ class Orchestrator:
             if fp not in files:
                 files.append(fp)
         attempt, vpn_rotations, flag_fixes, model_switches = 0, 0, 0, 0
+        initial_mdl = mdl
         tried_models: set[str] = {mdl}
         from .healer import analyze_error, heal_git_workspace
         from .plugins import hook_enabled
@@ -572,7 +599,8 @@ class Orchestrator:
                 self.cfg, cwd, agent_id=agent_id, role=role, model=mdl, skills=self.skills,
                 on_line=self._line_cb, continue_session=continue_session, session_id=session_id,
                 title=session_title, agent=oc.role_agents.get(role, ""), files=files, sandbox=sandbox, extra_rw=extra_rw,
-                attach_flag=att_flag, standalone=caps.can_standalone(oc), auto=auto and caps.can_auto(oc),
+                attach_flag=att_flag, standalone=True if (vpn.enabled or not use_server) else caps.can_standalone(oc),
+                auto=auto and caps.can_auto(oc), thinking=False,
                 effort=eff, variant_flag=caps.variant_flag(oc), thinking_flag=caps.thinking_flag(oc),
                 extra_env={**bus_env, **(keyrun.env if keyrun else {})},
             )
@@ -630,12 +658,36 @@ class Orchestrator:
             if not res.ok and keyrun and await keyrun.failed(text[-3000:]):
                 self._line_cb(agent_id, "OpenRouter key limit/credits/auth problem - retrying with the next key", True)
                 continue
+            if not res.ok:
+                is_free_quota_exceeded = bool(
+                    re.search(r"Free usage limit reached|FreeUsageLimitError|QuotaExceeded|model_not_found", text, re.I)
+                )
+                if is_free_quota_exceeded and is_opencode_free_model(mdl):
+                    mark_opencode_free_limited()
+                should_fallback_free = is_free_quota_exceeded or (
+                    is_dsh_model(mdl) or is_kilo_model(mdl)
+                )
+                if should_fallback_free:
+                    next_free = next_free_fallback_model(mdl, tried_models)
+                    if next_free:
+                        old_mdl = mdl
+                        mdl = next_free
+                        tried_models.add(mdl)
+                        model_switches += 1
+                        self._line_cb(
+                            agent_id,
+                            f"🔄 Лимит бесплатного тарифа на {old_mdl} -> мгновенный обход через {mdl}",
+                            True,
+                        )
+                        await self._log(f"{title}: free limit/failure on {old_mdl} -> switched to {mdl}")
+                        use_server = False
+                        continue
             if (
                 not res.ok
                 and vpn.enabled
                 and vpn.auto_switch_on_limits
                 and vpn.is_limit(text[-3000:])
-                and vpn_rotations < self.cfg.vpn.max_rotations_per_request
+                and vpn_rotations < min(2, self.cfg.vpn.max_rotations_per_request)
             ):
                 vpn_rotations += 1
                 self._line_cb(agent_id, "-> Provider limit/rate limit detected! Swapping VPN server...", True)
@@ -660,28 +712,6 @@ class Orchestrator:
                 use_server = False
                 continue
             if not res.ok:
-                is_free_quota_exceeded = bool(
-                    re.search(r"Free usage limit reached|FreeUsageLimitError", text, re.I)
-                )
-                should_fallback_free = is_free_quota_exceeded or (
-                    is_dsh_model(mdl) or is_kilo_model(mdl)
-                ) or (attempt >= oc.retries and bool(rate_re and rate_re.search(text)))
-
-                if should_fallback_free:
-                    next_free = next_free_fallback_model(mdl, tried_models)
-                    if next_free:
-                        old_mdl = mdl
-                        mdl = next_free
-                        tried_models.add(mdl)
-                        model_switches += 1
-                        self._line_cb(
-                            agent_id,
-                            f"🔄 Лимит бесплатного тарифа или сбой модели {old_mdl} -> переключение на {mdl}",
-                            True,
-                        )
-                        await self._log(f"{title}: free limit/failure on {old_mdl} -> switched to {mdl}")
-                        use_server = False
-                        continue
                 diag = analyze_error(text[-3000:])
                 router.record_failure(mdl, diag["snippet"], diag["kind"])
                 if diag["kind"] != "unknown":
@@ -696,7 +726,7 @@ class Orchestrator:
                     and not model
                     and not keyrun
                     and model_switches < 2
-                    and diag["kind"] in ("model_broken", "auth_error")
+                    and diag["kind"] in ("model_broken", "auth_error", "rate_limit")
                 ):
                     alt = router.fallback_model(self.cfg, role, mdl, self.sel.priority or self.cfg.priority, tried_models)
                     if alt and alt != mdl:
@@ -717,6 +747,26 @@ class Orchestrator:
             attempt += 1
         if res.ok:
             router.record_success(mdl, max(0.01, asyncio.get_running_loop().time() - t_start))
+            if mdl != initial_mdl and is_opencode_free_model(initial_mdl):
+                target_role = "coder" if role == "chat" else role
+                if hasattr(self.cfg.roles, target_role):
+                    setattr(self.cfg.roles, target_role, mdl)
+                if isinstance(getattr(self.sel, "models", None), dict):
+                    self.sel.models[target_role] = mdl
+                try:
+                    from .state import save_state
+                    save_state(
+                        mode=self.sel.mode,
+                        roles=self.cfg.roles,
+                        skills=self.sel.skills,
+                        parallel=self.sel.parallel,
+                        sandbox=self.sel.sandbox,
+                        workdir=str(self.sel.workdir),
+                        priority=self.sel.priority,
+                        effort=self.sel.effort,
+                    )
+                except Exception:
+                    pass
         if not res.ok:
             await self._set_status(agent_id, FAILED)
         elif final_status:

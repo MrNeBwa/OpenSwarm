@@ -32,56 +32,51 @@ KILO_PROVIDER_ID = "kilo"
 KILO_GATEWAY_BASE_URL = "https://api.kilo.ai/api/gateway"
 KILO_ALT_BASE_URL = "https://ai-gateway.kilo.ai/api/v1"
 KILO_ANONYMOUS_TOKEN = "anonymous"
-KILO_DEFAULT_MODEL = "kilo/poolside/laguna-s-2.1:free"
-KILO_FALLBACK_FREE_MODEL = "opencode/deepseek-v4.1-flash-free"
+KILO_DEFAULT_MODEL = "kilo/nvidia/nemotron-3.5-super-vl:free"
+KILO_FALLBACK_FREE_MODEL = "kilo/cohere/north-mini-code:free"
 
 # Short aliases -> canonical upstream Kilo gateway model IDs
 KILO_ALIASES: dict[str, str] = {
     "auto-free": "kilo-auto/free",
     "kilo-auto": "kilo-auto/free",
-    "laguna-free": "poolside/laguna-s-2.1:free",
-    "laguna-s-2.1-free": "poolside/laguna-s-2.1:free",
+    "poolside/laguna-s-2.1:free": "cohere/north-mini-code:free",
+    "laguna-free": "cohere/north-mini-code:free",
+    "laguna-s-2.1-free": "cohere/north-mini-code:free",
     "north-code-free": "cohere/north-mini-code:free",
     "north-mini-code-free": "cohere/north-mini-code:free",
-    "flint-free": "recursive/flint-v1.0:free",
+    "recursive/flint-v1.0:free": "cohere/north-mini-code:free",
+    "flint-free": "cohere/north-mini-code:free",
     "nemotron-lightning-free": "nvidia/nemotron-3.5-lightning:free",
     "nemotron-super-free": "nvidia/nemotron-3.5-super-vl:free",
     "beam-free": "reflection/beam-free",
-    "glyph-free": "stealth/glyph-cluster",
+    "stealth/glyph-cluster": "reflection/beam-free",
+    "glyph-free": "reflection/beam-free",
 }
 
 KILO_BUILTIN_FREE_MODELS: dict[str, dict[str, Any]] = {
-    "poolside/laguna-s-2.1:free": {
-        "name": "Poolside Laguna S 2.1 Free · Kilo (Code 262K)",
-        "limit": {"context": 262144, "output": 32768},
+    "nvidia/nemotron-3.5-super-vl:free": {
+        "name": "NVIDIA Nemotron 3.5 Super VL Free · Kilo (1M)",
+        "limit": {"context": 1000000, "output": 32768},
     },
     "cohere/north-mini-code:free": {
         "name": "Cohere North Mini Code Free · Kilo (256K)",
         "limit": {"context": 256000, "output": 32768},
     },
+    "reflection/beam-free": {
+        "name": "Reflection Beam 1.0 Free · Kilo (1M)",
+        "limit": {"context": 1048576, "output": 65536},
+    },
     "kilo-auto/free": {
         "name": "Kilo Auto Free Router (256K)",
         "limit": {"context": 256000, "output": 32768},
-    },
-    "recursive/flint-v1.0:free": {
-        "name": "Recursive Flint 1.0 Free · Kilo (262K)",
-        "limit": {"context": 262144, "output": 32768},
     },
     "nvidia/nemotron-3.5-lightning:free": {
         "name": "NVIDIA Nemotron 3.5 Lightning Free · Kilo (1M)",
         "limit": {"context": 1000000, "output": 32768},
     },
-    "nvidia/nemotron-3.5-super-vl:free": {
-        "name": "NVIDIA Nemotron 3.5 Super VL Free · Kilo (1M)",
-        "limit": {"context": 1000000, "output": 32768},
-    },
-    "reflection/beam-free": {
-        "name": "Reflection Beam 1.0 Free · Kilo (1M)",
-        "limit": {"context": 1048576, "output": 65536},
-    },
-    "stealth/glyph-cluster": {
-        "name": "Stealth Glyph Cluster Free · Kilo (256K)",
-        "limit": {"context": 256000, "output": 32768},
+    "nvidia/nemotron-3-ultra-550b-a55b:free": {
+        "name": "NVIDIA Nemotron 3 Ultra 550B Free · Kilo (256K)",
+        "limit": {"context": 262144, "output": 32768},
     },
 }
 

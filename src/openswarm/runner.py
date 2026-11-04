@@ -24,6 +24,48 @@ def strip_ansi(text: str) -> str:
     return ANSI_RE.sub("", text)
 
 
+_THINK_TAG_RE = re.compile(
+    r"<(?:think|thinking|reasoning|thought)\b[^>]*>[\s\S]*?</(?:think|thinking|reasoning|thought)>",
+    re.I,
+)
+_UNCLOSED_THINK_RE = re.compile(
+    r"<(?:think|thinking|reasoning|thought)\b[^>]*>[\s\S]*$",
+    re.I,
+)
+_TURN_LINE_RE = re.compile(r"^\s*>\s+\S+\s+·\s+\S+.*$", re.M)
+_THINKING_PREFIX_RE = re.compile(
+    r"(?:^|\n)Thinking:\s*[^\n]*(?:\n(?!(?:\n|#|[-*]\s|\d+\.\s|```))[^\n]*)*\n+",
+    re.I,
+)
+
+
+def strip_reasoning(text: str) -> str:
+    """Remove internal chain-of-thought (`Thinking: ...`, `<think>...</think>`) and CLI turn headers from output."""
+    if not text:
+        return ""
+    cleaned = strip_ansi(text)
+    cleaned = _THINK_TAG_RE.sub("", cleaned)
+    # Remove CLI `> build · model` headers
+    cleaned = _TURN_LINE_RE.sub("", cleaned)
+    # Remove `Thinking: ...` blocks when followed by actual answer paragraphs
+    prev = None
+    while prev != cleaned:
+        prev = cleaned
+        cleaned = _THINKING_PREFIX_RE.sub("\n", cleaned)
+    # Also strip standalone lines starting with `Thinking:` if remaining text has real content
+    lines = cleaned.splitlines()
+    non_thinking = [ln for ln in lines if not ln.strip().lower().startswith("thinking:")]
+    if any(ln.strip() for ln in non_thinking):
+        cleaned = "\n".join(non_thinking)
+    if "<think" in cleaned.lower() or "<reasoning" in cleaned.lower():
+        without_unclosed = _UNCLOSED_THINK_RE.sub("", cleaned).strip()
+        if without_unclosed:
+            cleaned = without_unclosed
+    # Collapse 3+ blank lines into at most 2
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
 _FATAL_ERR_RE = re.compile(
     r"(?:^|\b)(?:ERROR|Error:|Traceback \(most recent call last\)|Exception:|Fatal|Panic|"
     r"APIError|ProviderError|ModelNotFoundError|ProviderModelNotFoundError|FreeUsageLimitError|"
@@ -105,7 +147,7 @@ class RunResult:
 
     @property
     def clean_output(self) -> str:
-        return strip_ansi(self.output)
+        return strip_reasoning(self.output)
 
 
 class OpenCodeRunner:
@@ -139,7 +181,7 @@ class OpenCodeRunner:
         standalone: bool = False,
         auto: bool = False,
         effort: str = "",
-        thinking: bool = True,
+        thinking: bool = False,
         variant_flag: str | None = None,
         thinking_flag: str | None = None,
     ) -> None:
