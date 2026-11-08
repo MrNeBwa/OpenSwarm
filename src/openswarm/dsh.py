@@ -49,8 +49,22 @@ DSH_FREE_MODELS_CASCADE: list[str] = [
     "kilo/nvidia/nemotron-3.5-super-vl:free",
     "kilo/cohere/north-mini-code:free",
     "kilo/reflection/beam-free",
+    "kilo/nvidia/nemotron-3.5-lightning:free",
+    "kilo/openrouter/free",
     "openrouter/openrouter/free",
 ]
+
+_OPENCODE_FREE_EQUIVALENTS: dict[str, str] = {
+    "opencode/deepseek-v4.1-flash-free": "kilo/nvidia/nemotron-3.5-super-vl:free",
+    "opencode/beam-free": "kilo/reflection/beam-free",
+    "opencode/nemotron-3.5-super-vl-free": "kilo/nvidia/nemotron-3.5-super-vl:free",
+    "opencode/nemotron-3.5-lightning-free": "kilo/nvidia/nemotron-3.5-lightning:free",
+    "opencode/nemotron-3-ultra-free": "kilo/nvidia/nemotron-3-ultra-550b-a55b:free",
+    "opencode/flint-40b-free": "kilo/cohere/north-mini-code:free",
+    "opencode/mimo-v2.6-flash-free": "kilo/cohere/north-mini-code:free",
+    "opencode/glm-5.3-flash-free": "kilo/cohere/north-mini-code:free",
+    "opencode/big-pickle": "kilo/kilo-auto/free",
+}
 
 # Track when OpenCode's zen/v1 free quota is exhausted so we bypass it immediately:
 _OPENCODE_FREE_LIMITED_UNTIL: float = 0.0
@@ -307,7 +321,8 @@ def has_direct_dsh_auth() -> bool:
 def resolve_dsh_model(model: str) -> str:
     """Resolve `deepseek-harness/*` (or quota-limited `opencode/*-free`) to a working model."""
     if is_opencode_free_model(model) and is_opencode_free_limited():
-        return DSH_FREE_FALLBACK_MODEL
+        raw = model.split("#", 1)[0].strip().lower()
+        return _OPENCODE_FREE_EQUIVALENTS.get(raw, DSH_FREE_FALLBACK_MODEL)
     if not is_dsh_model(model):
         return model
     if has_direct_dsh_auth():

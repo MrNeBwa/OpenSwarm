@@ -5,14 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenSwarm</title>
 <style>
-:root,html[data-theme="claude"]{--bg:#191715;--panel:#221F1C;--panel2:#2C2824;--line:#3A342E;--text:#F2EDE4;--dim:#A69E92;--accent:#E58565;--accent2:#D46B48;--ok:#56B37A;--warn:#E0A642;--bad:#E06363;--code:#141210;--glow:229,133,101;--serif:ui-serif,Georgia, Cambria, "Times New Roman", Times, serif;color-scheme:dark}
-html[data-theme="sakura"]{--bg:#1B1518;--panel:#251D21;--panel2:#31262C;--line:#46353E;--text:#FAF0F5;--dim:#BFA3B0;--accent:#F472B6;--accent2:#EC4899;--ok:#4ADE80;--warn:#FBBF24;--bad:#FB7185;--code:#130E11;--glow:244,114,182;--serif:ui-serif,Georgia, Cambria, "Times New Roman", Times, serif;color-scheme:dark}
-html[data-theme="oled"]{--bg:#090A0F;--panel:#11131C;--panel2:#191C28;--line:#262A3B;--text:#F1F5F9;--dim:#8E96AA;--accent:#818CF8;--accent2:#6366F1;--ok:#34D399;--warn:#FBBF24;--bad:#F87171;--code:#050609;--glow:99,102,241;--serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;color-scheme:dark}
+:root,html[data-theme="claude"],html[data-theme="opencode"],html[data-theme="oled"]{--bg:#090a0f;--panel:#0d1117;--panel2:#161b22;--line:#21262d;--text:#e6edf3;--dim:#8b949e;--accent:#2ea043;--accent2:#238636;--ok:#2ea043;--warn:#d29922;--bad:#f85149;--code:#060709;--glow:46,160,67;--serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"JetBrains Mono",Inter,sans-serif;color-scheme:dark}
+html[data-theme="sakura"]{--bg:#1B1518;--panel:#251D21;--panel2:#31262C;--line:#46353E;--text:#FAF0F5;--dim:#BFA3B0;--accent:#F472B6;--accent2:#EC4899;--ok:#4ADE80;--warn:#FBBF24;--bad:#FB7185;--code:#130E11;--glow:244,114,182;--serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;color-scheme:dark}
 html[data-theme="nord"]{--bg:#1E222A;--panel:#252A34;--panel2:#2E3440;--line:#3B4252;--text:#ECEFF4;--dim:#9AA5B8;--accent:#88C0D0;--accent2:#5E81AC;--ok:#A3BE8C;--warn:#EBCB8B;--bad:#BF616A;--code:#181B22;--glow:136,192,208;--serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;color-scheme:dark}
 html[data-theme="emerald"]{--bg:#0C1410;--panel:#121E18;--panel2:#192921;--line:#243B30;--text:#E6F4ED;--dim:#87A696;--accent:#34D399;--accent2:#10B981;--ok:#34D399;--warn:#FBBF24;--bad:#F87171;--code:#080E0B;--glow:16,185,129;--serif:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;color-scheme:dark}
 html[data-theme="light"]{--bg:#FAF8F4;--panel:#F2EEE6;--panel2:#E8E2D7;--line:#DCD5C7;--text:#1F1E1B;--dim:#706B60;--accent:#C96442;--accent2:#B85534;--ok:#2E7D4F;--warn:#B7791F;--bad:#C53030;--code:#EFECE4;--glow:201,100,66;--serif:ui-serif,Georgia, Cambria, "Times New Roman", Times, serif;color-scheme:light}
+/* Accessibility High-Contrast & Focus Styles */
+body[data-high-contrast="true"],html.high-contrast-mode{--bg:#000000!important;--panel:#0d0d0d!important;--panel2:#161616!important;--line:#555555!important;--text:#ffffff!important;--dim:#dcdcdc!important;--accent:#58a6ff!important;--accent2:#79c0ff!important;--ok:#34d399!important;--warn:#fbbf24!important;--bad:#f87171!important}
+body[data-high-contrast="true"] button,html.high-contrast-mode button{border:2px solid #777!important;font-weight:600!important}
+body[data-high-contrast="true"] .bubble,html.high-contrast-mode .bubble{border:2px solid #666!important}
+*:focus-visible{outline:3px solid var(--accent)!important;outline-offset:2px!important}
 *{box-sizing:border-box}html,body{height:100%;margin:0}
-body{font:14.5px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;background:radial-gradient(1200px 700px at 8% -10%,rgba(var(--glow),.11),transparent 62%),radial-gradient(900px 600px at 100% 110%,rgba(86,179,122,.05),transparent 55%),var(--bg);color:var(--text);display:flex;-webkit-font-smoothing:antialiased}
+body{font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"JetBrains Mono",Inter,sans-serif;background:var(--bg);color:var(--text);display:flex;-webkit-font-smoothing:antialiased}
 button,select,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:6px 13px;font-weight:500;font-size:13px;transition:border-color .16s,background .16s,transform .14s cubic-bezier(0.34,1.56,0.64,1),box-shadow .16s}
 button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--panel2) 84%,var(--accent));transform:translateY(-1px)}
@@ -35,15 +39,15 @@ select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}.dot.run{background:var(--accent);animation:p 1s infinite}.dot.ok{background:var(--ok)}.dot.bad{background:var(--bad)}
 @keyframes p{50%{opacity:.3}}
 #sidefoot{padding:11px 14px;border-top:1px solid var(--line);color:var(--dim);font-size:12px}
-#main{flex:1;display:flex;flex-direction:column;min-width:0}
-#top{padding:9px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:nowrap;background:color-mix(in srgb,var(--panel) 80%,var(--bg));backdrop-filter:blur(10px)}
+#main{flex:1;display:flex;flex-direction:column;min-width:0;height:100%;overflow:hidden;position:relative}
+#top{padding:9px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:nowrap;background:color-mix(in srgb,var(--panel) 80%,var(--bg));backdrop-filter:blur(10px);flex:none;width:100%}
 #title{font-family:var(--serif);font-weight:600;font-size:16.5px;letter-spacing:-.01em}#wd{color:var(--dim);font-size:12px;background:var(--panel2);border:1px solid var(--line);padding:2px 10px;border-radius:99px;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#wd:empty{display:none}
 #bar{padding:8px 20px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:color-mix(in srgb,var(--panel) 45%,var(--bg));font-size:13px}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;border-radius:0;background:none;padding:5px 10px}
 .seg button.on{background:var(--accent2);color:#fff}
 .lbl{color:var(--dim);font-size:12px}
-#conv{flex:1;overflow:auto;padding:24px 20px 12px}
-.wrap{max-width:860px;margin:0 auto}
+#conv{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:24px 20px 12px;width:100%}
+.wrap{max-width:860px;width:100%;margin:0 auto}
 .msg{margin:0 0 18px;display:flex}.msg.user{justify-content:flex-end}
 .bubble{max-width:100%;padding:14px 18px;border-radius:16px;background:var(--panel);border:1px solid var(--line);overflow-wrap:anywhere;box-shadow:0 2px 14px -8px rgba(0,0,0,.35)}
 .user .bubble{background:var(--panel2);border-color:color-mix(in srgb,var(--accent) 35%,var(--line));color:var(--text);white-space:pre-wrap;max-width:82%;border-bottom-right-radius:5px}
@@ -61,7 +65,7 @@ pre.code{background:var(--code);padding:12px 14px;border-radius:12px;overflow:au
 .card .st{font-size:12px;color:var(--dim);padding:4px 14px 8px;display:flex;align-items:center;gap:6px}
 .card pre.log{display:none;margin:0;padding:12px 14px;max-height:360px;overflow:auto;background:var(--code);font:12.5px/1.55 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-word;border-top:1px solid var(--line);color:#e2ded4}
 .card.open pre.log{display:block}.log .e{color:var(--bad)}
-#composer{padding:10px 20px 18px;background:transparent}
+#composer{padding:10px 20px 18px;background:transparent;flex:none;width:100%}
 #cbox{display:flex;flex-direction:column;gap:8px;max-width:820px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 14px 10px;box-shadow:0 10px 32px -12px rgba(0,0,0,.48);transition:border-color .15s,box-shadow .15s}
 #cbox:focus-within{border-color:color-mix(in srgb,var(--accent) 70%,var(--line));box-shadow:0 10px 34px -10px rgba(var(--glow),.2)}
 #prompt{width:100%;resize:none;min-height:44px;max-height:200px;border:0;background:transparent;padding:2px 4px;font-size:14.5px;line-height:1.5;box-shadow:none}
@@ -220,16 +224,25 @@ blockquote{margin:8px 0;padding:8px 14px;border-left:3px solid var(--accent);bac
 .sesshead{display:flex;align-items:center;justify-content:space-between;padding:2px 14px 6px;font-size:11.5px;color:var(--dim)}
 .sesshead button{border:0;background:none;padding:2px 6px;font-size:11px;color:var(--dim);border-radius:6px}
 .sesshead button:hover{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
-#msgsearch{max-width:170px;font-size:12px;padding:5px 11px;border-radius:99px;background:var(--panel2)}
+.top-actions{display:flex;align-items:center;gap:6px}
+.searchbox{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 10px;transition:all .18s cubic-bezier(0.2,0.8,0.2,1)}
+.searchbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent)}
+.searchic{font-size:11.5px;color:var(--dim);opacity:.75}
+#msgsearch{border:0;background:transparent;padding:0;font-size:12px;width:100px;transition:width .2s ease;outline:none;color:var(--text)}
+#msgsearch:focus{width:160px}
 mark.chat-hl{background:color-mix(in srgb,var(--accent) 45%,transparent);color:var(--text);padding:0 2px;border-radius:3px}
-.tbtn{padding:5px 11px;border-radius:9px;font-size:12.5px;display:inline-flex;align-items:center;gap:5px}
-.sfhead{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 2px 5px;font-weight:600}
-.sfitem{width:100%;display:flex;align-items:center;gap:7px;padding:6px 10px;margin-bottom:5px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:12px;text-align:left}
-.sfitem .sfic{font-size:13px;width:16px;text-align:center}
+.tbtn{padding:5px 10px;border-radius:10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--panel);color:var(--text);transition:all .14s ease}
+.tbtn:hover{background:var(--panel2);border-color:var(--accent);transform:translateY(-1px)}
+.tbtn.icon-only{padding:5px 9px}
+.sfhead{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 4px 6px;font-weight:600}
+.sfitem{width:100%;display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:12px;text-align:left;transition:all .14s ease}
+.sfitem:hover{border-color:var(--accent);background:color-mix(in srgb,var(--panel2) 80%,var(--panel))}
+.sfitem.active{border-color:color-mix(in srgb,var(--ok) 50%,var(--line));background:color-mix(in srgb,var(--ok) 10%,var(--panel2))}
+.sfitem .sfic{font-size:13.5px;width:18px;text-align:center;flex:none}
 .sfitem .sft{flex:1;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sfvpn{flex-wrap:wrap;cursor:default}
-.sfvpn .mini{padding:2px 7px;font-size:11px;border-radius:7px}
-.sfvpn .sfauto{width:100%;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);cursor:pointer;margin-top:2px;padding-left:22px}
+.sfvpn{cursor:default;flex-wrap:nowrap;padding:5px 9px}
+.sfvpn .mini{padding:2px 7px;font-size:11px;border-radius:6px;border:1px solid var(--line);background:var(--panel)}
+.sfvpn .mini:hover{border-color:var(--accent)}
 #nskills{font-size:11px;color:var(--dim);text-align:center;margin-top:4px;opacity:.75}
 .mphead{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);padding:4px 8px 2px;font-weight:600}
 
@@ -525,6 +538,227 @@ body.pet-mode #pet-standalone-view{
   .presets{grid-template-columns:1fr}
   .sheet{padding:16px;width:95vw;max-height:92vh;border-radius:14px}
 }
+
+/* ==========================================================================
+   OpenCode Minimalist Design System
+   ========================================================================== */
+/* Hide noisy clutter from top header */
+.searchbox, #artbtn, #busbtn, #filesbtn, #petdetachbtn, #usage, .badge.ready {
+  display: none !important;
+}
+
+/* Hide noisy clutter from bottom composer */
+#respstyle, #focus_sel, #voicebtn, #voicelang, .csep, #modedesc {
+  display: none !important;
+}
+
+/* Hide noisy clutter from sidebar */
+#orbpanel, #side-pet-card, #dshbtn, #kilobtn, #keysbtn, .sfhead {
+  display: none !important;
+}
+
+#top {
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel) !important;
+  backdrop-filter: none;
+}
+#title {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+}
+.oc-top-pill {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel2));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  color: var(--accent);
+  cursor: pointer;
+  font-family: ui-monospace, monospace;
+  font-weight: 500;
+  transition: all .14s;
+}
+.oc-top-pill:hover {
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel2));
+  border-color: var(--accent);
+}
+
+#side {
+  width: 240px;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+#brand {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 14px 10px;
+}
+#newbtn {
+  margin: 0 10px 10px;
+  border-radius: 8px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  padding: 6px 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+#newbtn:hover {
+  border-color: var(--accent);
+}
+.sesssearch {
+  margin: 0 10px 8px;
+}
+.sesshead {
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--dim);
+}
+.sess {
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+#sidefoot {
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+}
+#opencodebtn {
+  width: 100%;
+  border-radius: 8px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#opencodebtn:hover {
+  border-color: var(--accent);
+}
+
+#cbox {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px 8px;
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.5);
+}
+#cbox:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+#prompt {
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  min-height: 42px;
+}
+#compbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+}
+.modepills {
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  gap: 4px;
+  width: auto;
+}
+.mpill {
+  font-size: 11.5px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.mpill.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.sendbtn {
+  border-radius: 8px;
+  padding: 5px 14px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+#welcome {
+  max-width: 640px;
+  margin: 9vh auto 4vh;
+  text-align: center;
+}
+#welcome h1 {
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+#welcome p {
+  font-size: 13.5px;
+  color: var(--dim);
+  margin-bottom: 20px;
+}
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 0;
+}
+.preset {
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  border-radius: 99px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all .14s;
+  display: inline-flex;
+  align-items: center;
+}
+.preset:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.preset b {
+  font-family: inherit;
+  font-size: 12.5px;
+  margin: 0;
+  font-weight: 500;
+}
+.preset span {
+  display: none !important;
+}
+
+.bubble {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 14px;
+  box-shadow: none;
+}
+.user .bubble {
+  background: var(--panel2);
+  border-color: #30363d;
+  color: var(--text);
+  border-radius: 12px;
+  border-bottom-right-radius: 4px;
+}
+pre.code {
+  background: var(--code);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
 </style>
 </head>
 <body>
@@ -553,36 +787,43 @@ body.pet-mode #pet-standalone-view{
     <button type="button" id="side-pet-detach-btn" class="primary side-pet-detach" title="Вынести агента за пределы окна приложения на рабочий стол">🚀 За окно</button>
   </div>
   <div id="sidefoot">
-    <div class="sfhead">Провайдеры</div>
-    <button id="kilobtn" class="sfitem" title="Kilo Gateway: бесплатные модели без ключа (≈200 запросов/час)"><span class="sfic">🟣</span><span class="sft">Kilo Gateway</span><span id="kilobadge" class="badge ready">FREE</span></button>
-    <button id="dshbtn" class="sfitem" title="DeepSeek Harness: Бесплатная безлимитная модель DeepSeek-V4.1-Flash (1M контекст)"><span class="sfic">🦈</span><span class="sft">DeepSeek Harness</span><span id="dshbadge" class="badge ready">FREE ∞</span></button>
-    <button id="keysbtn" class="sfitem" title="API keys for OpenRouter: several keys are switched automatically on limit / no credits"><span class="sfic">🔑</span><span class="sft">OpenRouter</span><span id="keycount" class="lbl"></span></button>
+    <div class="sfhead">Модели &amp; Сеть</div>
+    <button id="opencodebtn" class="sfitem active" title="Модели OpenCode: Google Gemini 3.5, 3.1 Flash-Lite, Ollama"><span class="sfic">⚡</span><span class="sft">Модели OpenCode</span><span id="ocbadge" class="badge ready">АКТИВНО</span></button>
     <div id="vpnsection" class="sfitem sfvpn">
-      <span class="sfic">🛡️</span><span class="sft">VPN</span>
+      <span class="sfic">🛡️</span><span class="sft">VPN туннель</span>
       <span id="vpnbadge" class="badge">off</span>
-      <button id="vpnquicktoggle" class="primary mini">Вкл</button>
-      <button id="vpnquicksettings" class="mini" title="Configure 65 servers">⚙</button>
-      <label class="sfauto" title="Automatically switch to another server when opencode gets rate limited or 429"><input type="checkbox" id="vpnautoswitch" checked> авто-смена при лимитах</label>
+      <button type="button" id="vpnquicktoggle" class="mini">Вкл</button>
+      <button type="button" id="vpnquicksettings" class="mini" title="Выбор из 65 серверов">⚙</button>
+      <input type="checkbox" id="vpnautoswitch" style="display:none" checked>
     </div>
-    <div id="nskills"></div></div>
+    <button id="dshbtn" class="sfitem" title="DeepSeek Harness: Безлимитная модель DeepSeek-V4.1-Flash (1M контекст)"><span class="sfic">🦈</span><span class="sft">DeepSeek Harness</span><span id="dshbadge" class="badge ready">1M</span></button>
+    <button id="kilobtn" class="sfitem" title="Kilo Gateway: внешние шлюзы"><span class="sfic">🟣</span><span class="sft">Kilo Gateway</span><span id="kilobadge" class="badge">шлюз</span></button>
+    <button id="keysbtn" class="sfitem" title="API keys for OpenRouter" style="display:none"><span class="sfic">🔑</span><span class="sft">OpenRouter</span><span id="keycount" class="lbl"></span></button>
+    <div id="nskills"></div>
+  </div>
 </aside>
 <section id="main">
   <div id="top">
     <button id="menubtn" class="iconbtn" title="Боковое меню сессий" onclick="toggleSidebar()">☰</button>
     <div style="display:flex;align-items:center;gap:8px;min-width:0">
-      <span id="title" title="Нажмите, чтобы переименовать сессию" style="cursor:pointer;font-weight:600;font-size:15px;font-family:var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">OpenSwarm</span>
+      <span id="title" title="Нажмите, чтобы переименовать сессию" style="cursor:pointer;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">OpenSwarm</span>
       <span class="badge ready" style="font-size:11px" title="Личный ИИ ассистент онлайн">● Онлайн</span>
       <span id="wd" class="wd-pill" title="Нажмите, чтобы выбрать рабочую папку и режим чата"></span>
+      <button type="button" id="top-opencode-pill" class="pill oc-top-pill" onclick="$('opencodebtn').click()" title="Бесплатные модели OpenCode">⚡ OpenCode Free</button>
     </div>
     <span style="flex:1"></span>
     <span id="usage" class="lbl"></span><span id="runstate" class="lbl"></span>
-    <input type="text" id="msgsearch" placeholder="Поиск в чате…" title="Фильтр сообщений в текущем диалоге">
-    <button id="petdetachbtn" class="tbtn" title="Вынести агента-питомца за пределы окна на рабочий стол (или вернуть обратно)">🐾<span class="tl"> За окно</span></button>
-    <button id="artbtn" class="tbtn" title="Claude Artifacts — интерактивные виджеты, код, SVG и превью">🎨<span class="tl"> Артефакты</span> <span id="artcount" class="lbl">(0)</span></button>
-    <button id="busbtn" class="tbtn" title="Swarm Room — live inter-agent chat &amp; non-blocking questions">💬<span class="tl"> Команда</span> <span id="buscount" class="lbl"></span></button>
-    <button id="filesbtn" class="tbtn" title="Файлы рабочей папки">📁<span class="tl"> Файлы</span></button>
-    <div class="morewrap">
-      <button id="morebtn" class="tbtn" title="Все инструменты, настройки, темы и интеграции">⋯</button>
+    <div class="top-actions">
+      <div class="searchbox">
+        <span class="searchic">🔍</span>
+        <input type="text" id="msgsearch" placeholder="Поиск в чате…" title="Фильтр сообщений в текущем диалоге">
+      </div>
+      <button id="artbtn" class="tbtn" title="Claude Artifacts — интерактивные виджеты, код, SVG и превью">🎨<span class="tl"> Артефакты</span> <span id="artcount" class="lbl">(0)</span></button>
+      <button id="busbtn" class="tbtn" title="Swarm Room — командный чат агентов">💬<span class="tl"> Команда</span> <span id="buscount" class="lbl"></span></button>
+      <button id="filesbtn" class="tbtn" title="Файлы рабочей папки">📁<span class="tl"> Файлы</span></button>
+      <button id="petdetachbtn" class="tbtn icon-only" title="Вынести агента-питомца за пределы окна на рабочий стол">🐾<span class="tl" style="display:none"> За окно</span></button>
+      <div class="morewrap">
+        <button id="morebtn" class="tbtn icon-only" title="Все инструменты, настройки, темы и интеграции">⋯</button>
       <div id="morepop">
         <div class="mphead">Инструменты &amp; ИИ</div>
         <button id="desktopbtn" title="Управление приложениями рабочего стола (Computer Use Agent)">🖥️ Управление приложениями</button>
@@ -613,6 +854,7 @@ body.pet-mode #pet-standalone-view{
       </div>
     </div>
   </div>
+  </div>
   <div id="threadbar" class="threadbar" style="display:none">
     <span class="lbl" style="font-weight:600">Threads:</span>
     <div id="threadtabs" class="threadtabs">
@@ -621,13 +863,13 @@ body.pet-mode #pet-standalone-view{
   </div>
   <div id="conv"><div class="wrap" id="stream">
     <div id="welcome">
-      <h1><span style="color:var(--accent)">✻</span> Чем помочь сегодня?</h1>
-      <p>Пишите или диктуйте 🎤 сразу в поле ниже — для простых вопросов и сложных проектов. Или выберите сценарий:</p>
+      <h1><span style="color:var(--accent)">✻</span> OpenSwarm</h1>
+      <p>Автономный агент на движке <b>OpenCode</b>. Минимализм и фокус на коде:</p>
       <div class="presets" id="wp">
-        <div class="preset on" data-m="auto"><b>✨ Умный Авто-режим</b><span>Сам выберет быстрый ответ или рой агентов под вашу задачу</span></div>
-        <div class="preset" data-m="chat"><b>💬 Быстрый вопрос / Чат</b><span>Мгновенный диалог с одним агентом без лишних шагов</span></div>
-        <div class="preset" data-m="cowork"><b>🚀 Разработка Роем (Cowork)</b><span>Архитектор + Кодеры + Ревьюер работают в команде над кодом</span></div>
-        <div class="preset" data-m="heal"><b>🩺 Диагностика и Починка</b><span>Автоматический поиск багов, исправление ошибок и проверка тестов</span></div>
+        <div class="preset on" data-m="auto"><b>✨ Авто-режим</b><span>Сам выберет быстрый ответ или рой агентов под вашу задачу</span></div>
+        <div class="preset" data-m="chat"><b>💬 Чат</b><span>Мгновенный диалог с одним агентом без лишних шагов</span></div>
+        <div class="preset" data-m="cowork"><b>🚀 Рой (Cowork)</b><span>Архитектор + Кодеры + Ревьюер работают в команде над кодом</span></div>
+        <div class="preset" data-m="heal"><b>🩺 Self-Heal</b><span>Автоматический поиск багов, исправление ошибок и проверка тестов</span></div>
       </div>
     </div>
   </div></div>
@@ -648,17 +890,18 @@ body.pet-mode #pet-standalone-view{
     </div>
     <div id="cbox">
       <div id="imgpreviews" class="img-previews" style="display:none"></div>
-      <textarea id="prompt" rows="1" placeholder="Спросите что-нибудь или опишите задачу…  ( / — команды )"></textarea>
+      <textarea id="prompt" rows="1" placeholder="Задайте вопрос или опишите задачу для OpenCode…  ( / — команды, Enter — отправить )"></textarea>
       <div id="compbar">
         <button id="attach" class="cicon" title="Прикрепить файл в рабочую папку">📎</button><input type="file" id="file" multiple hidden>
         <button type="button" id="imgbtn" class="cicon" title="Прикрепить изображение для анализа (или вставьте скриншот Ctrl+V)">📷</button><input type="file" id="imginput" accept="image/*" multiple hidden>
+        <button type="button" class="pill oc-top-pill" onclick="$('opencodebtn').click()" title="Выбрать бесплатную модель OpenCode">⚡ OpenCode Free</button>
         <button type="button" id="voicebtn" class="cicon" title="Голосовой ввод (нажмите, чтобы говорить)">🎤</button>
         <button type="button" id="voicelang" class="cicon" title="Переключить язык голосового ввода (RU / EN)">RU</button>
         <span class="csep"></span>
         <div id="modepills" class="modepills">
           <button type="button" class="mpill on" data-m="auto" title="Умный выбор: быстрый ответ для простых вопросов или рой агентов для сложных задач">✨ Авто</button>
           <button type="button" class="mpill" data-m="chat" title="Быстрый диалог с одним агентом (для простых вопросов и правок)">💬 Чат</button>
-          <button type="button" class="mpill" data-m="swarm" title="Командная работа нескольких агентов параллельно (Cowork, Storm, Heal, Architect)">🚀 Рой агентов</button>
+          <button type="button" class="mpill" data-m="swarm" title="Командная работа нескольких агентов параллельно (Cowork, Storm, Heal, Architect)">🚀 Рой</button>
         </div>
         <div id="swarmopts" style="display:none">
           <select id="mode" title="Специализация роя"></select>
@@ -919,22 +1162,25 @@ body.pet-mode #pet-standalone-view{
 <div class="modal" id="pvmodal"><div class="sheet"><div class="row"><b style="flex:1">Preview (sandboxed)</b><button id="pvclose">Close</button></div><iframe id="pvf" sandbox="allow-scripts"></iframe></div></div>
 <div class="modal" id="instrmodal"><div class="sheet"><div class="row"><b style="flex:1">AGENTS.md — standing instructions for this project (opencode reads it automatically)</b><button id="instrsave" class="primary">Save</button><button id="instrclose">Close</button></div><textarea id="instr" spellcheck="false"></textarea></div></div>
 <div class="modal" id="vpnmodal"><div class="sheet">
-  <div class="row"><b style="flex:1;font-size:16px">🛡️ Per-App VPN (NinjaVPN Exit Nodes)</b><button id="vpnclose">Close</button></div>
-  <div class="lbl">Only OpenSwarm agents go through this VPN proxy (127.0.0.1:18089). System network and your main browser are untouched. When an agent hits provider limits or 429s, OpenSwarm swaps to the next exit server automatically.</div>
+  <div class="row"><b style="flex:1;font-size:16px">🛡️ Per-App VPN (NinjaVPN AI Exit Nodes)</b><button id="vpnclose">Закрыть</button></div>
+  <div class="lbl">Туннелируется только трафик OpenSwarm (127.0.0.1:18089). Ваш браузер, Telegram и система работают напрямую без задержек. Санкционные страны (RU, CN, BY, IR) исключены из ротации, приоритет отдан скоростным Tier-1 AI узлам (Германия, Нидерланды, Финляндия, Швеция, США).</div>
   <div class="row" style="margin:14px 0 8px;gap:8px;align-items:center;flex-wrap:wrap">
-    <button id="vpntoggle" class="primary">Toggle VPN</button>
-    <button id="vpnrotate">↻ Rotate Server Now</button>
+    <button id="vpntoggle" class="primary">Включить VPN</button>
+    <button id="vpnrotate">↻ Сменить сервер</button>
     <button id="vpnverify" title="Проверить соединение, задержку и внешний IP через туннель">⚡ Проверить связь</button>
-    <button id="vpnreset">Reset Cooldowns</button>
+    <button id="vpnreset">Сброс кулдаунов</button>
     <label class="lbl" style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto">
       <input type="checkbox" id="vpnmodalautoswitch" checked>
-      <span>Auto-swap on limits</span>
+      <span>Автосмена при лимитах</span>
     </label>
   </div>
   <div id="vpncheckstatus" style="font-size:12.5px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;margin-bottom:8px;display:none;align-items:center;gap:8px"></div>
   <div class="row"><span id="vpninfo" style="font-size:13px;color:var(--dim)"></span></div>
   <div id="vpnmsg" class="lbl" style="min-height:18px"></div>
-  <div style="font-weight:600;font-size:13px;margin:12px 0 6px">Available Servers (click to connect immediately)</div>
+  <div class="row" style="margin:12px 0 6px;align-items:center;gap:8px">
+    <div style="font-weight:600;font-size:13px;flex:1">Доступные серверы (нажмите для переключения)</div>
+    <input type="text" id="vpnsearch" placeholder="🔍 Поиск сервера или страны…" style="max-width:240px;font-size:12px;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--panel)">
+  </div>
   <div id="vpnlist" style="max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px"></div>
 </div></div>
 <div class="modal" id="keysmodal"><div class="sheet">
@@ -1233,14 +1479,16 @@ body.pet-mode #pet-standalone-view{
     <b style="font-size:13px">Выбор бесплатной модели Kilo Gateway</b>
     <div class="row" style="gap:8px;flex-wrap:wrap">
       <select id="kilo_model_sel" style="flex:1;min-width:240px;font-size:12.5px">
-        <option value="kilo/poolside/laguna-s-2.1:free">Poolside Laguna S 2.1 Free (Code · 262K)</option>
         <option value="kilo/cohere/north-mini-code:free">Cohere North Mini Code Free (Code · 256K)</option>
-        <option value="kilo/kilo-auto/free">Kilo Auto Free Router (256K)</option>
         <option value="kilo/nvidia/nemotron-3.5-super-vl:free">NVIDIA Nemotron 3.5 Super VL Free (1M ctx)</option>
-        <option value="kilo/nvidia/nemotron-3.5-lightning:free">NVIDIA Nemotron 3.5 Lightning Free (1M ctx)</option>
         <option value="kilo/reflection/beam-free">Reflection Beam 1.0 Free (1M ctx)</option>
-        <option value="kilo/recursive/flint-v1.0:free">Recursive Flint 1.0 Free (262K)</option>
+        <option value="kilo/nvidia/nemotron-3.5-lightning:free">NVIDIA Nemotron 3.5 Lightning Free (1M ctx)</option>
+        <option value="kilo/kilo-auto/free">Kilo Auto Free Router (256K)</option>
+        <option value="kilo/openrouter/free">OpenRouter Free via Kilo (200K)</option>
+        <option value="kilo/nvidia/nemotron-3-ultra-550b-a55b:free">NVIDIA Nemotron 3 Ultra 550B Free (262K)</option>
         <option value="kilo/stealth/glyph-cluster">Stealth Glyph Cluster Free (256K)</option>
+        <option value="kilo/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">NVIDIA Nemotron 3 Nano Omni 30B Reasoning Free (262K)</option>
+        <option value="kilo/dots-studio/dots-3-note-preview:free">Dots 3 Note Preview Free (131K)</option>
       </select>
       <button type="button" id="kilo_activate_btn" class="primary">⚡ Выбрать как рабочую модель</button>
       <button type="button" id="kilo_test_btn">🔌 Проверить</button>
@@ -1955,9 +2203,16 @@ function fillModels(){
   for(const r of["planner","coder","reviewer"]){
     const el=$("m_"+r);if(!el)continue;
     const ids=models.map(m=>m.id);
-    el.innerHTML=models.map(m=>`<option value="${esc(m.id)}">${esc(m.label)}</option>`).join("")+(sel.models[r]&&!ids.includes(sel.models[r])?`<option>${esc(sel.models[r])}</option>`:"");
+    el.innerHTML=models.map(m=>`<option value="${esc(m.id)}">${esc(m.label)}</option>`).join("")+(sel.models[r]&&!ids.includes(sel.models[r])?`<option value="${esc(sel.models[r])}">${esc(sel.models[r])}</option>`:"");
     if(sel.models[r])el.value=sel.models[r];
-    el.onchange=()=>{sel.models[r]=el.value;};
+    el.onchange=async()=>{
+      sel.models[r]=el.value;
+      if(ST&&ST.roles)ST.roles[r]=el.value;
+      try{
+        await api("/api/roles",{method:"POST",body:JSON.stringify({roles:sel.models})});
+        toast(`Роль ${r} → ${el.value}`);
+      }catch(e){}
+    };
   }
 }
 function fillPriorities(){
@@ -2099,7 +2354,17 @@ async function openSession(id){if(ES)ES.close();toggleSidebar(false);const s=awa
 function connect(){if(!CUR)return;const id=CUR.id;ES=new EventSource(`/api/sessions/${id}/events?token=${TOKEN}&after=${lastId}`);
   ES.onmessage=m=>{const ev=JSON.parse(m.data);if(!CUR||CUR.id!==id)return;apply(ev,false);};
   ES.onerror=()=>{ES.close();setTimeout(()=>{if(CUR&&CUR.id===id)connect();},1500);};}
-function setBusy(b){busy=b;$("send").style.display=b?"none":"";$("stop").style.display=b?"":"none";$("runstate").textContent=b?"● running":"";}
+function setBusy(b){
+  busy=b;$("send").style.display=b?"none":"";$("stop").style.display=b?"":"none";$("runstate").textContent=b?"● running":"";
+  if(window.OpenSwarmNative&&window.OpenSwarmNative.updateStatus){
+    window.OpenSwarmNative.updateStatus({
+      status: b ? "running" : "idle",
+      title: CUR ? (CUR.title||"OpenSwarm") : "OpenSwarm",
+      workdir: CUR ? CUR.workdir : (ST ? ST.workdir : ""),
+      mode: sel.mode || "auto"
+    });
+  }
+}
 function mkCard(id,title,role){
   addBusTarget(id,title);addThread(id,title);
   AGENT_DATA[id]={id,title,role,status:"idle",logs:[],tools:[],thinking:"",result:""};
@@ -2236,7 +2501,28 @@ function apply(ev,replay){if(ev.id<=lastId)return;lastId=ev.id;orbReduce(ORB,ev)
       b.onclick=async()=>{try{await api(`/api/sessions/${CUR.id}/permission`,{method:"POST",body:JSON.stringify({id:r.id,response:val})});}catch(e){toast(e.message);}};t.appendChild(b);}
     S.appendChild(d);if(!replay)notifyPetPermission("Требуется подтверждение действия! ⚠️");break;}
   case"permission_resolved":{const d=document.getElementById("perm-"+ev.pid);if(d){d.querySelector(".tools").textContent="→ "+({once:"allowed once",always:"always allowed",reject:"denied"}[ev.decision]||ev.decision);}break;}
-  case"done":{busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);refreshOptimizerStats().catch(()=>{});if(ev.ok){notifyPetDone(hasPetResultInRun?"":"Задача успешно завершена! ✨",hasPetResultInRun);}else{notifyPetAttention("Завершено с замечаниями ⚠️");}}
+  case"role_model_updated":{
+    if(ev.role&&ev.model){
+      if(["planner","coder","reviewer"].includes(ev.role)){
+        sel.models[ev.role]=ev.model;
+      }else if(ev.role==="chat"){
+        sel.models.coder=ev.model;
+      }else if(ev.role==="architect"){
+        sel.models.planner=ev.model;
+      }
+      if(ST&&ST.roles)ST.roles={...ST.roles,...sel.models};
+      fillModels();
+      if(!replay)toast(`⚡ Авто-переключение (${ev.role}): ${ev.model}`);
+    }
+    break;
+  }
+  case"done":{
+    if(ev.roles&&typeof ev.roles==="object"){
+      sel.models={...sel.models,...ev.roles};
+      if(ST)ST.roles={...(ST.roles||{}),...ev.roles};
+      fillModels();
+    }
+    busy=false;if(!replay){setBusy(false);refreshSessions();loadFiles(viewPath);refreshOptimizerStats().catch(()=>{});if(ev.ok){notifyPetDone(hasPetResultInRun?"":"Задача успешно завершена! ✨",hasPetResultInRun);}else{notifyPetAttention("Завершено с замечаниями ⚠️");}}
     const d=document.createElement("div");d.className="sys";d.textContent=(ev.ok?"✔ finished":"✘ finished with problems")+(ev.failed&&ev.failed.length?" — "+ev.failed.join(", "):"")+(ev.usage&&ev.usage.tokens?` · ${ev.usage.tokens.input}→${ev.usage.tokens.output} tokens`+(ev.usage.cost?` · $${Number(ev.usage.cost).toFixed(4)}`:""):"");
     if(!ev.ok||(ev.failed&&ev.failed.length)){const rb=document.createElement("button");rb.className="primary";rb.textContent="▶ Продолжить ответ (перезапустить fail)";rb.style.marginLeft="8px";rb.onclick=()=>retryFailedAgents(ev.failed||[]);d.appendChild(rb);}
     if(ev.snapshot){const b=document.createElement("button");b.textContent="↩ Undo this run";b.style.marginLeft="8px";b.onclick=()=>undo(ev.snapshot);d.appendChild(b);}
@@ -2608,7 +2894,18 @@ try{PK.hidden=localStorage.getItem("pkhidden")==="1";}catch(e){}
 $("pkhidden").checked=PK.hidden;
 $("browse").onclick=()=>{const p=$("picker");if(p.style.display==="none"){p.style.display="flex";browse($("nwd").value.trim());}else p.style.display="none";};
 $("pkhidden").onchange=()=>{PK.hidden=$("pkhidden").checked;try{localStorage.setItem("pkhidden",PK.hidden?"1":"0");}catch(e){}browse(PK.d?PK.d.path:$("nwd").value.trim());};
-$("pkpick").onclick=async()=>{const b=$("pkpick");b.disabled=true;try{const r=await api("/api/pick-dir",{method:"POST",body:JSON.stringify({start:($("nwd").value.trim()||(PK.d&&PK.d.path)||"")})});
+$("pkpick").onclick=async()=>{
+  if(window.OpenSwarmNative&&window.OpenSwarmNative.pickDirectory){
+    try{
+      const r=await window.OpenSwarmNative.pickDirectory($("nwd").value.trim()||(PK.d&&PK.d.path)||"");
+      if(r&&r.path){
+        $("nwd").value=r.path;
+        if($("picker").style.display!=="none")browse(r.path);
+        return;
+      }
+    }catch(e){}
+  }
+  const b=$("pkpick");b.disabled=true;try{const r=await api("/api/pick-dir",{method:"POST",body:JSON.stringify({start:($("nwd").value.trim()||(PK.d&&PK.d.path)||"")})});
   if(r.path){$("nwd").value=r.path;if($("picker").style.display!=="none")browse(r.path);}}catch(e){alert(e.message);}b.disabled=false;};
 $("pkfilter").oninput=()=>{PK.sel=-1;renderPickerList();};
 $("pkfilter").onkeydown=e=>{const rows=[...$("pklist").querySelectorAll("div.d:not(.up)")];
@@ -2622,7 +2919,7 @@ $("nwd").onkeydown=e=>{
       const base=PK.d.path.replace(/\/$/,"");$("nwd").value=base+"/"+c+(names.length===1?"/":"");browse($("nwd").value,true);}}
   else if(e.key==="Enter"){e.preventDefault();const v=$("nwd").value.trim();if(e.ctrlKey||e.metaKey){$("createnew").click();return;}
     if($("picker").style.display==="none")$("createnew").click();else if(PK.d&&PK.d.prefix&&PK.d.dirs.length===1){$("nwd").value=PK.d.path.replace(/\/$/,"")+"/"+PK.d.dirs[0];browse($("nwd").value);}else browse(v);}};
-function openPicker(){$("pkpick").style.display=(ST&&ST.native_picker)?"":"none";$("picker").style.display="flex";$("pkfilter").value="";browse($("nwd").value.trim());}
+function openPicker(){$("pkpick").style.display=((ST&&ST.native_picker)||(window.OpenSwarmNative&&window.OpenSwarmNative.isNativeDesktop))?"":"none";$("picker").style.display="flex";$("pkfilter").value="";browse($("nwd").value.trim());}
 async function browse(p,soft){
   try{const d=await api("/api/dirs?hidden="+(PK.hidden?1:0)+"&path="+encodeURIComponent(p||""));PK.d=d;PK.sel=-1;
     if(!soft)$("nwd").value=d.path;
@@ -2690,36 +2987,86 @@ async function loadOrModels(quiet){try{if(!quiet)kmsg("loading models…");const
 async function refreshVpnStatus(){
   try{
     const d=await api("/api/vpn");
-    const lat=d.last_check&&d.last_check.ok&&d.last_check.latency_ms?` (${d.last_check.latency_ms}ms)`:"";
-    const label=d.enabled?(d.running?((d.current||"on")+lat):"starting"):"off";
-    $("vpnstatus").textContent=d.enabled?(d.running?"● "+(d.current||"on")+lat:"● starting"):"off";
+    const lat=d.last_check&&d.last_check.ok&&(d.last_check.latency_ms!==null&&d.last_check.latency_ms!==undefined)?` (${d.last_check.latency_ms}мс)`:"";
+    const curName = d.flag ? `${d.flag} ${d.current}` : (d.current || "вкл");
+    const label=d.enabled?(d.running?(curName+lat):"запуск"):"выкл";
+    $("vpnstatus").textContent=d.enabled?(d.running?"● "+curName+lat:"● запуск"):"выкл";
     $("vpnstatus").style.color=d.enabled?(d.running?"var(--ok)":"var(--warn)"):"var(--dim)";
     $("vpnbadge").textContent=label;
     $("vpnbadge").className="badge "+(d.enabled?(d.running?"ready":"cooling"):"");
-    $("vpnquicktoggle").textContent=d.enabled?"Turn OFF":"Turn ON";
+    $("vpnquicktoggle").textContent=d.enabled?"Выкл":"Вкл";
     $("vpnquicktoggle").className=d.enabled?"danger":"primary";
     $("vpnautoswitch").checked=!!d.auto_switch_on_limits;
     $("vpnmodalautoswitch").checked=!!d.auto_switch_on_limits;
     return d;
   }catch(e){return null;}
 }
+let _lastVpnData = null;
 async function openVpnModal(){
   $("vpnmodal").classList.add("on");
-  $("vpnmsg").textContent="loading status…";
+  $("vpnmsg").textContent="Загрузка статуса…";
+  $("vpnmsg").style.color="var(--dim)";
   try{
     const d=await api("/api/vpn");
     renderVpnModal(d);
   }catch(e){$("vpnmsg").textContent=e.message;}
 }
+function renderVpnList(filterText = ""){
+  if(!_lastVpnData) return;
+  const d=_lastVpnData;
+  const box=$("vpnlist");
+  box.innerHTML="";
+  if(!d.servers||!d.servers.length){box.innerHTML='<div class="lbl" style="padding:12px;text-align:center">Серверы NinjaVPN не найдены.</div>';return;}
+  const q=(filterText||"").trim().toLowerCase();
+  const list=d.servers.filter(s=>{
+    if(!q) return true;
+    return (s.id&&s.id.toLowerCase().includes(q))||
+           (s.country&&s.country.toLowerCase().includes(q))||
+           (s.country_code&&s.country_code.toLowerCase().includes(q))||
+           (s.protocol&&s.protocol.toLowerCase().includes(q));
+  });
+  if(!list.length){
+    box.innerHTML=`<div class="lbl" style="padding:12px;text-align:center">Ничего не найдено по запросу "${esc(filterText)}".</div>`;
+    return;
+  }
+  list.forEach(s=>{
+    const row=document.createElement("div");
+    row.className="f";
+    const isCur=s.id===d.current;
+    const isCool=s.cooling>0;
+    const flag=s.flag||"🌐";
+    const tierBadge=s.tier1?`<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,0.15);color:var(--ok);font-weight:600;margin-left:6px;border:1px solid rgba(34,197,94,0.3)">⚡ Tier-1 AI</span>`:"";
+    row.style.background=isCur?"color-mix(in srgb,var(--accent) 20%,transparent)":"";
+    row.style.cursor="pointer";
+    row.innerHTML=`<span style="font-size:16px;line-height:1">${flag}</span><span style="font-weight:${isCur?600:400}">${esc(s.id)}</span><span class="lbl">${esc(s.country||s.country_code||"")}</span>${tierBadge}<span class="lbl" style="margin-left:auto">${isCool?`<span style="color:var(--warn)">кулдаун ${s.cooling}с</span>`:esc(s.protocol)}</span>${isCur?'<span style="color:var(--accent);font-size:11px;font-weight:600;margin-left:8px">● активен</span>':""}`;
+    row.onclick=async()=>{
+      $("vpnmsg").textContent="Переключение на "+s.id+" (ожидание и проверка связи)…";
+      $("vpnmsg").style.color="var(--accent)";
+      try{
+        const r=await api("/api/vpn/use",{method:"POST",body:JSON.stringify({id:s.id})});
+        renderVpnModal(await api("/api/vpn"));
+        refreshVpnStatus();
+        if(r.ok){
+          const lat=(r.check&&r.check.latency_ms!==null)?` (${r.check.latency_ms} мс)` : "";
+          const ip=(r.check&&r.check.exit_ip)?`, IP: ${r.check.exit_ip}` : "";
+          toast(`VPN подключён: ${s.id}!${lat}${ip}`);
+        }
+      }catch(e){$("vpnmsg").textContent=e.message;$("vpnmsg").style.color="var(--danger)";}
+    };
+    box.appendChild(row);
+  });
+}
 function renderVpnModal(d){
-  $("vpnmsg").textContent=d.error?("Error: "+d.error):"";
+  _lastVpnData = d;
+  $("vpnmsg").textContent=d.error?("Ошибка: "+d.error):"";
   $("vpnmsg").style.color=d.error?"var(--bad)":"";
-  $("vpntoggle").textContent=d.enabled?"Disable VPN":"Enable VPN";
+  $("vpntoggle").textContent=d.enabled?"Отключить VPN":"Включить VPN";
   $("vpntoggle").className=d.enabled?"danger":"primary";
   $("vpnmodalautoswitch").checked=!!d.auto_switch_on_limits;
   $("vpnautoswitch").checked=!!d.auto_switch_on_limits;
-  const settle = d.settle_delay_seconds ? ` · Settle: ${d.settle_delay_seconds}s` : "";
-  $("vpninfo").textContent=`State: ${d.enabled?(d.running?"RUNNING ("+d.current+")":"WAITING"):"DISABLED"} · Auto-swap on limits: ${d.auto_switch_on_limits?"ON":"OFF"} · Rotations: ${d.rotations||0}${settle}`;
+  const settle = d.settle_delay_seconds ? ` · Пауза: ${d.settle_delay_seconds}с` : "";
+  const curLabel = d.current_label || (d.flag ? `${d.flag} ${d.current}` : d.current);
+  $("vpninfo").textContent=`Статус: ${d.enabled?(d.running?"РАБОТАЕТ ("+curLabel+")":"ОЖИДАНИЕ"):"ОТКЛЮЧЁН"} · Автосмена при лимитах: ${d.auto_switch_on_limits?"ВКЛ":"ВЫКЛ"} · Ротаций: ${d.rotations||0}${settle}`;
   
   const chkBox = $("vpncheckstatus");
   if(chkBox){
@@ -2740,32 +3087,9 @@ function renderVpnModal(d){
     }
   }
 
-  const box=$("vpnlist");box.innerHTML="";
-  if(!d.servers||!d.servers.length){box.innerHTML='<div class="lbl">No servers found from NinjaVPN.</div>';return;}
-  d.servers.forEach(s=>{
-    const row=document.createElement("div");
-    row.className="f";
-    const isCur=s.id===d.current;
-    const isCool=s.cooling>0;
-    row.style.background=isCur?"color-mix(in srgb,var(--accent) 20%,transparent)":"";
-    row.innerHTML=`<span>${isCur?"👉":"🌐"}</span><span style="font-weight:${isCur?600:400}">${esc(s.id)}</span><span class="lbl">${esc(s.country||s.country_code||"")}</span><span class="lbl" style="margin-left:auto">${isCool?`cooling ${s.cooling}s`:s.protocol}</span>`;
-    row.onclick=async()=>{
-      $("vpnmsg").textContent="Переключение на "+s.id+" (ожидание и проверка)…";
-      $("vpnmsg").style.color="var(--accent)";
-      try{
-        const r=await api("/api/vpn/use",{method:"POST",body:JSON.stringify({id:s.id})});
-        renderVpnModal(await api("/api/vpn"));
-        refreshVpnStatus();
-        if(r.ok){
-          const lat = (r.check && r.check.latency_ms !== null) ? ` (${r.check.latency_ms} мс)` : "";
-          const ip = (r.check && r.check.exit_ip) ? `, IP: ${r.check.exit_ip}` : "";
-          toast(`VPN подключён: ${s.id}!${lat}${ip}`);
-        }
-      }catch(e){$("vpnmsg").textContent=e.message;}
-    };
-    box.appendChild(row);
-  });
+  renderVpnList($("vpnsearch") ? $("vpnsearch").value : "");
 }
+if($("vpnsearch")) $("vpnsearch").oninput = () => renderVpnList($("vpnsearch").value);
 $("vpnbtn").onclick=openVpnModal;
 $("vpnquicksettings").onclick=openVpnModal;
 $("vpnclose").onclick=()=>$("vpnmodal").classList.remove("on");
@@ -3456,19 +3780,19 @@ $("kilo_clear_btn").onclick=async()=>{
   }catch(e){toast(e.message);}
 };
 $("kilo_activate_btn").onclick=async()=>{
-  const mdl=$("kilo_model_sel").value||"kilo/poolside/laguna-s-2.1:free";
+  const mdl=$("kilo_model_sel").value||"kilo/cohere/north-mini-code:free";
   try{
     const r=await api("/api/kilo/activate",{method:"POST",body:JSON.stringify({model:mdl})});
     if(r.roles&&r.roles.coder){
-      sel.models.coder=r.roles.coder;
-      if($("m_coder"))$("m_coder").value=r.roles.coder;
+      sel.models={...sel.models,...r.roles};
+      fillModels();
     }
     await refreshKiloStatus();
     toast(`⚡ ${mdl} установлена рабочей моделью!`);
   }catch(e){toast(e.message);}
 };
 $("kilo_test_btn").onclick=async()=>{
-  const mdl=$("kilo_model_sel").value||"kilo/poolside/laguna-s-2.1:free";
+  const mdl=$("kilo_model_sel").value||"kilo/cohere/north-mini-code:free";
   $("kilo_test_msg").textContent="Проверяю отклик Kilo Gateway…";
   try{
     const r=await api("/api/kilo/test",{method:"POST",body:JSON.stringify({model:mdl})});
@@ -3839,6 +4163,7 @@ async function openFreeModelsModal(){
   await loadFreeCatalog();
 }
 if($("freetopbtn"))$("freetopbtn").onclick=openFreeModelsModal;
+if($("opencodebtn"))$("opencodebtn").onclick=openFreeModelsModal;
 $("freeclose").onclick=()=>$("freemodal").classList.remove("on");
 
 async function loadFreeCatalog(){
@@ -3851,6 +4176,23 @@ async function loadFreeCatalog(){
       return;
     }
     box.innerHTML="";
+    const topBar=document.createElement("div");
+    topBar.style.cssText="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap";
+    topBar.innerHTML=`<div style="font-size:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <span>🧠 <b>Планнер:</b> <code>${esc(sel.models.planner||"—")}</code></span>
+      <span>💻 <b>Кодер:</b> <code>${esc(sel.models.coder||"—")}</code></span>
+      <span>🔍 <b>Ревьюер:</b> <code>${esc(sel.models.reviewer||"—")}</code></span>
+    </div>
+    <button type="button" class="primary mini" id="free_auto_distinct_btn">⚡ Авто-распределение разных моделей по ролям</button>`;
+    topBar.querySelector("#free_auto_distinct_btn").onclick=async()=>{
+      try{
+        const r=await api("/api/roles",{method:"POST",body:JSON.stringify({auto_distinct:true,priority:sel.priority||"balanced"})});
+        if(r.roles){sel.models={...sel.models,...r.roles};fillModels();}
+        toast(`Назначены 3 разные модели: ${sel.models.planner} / ${sel.models.coder} / ${sel.models.reviewer}`);
+        loadFreeCatalog();
+      }catch(e){toast(e.message);}
+    };
+    box.appendChild(topBar);
     for(const cat of d.categories){
       const sec=document.createElement("div");
       sec.className="free-cat";
@@ -3860,13 +4202,24 @@ async function loadFreeCatalog(){
       for(const m of (cat.models||[])){
         const card=document.createElement("div");
         card.className="free-item";
-        const isCurrent=(sel.models&&sel.models.coder===m.id);
+        const activeRoles=[];
+        if(sel.models&&sel.models.planner===m.id)activeRoles.push("Планнер");
+        if(sel.models&&sel.models.coder===m.id)activeRoles.push("Кодер");
+        if(sel.models&&sel.models.reviewer===m.id)activeRoles.push("Ревьюер");
+        const isCurrent=activeRoles.length>0;
+        const bestRole=m.best_role||"coder";
+        const bestRoleLbl=bestRole==="planner"?"Планнер":bestRole==="reviewer"?"Ревьюер":"Кодер";
         card.innerHTML=`<div class="row" style="margin-bottom:2px"><span class="free-name">${esc(m.name)}</span>${m.badge?`<span class="badge ready mini">${esc(m.badge)}</span>`:''}</div>`+
           `<div class="free-meta"><span>${esc(m.role||m.provider||"")}</span>${m.context?`<span>• ${esc(m.context)}</span>`:''}${m.speed?`<span>• ${esc(m.speed)}</span>`:''}</div>`+
           (m.info?`<div class="lbl" style="font-size:11px;margin-top:2px">${esc(m.info)}</div>`:'')+
-          `<div class="row" style="justify-content:space-between;margin-top:auto"><code style="font-size:10.5px;color:var(--dim)">${esc(m.id)}</code><button class="primary mini free-pick-btn ${isCurrent?'ready':''}" data-id="${esc(m.id)}">${isCurrent?'✔ Активна':'Выбрать'}</button></div>`;
+          (isCurrent?`<div style="margin-top:4px;font-size:11px;color:var(--ok);font-weight:600">✔ Активна: ${esc(activeRoles.join(", "))}</div>`:'')+
+          `<div class="row" style="justify-content:space-between;margin-top:auto;gap:6px;flex-wrap:wrap"><code style="font-size:10.5px;color:var(--dim)">${esc(m.id)}</code>`+
+          `<div class="row" style="gap:4px;margin:0">`+
+          `<select class="free-role-sel" style="font-size:11px;padding:2px 6px"><option value="${esc(bestRole)}">Роль: ${esc(bestRoleLbl)} (рек.)</option><option value="coder">Роль: Кодер</option><option value="planner">Роль: Планнер</option><option value="reviewer">Роль: Ревьюер</option><option value="all">Все роли</option></select>`+
+          `<button class="primary mini free-pick-btn ${isCurrent?'ready':''}" data-id="${esc(m.id)}">${isCurrent?'✔ Выбрана':'Выбрать'}</button></div></div>`;
+        const roleSel=card.querySelector(".free-role-sel");
         card.querySelector(".free-pick-btn").onclick=()=>{
-          applyFreeModel(m.id);
+          applyFreeModel(m.id, roleSel?roleSel.value:bestRole);
         };
         grid.appendChild(card);
       }
@@ -3877,12 +4230,21 @@ async function loadFreeCatalog(){
     box.innerHTML=`<div class="lbl" style="color:var(--danger)">Ошибка загрузки каталога: ${esc(e.message)}</div>`;
   }
 }
-function applyFreeModel(modelId){
-  sel.models.coder=modelId;
-  sel.models.planner=modelId;
-  sel.models.reviewer=modelId;
+async function applyFreeModel(modelId, targetRole="coder"){
+  if(targetRole==="all"){
+    sel.models.coder=modelId;
+    sel.models.planner=modelId;
+    sel.models.reviewer=modelId;
+  }else{
+    sel.models[targetRole]=modelId;
+  }
   fillModels();
-  toast(`Модель ${modelId} установлена для всех ролей!`);
+  try{
+    const r=await api("/api/roles",{method:"POST",body:JSON.stringify({roles:sel.models})});
+    if(r.roles)sel.models={...sel.models,...r.roles};
+  }catch(e){}
+  const roleLabel=targetRole==="all"?"всех ролей":(targetRole==="planner"?"Планнера":targetRole==="reviewer"?"Ревьюера":"Кодера");
+  toast(`Модель ${modelId} установлена для ${roleLabel}!`);
   loadFreeCatalog();
 }
 
@@ -4345,7 +4707,8 @@ function updatePetDetachedUI(){
       : "Вынести агента за пределы приложения в отдельное плавающее окно";
   }
   if($("petdetachbtn")){
-    $("petdetachbtn").innerHTML = PET_DETACHED ? '🐾<span class="tl"> В окно</span>' : '🐾<span class="tl"> За окно</span>';
+    $("petdetachbtn").innerHTML = PET_DETACHED ? '🐾<span class="tl" style="display:none"> В окно</span>' : '🐾<span class="tl" style="display:none"> За окно</span>';
+    $("petdetachbtn").title = PET_DETACHED ? "Вернуть питомца внутрь окна" : "Вынести питомца за окно на рабочий стол";
   }
   if($("pet-popout-btn")){
     $("pet-popout-btn").textContent = PET_DETACHED ? "↙ Вернуть агента в приложение" : "🚀 Вынести за пределы приложения";

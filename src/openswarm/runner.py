@@ -277,6 +277,10 @@ class OpenCodeRunner:
         inline = inline_model_config(self.cfg, self.model, env.get(CONFIG_ENV, ""))
         if inline:  # openrouter/* model that opencode's bundled catalogue may not list yet
             env[CONFIG_ENV] = inline
+        try:
+            env["PWD"] = str(self.cwd.resolve())
+        except OSError:
+            env["PWD"] = str(self.cwd)
         env["OPENSWARM_AGENT"] = self.agent_id
         env["OPENSWARM_ROLE"] = self.role
         env.setdefault("OPENSWARM_DB", str(self.cwd / ".swarm" / "swarm.db"))
@@ -299,10 +303,20 @@ class OpenCodeRunner:
         shown = " ".join(cmd[:-1]) + " <prompt>"
         self._emit(f"$ {shown}   (cwd: {self.cwd})", False)
         try:
+            proc_env = self.build_env()
+            try:
+                import json
+                from .keys import CONFIG_ENV
+                cfg_obj = json.loads(proc_env.get(CONFIG_ENV, "") or "{}")
+                if isinstance(cfg_obj, dict) and "snapshot" not in cfg_obj:
+                    cfg_obj["snapshot"] = False
+                    proc_env[CONFIG_ENV] = json.dumps(cfg_obj, separators=(",", ":"), sort_keys=True)
+            except Exception:
+                pass
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 cwd=str(self.cwd),
-                env=self.build_env(),
+                env=proc_env,
                 stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -384,9 +398,14 @@ async def find_session_id(cfg: SwarmConfig, cwd: Path, title: str) -> str:
 
     oc = cfg.opencode
     try:
+        resolved_cwd = str(cwd.resolve())
+    except OSError:
+        resolved_cwd = str(cwd)
+    env = {**os.environ, "PWD": resolved_cwd}
+    try:
         proc = await asyncio.create_subprocess_exec(
             shutil.which(oc.binary) or oc.binary, "session", "list", "--format", "json", "-n", "50",
-            cwd=str(cwd), stdin=asyncio.subprocess.DEVNULL,
+            cwd=resolved_cwd, env=env, stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
         out, _ = await asyncio.wait_for(proc.communicate(), timeout=20)

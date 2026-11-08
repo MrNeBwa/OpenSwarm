@@ -121,36 +121,27 @@ def inline_model_config(cfg: SwarmConfig, model: str, existing: str = "") -> str
     from .dsh import DSH_PROVIDER_ID, dsh_provider_config, is_dsh_model
     from .kilo import KILO_PROVIDER_ID, is_kilo_model, kilo_provider_config
 
-    if is_dsh_model(model):
-        dsh_cfg = dsh_provider_config()
-        if not dsh_cfg:
-            return existing
-        try:
-            base = json.loads(existing) if existing else {}
-        except ValueError:
-            base = {}
-        base = base if isinstance(base, dict) else {}
-        base.setdefault("provider", {})[DSH_PROVIDER_ID] = dsh_cfg
-        return json.dumps(base, separators=(",", ":"), sort_keys=True)
-
-    if is_kilo_model(model):
-        k_cfg = kilo_provider_config(extra_model=model)
-        try:
-            base = json.loads(existing) if existing else {}
-        except ValueError:
-            base = {}
-        base = base if isinstance(base, dict) else {}
-        base.setdefault("provider", {})[KILO_PROVIDER_ID] = k_cfg
-        return json.dumps(base, separators=(",", ":"), sort_keys=True)
-
-    pre = cfg.openrouter.model_prefix
-    if not model.startswith(pre) or len(model) == len(pre):
-        return ""
     try:
         base = json.loads(existing) if existing else {}
     except ValueError:
         base = {}
     base = base if isinstance(base, dict) else {}
+
+    if is_dsh_model(model):
+        dsh_cfg = dsh_provider_config()
+        if not dsh_cfg:
+            return existing
+        base.setdefault("provider", {})[DSH_PROVIDER_ID] = dsh_cfg
+        return json.dumps(base, separators=(",", ":"), sort_keys=True)
+
+    if is_kilo_model(model):
+        k_cfg = kilo_provider_config(extra_model=model)
+        base.setdefault("provider", {})[KILO_PROVIDER_ID] = k_cfg
+        return json.dumps(base, separators=(",", ":"), sort_keys=True)
+
+    pre = cfg.openrouter.model_prefix
+    if not (model.startswith(pre) and len(model) > len(pre)):
+        return existing
     prov = base.setdefault("provider", {}).setdefault(pre.rstrip("/"), {})
     prov.setdefault("models", {}).setdefault(model[len(pre):], {"name": model[len(pre):]})
     return json.dumps(base, separators=(",", ":"), sort_keys=True)

@@ -495,7 +495,7 @@ class Orchestrator:
         keyrun = KeyRun(kp, self._log) if kp else None  # several OpenRouter keys -> rotate on limit / no credits
         from .vpn import get_vpn
         vpn = get_vpn(self.cfg)
-        if vpn.enabled and not vpn.running():
+        if vpn.enabled:
             await asyncio.to_thread(vpn.ensure)
         bus_env = {"OPENSWARM_DB": str(self.git.swarm_dir / "swarm.db"), "OPENSWARM_RUN_ID": self._run_id}
         if (
@@ -669,6 +669,7 @@ class Orchestrator:
                     is_dsh_model(mdl) or is_kilo_model(mdl)
                 )
                 if should_fallback_free:
+                    router.record_failure(mdl, text[-300:], "rate_limit" if is_free_quota_exceeded else "model_broken")
                     next_free = next_free_fallback_model(mdl, tried_models)
                     if next_free:
                         old_mdl = mdl
@@ -748,26 +749,40 @@ class Orchestrator:
             attempt += 1
         if res.ok:
             router.record_success(mdl, max(0.01, asyncio.get_running_loop().time() - t_start))
-            if mdl != initial_mdl and is_opencode_free_model(initial_mdl):
+            if mdl != initial_mdl:
                 target_role = "coder" if role == "chat" else role
                 if hasattr(self.cfg.roles, target_role):
                     setattr(self.cfg.roles, target_role, mdl)
+                if role == "chat" and hasattr(self.cfg.roles, "chat"):
+                    self.cfg.roles.chat = mdl
                 if isinstance(getattr(self.sel, "models", None), dict):
                     self.sel.models[target_role] = mdl
                 try:
-                    from .state import save_state
-                    save_state(
-                        mode=self.sel.mode,
-                        roles=self.cfg.roles,
-                        skills=self.sel.skills,
-                        parallel=self.sel.parallel,
-                        sandbox=self.sel.sandbox,
-                        workdir=str(self.sel.workdir),
-                        priority=self.sel.priority,
-                        effort=self.sel.effort,
-                    )
+                    from .state import load_state, save_state
+                    st = load_state()
+                    roles_dict = dict(st.get("roles") or {})
+                    roles_dict[target_role] = mdl
+                    if target_role == "planner":
+                        roles_dict["architect"] = mdl
+                    st["roles"] = roles_dict
+                    save_state(st)
                 except Exception:
                     pass
+                await _emit(
+                    self.hooks.on_event,
+                    agent_id,
+                    "role_model_updated",
+                    {
+                        "role": target_role,
+                        "old_model": initial_mdl,
+                        "model": mdl,
+                        "roles": {
+                            "planner": self.cfg.roles.planner,
+                            "coder": self.cfg.roles.coder,
+                            "reviewer": self.cfg.roles.reviewer,
+                        },
+                    },
+                )
         if not res.ok:
             await self._set_status(agent_id, FAILED)
         elif final_status:

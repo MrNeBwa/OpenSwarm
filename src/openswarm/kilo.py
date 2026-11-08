@@ -49,33 +49,48 @@ KILO_ALIASES: dict[str, str] = {
     "nemotron-lightning-free": "nvidia/nemotron-3.5-lightning:free",
     "nemotron-super-free": "nvidia/nemotron-3.5-super-vl:free",
     "beam-free": "reflection/beam-free",
-    "stealth/glyph-cluster": "reflection/beam-free",
-    "glyph-free": "reflection/beam-free",
+    "glyph-free": "stealth/glyph-cluster",
 }
 
 KILO_BUILTIN_FREE_MODELS: dict[str, dict[str, Any]] = {
-    "nvidia/nemotron-3.5-super-vl:free": {
-        "name": "NVIDIA Nemotron 3.5 Super VL Free · Kilo (1M)",
-        "limit": {"context": 1000000, "output": 32768},
-    },
     "cohere/north-mini-code:free": {
         "name": "Cohere North Mini Code Free · Kilo (256K)",
         "limit": {"context": 256000, "output": 32768},
+    },
+    "nvidia/nemotron-3.5-super-vl:free": {
+        "name": "NVIDIA Nemotron 3.5 Super VL Free · Kilo (1M)",
+        "limit": {"context": 1000000, "output": 32768},
     },
     "reflection/beam-free": {
         "name": "Reflection Beam 1.0 Free · Kilo (1M)",
         "limit": {"context": 1048576, "output": 65536},
     },
-    "kilo-auto/free": {
-        "name": "Kilo Auto Free Router (256K)",
-        "limit": {"context": 256000, "output": 32768},
-    },
     "nvidia/nemotron-3.5-lightning:free": {
         "name": "NVIDIA Nemotron 3.5 Lightning Free · Kilo (1M)",
         "limit": {"context": 1000000, "output": 32768},
     },
+    "kilo-auto/free": {
+        "name": "Kilo Auto Free Router (256K)",
+        "limit": {"context": 256000, "output": 32768},
+    },
+    "openrouter/free": {
+        "name": "OpenRouter Free Models Router · Kilo (200K)",
+        "limit": {"context": 200000, "output": 32768},
+    },
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": {
+        "name": "NVIDIA Nemotron 3 Nano Omni Reasoning Free · Kilo (256K)",
+        "limit": {"context": 262144, "output": 32768},
+    },
     "nvidia/nemotron-3-ultra-550b-a55b:free": {
         "name": "NVIDIA Nemotron 3 Ultra 550B Free · Kilo (256K)",
+        "limit": {"context": 262144, "output": 32768},
+    },
+    "stealth/glyph-cluster": {
+        "name": "Stealth Glyph Cluster Free · Kilo (256K)",
+        "limit": {"context": 262144, "output": 32768},
+    },
+    "dots-studio/dots-3-note-preview:free": {
+        "name": "Dots Studio Dots3-Note Free · Kilo (256K)",
         "limit": {"context": 262144, "output": 32768},
     },
 }

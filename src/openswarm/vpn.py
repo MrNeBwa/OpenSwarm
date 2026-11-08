@@ -30,6 +30,27 @@ from typing import Any, Callable
 from .config import SwarmConfig, VpnSettings
 from .state import state_path
 
+# Tier-1 fast, low-latency countries with unrestricted access to all major AI APIs (Google, Anthropic, OpenAI, OpenCode):
+TIER1_AI_COUNTRIES = (
+    "DE", "NL", "FI", "SE", "GB", "FR", "CH", "US", "CA", "NO", "DK", "AT", "PL", "JP", "SG", "IE", "ES", "IT"
+)
+# Sanctioned or heavily restricted countries where AI providers return 403 or regional limit errors:
+RESTRICTED_AI_COUNTRIES = frozenset({"RU", "CN", "BY", "IR", "KP", "SY", "CU"})
+
+
+def country_flag(cc: str) -> str:
+    """Convert a two-letter country code (e.g. 'DE') into a Unicode regional indicator flag."""
+    if not cc or len(cc) != 2:
+        return "🌐"
+    try:
+        c1, c2 = cc[0].upper(), cc[1].upper()
+        if "A" <= c1 <= "Z" and "A" <= c2 <= "Z":
+            return chr(127397 + ord(c1)) + chr(127397 + ord(c2))
+    except Exception:
+        pass
+    return "🌐"
+
+
 # Runs inside the NinjaVPN venv. `list` -> JSON servers; `config ID SOCKS HTTP` -> xray config JSON on stdout.
 BRIDGE = r'''
 import asyncio, json, sys
@@ -455,8 +476,18 @@ class VpnManager:
         if self.s.servers:
             known = {x["id"] for x in everything}
             allowed = [i for i in self.s.servers if i in known]
-        else:  # default: the native edge servers (WireGuard keys are issued live, nothing secret is cached)
-            allowed = [x["id"] for x in everything if x.get("edge")] or [x["id"] for x in everything]
+        else:
+            # Default: the native edge servers, excluding restricted countries where AI APIs are blocked
+            edges = [x for x in everything if x.get("edge")] or everything
+            allowed_servers = [
+                x for x in edges
+                if (x.get("country_code") or x.get("country") or "").upper() not in RESTRICTED_AI_COUNTRIES
+            ]
+            # Prioritize Tier-1 AI friendly countries (DE, NL, FI, SE, GB, FR, US...) first
+            t1 = [x for x in allowed_servers if (x.get("country_code") or x.get("country") or "").upper() in TIER1_AI_COUNTRIES]
+            t1.sort(key=lambda x: TIER1_AI_COUNTRIES.index((x.get("country_code") or x.get("country") or "").upper()))
+            other = [x["id"] for x in allowed_servers if (x.get("country_code") or x.get("country") or "").upper() not in TIER1_AI_COUNTRIES]
+            allowed = [x["id"] for x in t1] + other
         return [i for i in allowed if i not in set(self.s.exclude)]
 
     def _ready(self, sid: str) -> bool:
@@ -539,6 +570,10 @@ class VpnManager:
 
         t0 = time.perf_counter()
         conn_ok = _http_connect_ok(self.s.http_port, target, timeout=timeout)
+        if not conn_ok and target != "1.1.1.1:443":
+            conn_ok = _http_connect_ok(self.s.http_port, "1.1.1.1:443", timeout=min(2.5, timeout))
+            if conn_ok:
+                target = "1.1.1.1:443"
         latency_ms = round((time.perf_counter() - t0) * 1000)
 
         dns_ok = False
@@ -573,7 +608,10 @@ class VpnManager:
             f.write(cfg)
         self._cfg_file = Path(name)
         if _port_open(self.s.http_port):
-            raise VpnError(f"port {self.s.http_port} is already in use (set vpn.http_port)")
+            _reap_stale_xray(self.s.http_port)
+            time.sleep(0.15)
+            if _port_open(self.s.http_port):
+                raise VpnError(f"port {self.s.http_port} is already in use (set vpn.http_port)")
         self._proc = subprocess.Popen([self._xray(), "run", "-c", name], stdin=subprocess.DEVNULL,
                                       stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, start_new_session=True)
         deadline = self._clock() + 10
@@ -592,6 +630,7 @@ class VpnManager:
         if self.s.health_target:
             check_res = self.verify(target=self.s.health_target)
             if getattr(self.s, "verify_on_rotate", True) and not check_res.get("ok"):
+                self._kill()
                 err_msg = check_res.get("error") or f"tunnel via {sid} does not pass traffic"
                 raise VpnError(err_msg)
 
@@ -635,7 +674,18 @@ class VpnManager:
             if not self.enabled:
                 return False
             if self.running():
-                return True
+                if not self._bridge_fn and self.s.health_target:
+                    last_chk_at = float((self.last_check or {}).get("checked_at") or 0.0)
+                    if self._clock() - last_chk_at > 45.0:
+                        chk = self.verify(target=self.s.health_target, timeout=2.5)
+                        if chk.get("ok"):
+                            return True
+                        self._kill()
+                        self.current = ""
+                    else:
+                        return True
+                else:
+                    return True
             if self.preferred and self.preferred in self.candidates() and self._ready(self.preferred):
                 try:
                     self._start_on(self.preferred)
@@ -719,9 +769,10 @@ class VpnManager:
         return bool(self.s.rotate_pattern and re.search(self.s.rotate_pattern, text or "", re.I))
 
     def env(self) -> dict[str, str]:
-        """Proxy env for opencode children. Empty when the tunnel is not up (agents then go direct... unless enabled
-        but broken: then a dead proxy is better than silently leaking - see `env_for_run`)."""
+        """Proxy env for opencode children. Empty when the tunnel is not up."""
         if not self.enabled:
+            return {}
+        if not self._bridge_fn and not self.running():
             return {}
         http = f"http://127.0.0.1:{self.s.http_port}"
         return {"HTTP_PROXY": http, "HTTPS_PROXY": http, "http_proxy": http, "https_proxy": http,
@@ -738,10 +789,24 @@ class VpnManager:
                              "last_check": getattr(self, "last_check", {}),
                              "settle_delay_seconds": getattr(self.s, "settle_delay_seconds", 0.8)}
         cur = next((x for x in (self._servers or []) if x["id"] == self.current), None)
-        d["current_label"] = (f"{cur.get('country') or cur.get('country_code') or ''} · {cur['id']}".strip(" ·") if cur else self.current)
+        cc = (cur.get("country_code") or cur.get("country") or "").upper() if cur else ""
+        flag = country_flag(cc) if cc else "🌐"
+        d["flag"] = flag
+        d["country"] = cur.get("country") if cur else ""
+        d["country_code"] = cc
+        d["current_label"] = (f"{flag} {cur.get('country') or cc or ''} · {cur['id']}".strip(" ·") if cur else self.current)
         if with_servers:
             try:
-                d["servers"] = [{**x, "cooling": max(0, round(self.cooldown.get(x["id"], 0) - now))} for x in self.servers()]
+                srvs = self.servers()
+                d["servers"] = [
+                    {
+                        **x,
+                        "flag": country_flag(x.get("country_code") or x.get("country") or ""),
+                        "tier1": (x.get("country_code") or x.get("country") or "").upper() in TIER1_AI_COUNTRIES,
+                        "cooling": max(0, round(self.cooldown.get(x["id"], 0) - now)),
+                    }
+                    for x in srvs
+                ]
                 d["candidates"] = len(self.candidates())
             except VpnError as exc:
                 d["servers"], d["error"] = [], str(exc)
@@ -775,7 +840,25 @@ def vpn_env(cfg: SwarmConfig) -> dict[str, str]:
     """Env for an opencode child: proxy vars when the per-app VPN is on, nothing otherwise."""
     if _MGR is None and not cfg.vpn.enabled and not vpn_state_path().exists():
         return {}
-    return get_vpn(cfg).env()
+    mgr = get_vpn(cfg)
+    if mgr.enabled and not mgr.running():
+        try:
+            mgr.ensure()
+        except Exception:
+            pass
+    return mgr.env()
+
+
+def _cleanup_at_exit() -> None:
+    global _MGR
+    if _MGR is not None:
+        try:
+            _MGR[1].stop()
+        except Exception:
+            pass
+
+
+atexit.register(_cleanup_at_exit)
 
 
 # ---------------------------------------------------------------------- CLI: `openswarm vpn ...`

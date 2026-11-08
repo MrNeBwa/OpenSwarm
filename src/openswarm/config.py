@@ -7,6 +7,7 @@ import hashlib
 import os
 import re
 import shutil
+import time
 from pathlib import Path
 from typing import Literal
 
@@ -545,13 +546,14 @@ def builtin_workflows() -> list[WorkflowSpec]:
 def default_config() -> SwarmConfig:
     return SwarmConfig(
         models=[
+            ModelSpec(id="google/gemini-3.5-flash", label="Google Gemini 3.5 Flash · OpenCode (1M)", free=True, builtin=True),
+            ModelSpec(id="google/gemini-3.1-flash-lite", label="Google Gemini 3.1 Flash-Lite · OpenCode", free=True, builtin=True),
+            ModelSpec(id="google/gemini-3-flash-preview", label="Google Gemini 3 Flash Preview · OpenCode (1M)", free=True, builtin=True),
+            ModelSpec(id="google/gemini-flash-latest", label="Google Gemini Flash Latest · OpenCode (1M)", free=True, builtin=True),
+            ModelSpec(id="google/gemini-pro-latest", label="Google Gemini Pro Latest · OpenCode (2M)", free=True, builtin=True),
+            ModelSpec(id="ollama/qwen2.5-coder:7b", label="Ollama: qwen2.5-coder 7B (local · OpenCode)", free=True, builtin=True),
+            ModelSpec(id="ollama/deepseek-r1:8b", label="Ollama: deepseek-r1 8B (local · OpenCode)", free=True, builtin=True),
             ModelSpec(id="deepseek-harness/deepseek-flash", label="DeepSeek V4.1 Flash · DeepSeek Harness (Free Unlimited 1M)", free=True, builtin=False),
-            ModelSpec(id="kilo/poolside/laguna-s-2.1:free", label="Poolside Laguna S 2.1 Free · Kilo Gateway (Code 262K)", free=True, builtin=False),
-            ModelSpec(id="kilo/cohere/north-mini-code:free", label="Cohere North Mini Code Free · Kilo Gateway (256K)", free=True, builtin=False),
-            ModelSpec(id="kilo/kilo-auto/free", label="Kilo Auto Free Router · Kilo Gateway (256K)", free=True, builtin=False),
-            ModelSpec(id="kilo/nvidia/nemotron-3.5-super-vl:free", label="NVIDIA Nemotron 3.5 Super VL Free · Kilo Gateway (1M)", free=True, builtin=False),
-            ModelSpec(id="kilo/reflection/beam-free", label="Reflection Beam 1.0 Free · Kilo Gateway (1M)", free=True, builtin=False),
-            ModelSpec(id="kilo/recursive/flint-v1.0:free", label="Recursive Flint 1.0 Free · Kilo Gateway (262K)", free=True, builtin=False),
             ModelSpec(id="opencode/deepseek-v4.1-flash-free", label="DeepSeek V4.1 Flash Free", free=True, builtin=True),
             ModelSpec(id="opencode/beam-free", label="Beam Free (1M ctx)", free=True, builtin=True),
             ModelSpec(id="opencode/nemotron-3.5-super-vl-free", label="Nemotron 3.5 Super VL Free (1M ctx)", free=True, builtin=True),
@@ -561,9 +563,16 @@ def default_config() -> SwarmConfig:
             ModelSpec(id="opencode/glm-5.3-flash-free", label="GLM-5.3-Flash Free", free=True, builtin=True),
             ModelSpec(id="opencode/nemotron-3-ultra-free", label="Nemotron 3 Ultra Free (1M ctx)", free=True, builtin=True),
             ModelSpec(id="opencode/big-pickle", label="Big Pickle", free=True, builtin=True),
+            ModelSpec(id="kilo/cohere/north-mini-code:free", label="Cohere North Mini Code Free · Kilo Gateway (256K)", free=True, builtin=False),
+            ModelSpec(id="kilo/nvidia/nemotron-3.5-super-vl:free", label="NVIDIA Nemotron 3.5 Super VL Free · Kilo Gateway (1M)", free=True, builtin=False),
+            ModelSpec(id="kilo/reflection/beam-free", label="Reflection Beam 1.0 Free · Kilo Gateway (1M)", free=True, builtin=False),
+            ModelSpec(id="kilo/nvidia/nemotron-3.5-lightning:free", label="NVIDIA Nemotron 3.5 Lightning Free · Kilo Gateway (1M)", free=True, builtin=False),
+            ModelSpec(id="kilo/kilo-auto/free", label="Kilo Auto Free Router · Kilo Gateway (256K)", free=True, builtin=False),
+            ModelSpec(id="kilo/openrouter/free", label="OpenRouter Free Router · Kilo Gateway (200K)", free=True, builtin=False),
+            ModelSpec(id="kilo/nvidia/nemotron-3-ultra-550b-a55b:free", label="NVIDIA Nemotron 3 Ultra 550B Free · Kilo Gateway (256K)", free=True, builtin=False),
+            ModelSpec(id="kilo/stealth/glyph-cluster", label="Stealth Glyph Cluster Free · Kilo Gateway (256K)", free=True, builtin=False),
             ModelSpec(id="anthropic/claude-sonnet-4-5", label="Claude Sonnet 4.5"),
             ModelSpec(id="openai/gpt-5", label="GPT-5"),
-            ModelSpec(id="ollama/qwen2.5-coder:7b", label="Ollama: qwen2.5-coder 7B (local)"),
         ],
         skills=builtin_skills(),
         presets=builtin_presets(),
@@ -611,6 +620,8 @@ def load_config(path: Path) -> SwarmConfig:
         cfg.presets += [p for p in builtin_presets() if p.id not in have_p]
         have_w = {w.id for w in cfg.workflows}
         cfg.workflows += [w for w in builtin_workflows() if w.id not in have_w]
+        deprecated_kilo = {"kilo/poolside/laguna-s-2.1:free", "kilo/recursive/flint-v1.0:free"}
+        cfg.models = [m for m in cfg.models if m.id not in deprecated_kilo]
         have_m = {m.id for m in cfg.models}
         if "deepseek-harness/deepseek-flash" not in have_m:
             cfg.models.insert(
@@ -632,11 +643,23 @@ def load_config(path: Path) -> SwarmConfig:
 
 
 _MODEL_RE = re.compile(r"[\w.\-]+/[\w.\-:/@]+")
+_DISCOVER_CACHE: dict[str, tuple[float, list[str]]] = {}
 
 
-async def discover_models(cfg: SwarmConfig) -> list[str]:
-    """Ask `opencode models` which models are really available. Returns [] on any failure."""
+async def discover_models(cfg: SwarmConfig, max_age: float = 600.0, timeout: float = 4.0) -> list[str]:
+    """Ask `opencode models` which models are really available. Cached in-memory for max_age seconds."""
+    now = time.monotonic()
+    cached = _DISCOVER_CACHE.get(cfg.opencode.binary)
+    if cached and (now - cached[0] < max_age):
+        return list(cached[1])
+
     from .keys import configured_keys  # lazy: keys imports config
+    from .vpn import _reap_stale_opencode_service
+
+    try:
+        _reap_stale_opencode_service()
+    except Exception:
+        pass
 
     binary = shutil.which(cfg.opencode.binary) or cfg.opencode.binary
     env = dict(os.environ)
@@ -653,15 +676,23 @@ async def discover_models(cfg: SwarmConfig) -> list[str]:
             stderr=asyncio.subprocess.DEVNULL,
         )
     except (FileNotFoundError, PermissionError, OSError):
-        return []
+        return list(cached[1]) if cached else []
     try:
-        out, _ = await asyncio.wait_for(proc.communicate(), timeout=30)
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
     except asyncio.TimeoutError:
-        proc.kill()
-        await proc.wait()
-        return []
+        try:
+            proc.kill()
+            await proc.wait()
+        except Exception:
+            pass
+        return list(cached[1]) if cached else []
     lines = (ln.strip() for ln in out.decode(errors="replace").splitlines())
-    return [ln for ln in lines if _MODEL_RE.fullmatch(ln)]
+    res = [ln for ln in lines if _MODEL_RE.fullmatch(ln)]
+    if res:
+        _DISCOVER_CACHE[cfg.opencode.binary] = (now, res)
+    elif cached:
+        return list(cached[1])
+    return res
 
 
 def reconcile_models(cfg: SwarmConfig, discovered: list[str]) -> None:

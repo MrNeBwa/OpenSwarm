@@ -17,9 +17,12 @@ dependencies = [
 
 [project.scripts]
 openswarm = "openswarm.main:main"
+openswarm-desktop = "openswarm.desktop.app:desktop_main"
+turnstone = "openswarm.turnstone.app:turnstone_main"
+turnstone-desktop = "openswarm.turnstone.app:turnstone_desktop_main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-openswarm = ["styles.tcss", "web_ui.html", "openswarm.svg", "data/*.json", "data/*.apk", "vpn_engine/data/*.json"]
+openswarm = ["styles.tcss", "web_ui.html", "openswarm.svg", "data/*.json", "data/*.apk", "vpn_engine/data/*.json", "turnstone/turnstone_ui.html", "turnstone/turnstone.svg"]

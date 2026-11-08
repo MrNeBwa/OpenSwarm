@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Turnstone CLI Standalone Launcher
+set -euo pipefail
+ROOT="/home/nebwa/Projects/openswarm"
+export PYTHONPATH="$ROOT/src:${PYTHONPATH:-}"
+exec python3 -m openswarm.turnstone "$@"

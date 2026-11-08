@@ -47,6 +47,12 @@ def forget() -> bool:
         return False
 
 
+_REMOVED_LEGACY_MODELS = {
+    "kilo/poolside/laguna-s-2.1:free": "kilo/cohere/north-mini-code:free",
+    "kilo/recursive/flint-v1.0:free": "kilo/reflection/beam-free",
+}
+
+
 def apply_state(cfg: SwarmConfig, state: dict[str, Any]) -> bool:
     """Overlay remembered selections onto the config defaults. Returns True if anything was restored."""
     restored = False
@@ -55,6 +61,7 @@ def apply_state(cfg: SwarmConfig, state: dict[str, Any]) -> bool:
         for role in ROLES:
             val = roles.get(role)
             if isinstance(val, str) and val:
+                val = _REMOVED_LEGACY_MODELS.get(val, val)
                 setattr(cfg.roles, role, val)
                 restored = True
     if state.get("mode") in MODES or str(state.get("mode", "")).startswith("wf:"):

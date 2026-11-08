@@ -191,6 +191,17 @@ def apply_hyprland_pet_state(ontop: bool = True, overlay: bool = True) -> bool:
 
 def run_gtk(url: str, gpu: bool = False, pet: bool = False, ontop: bool = True, overlay: bool = True) -> None:
     """Blocks until the window is closed. Optional niceties (external links, notifications) never block the window."""
+    try:
+        from .desktop.config import DesktopConfig
+        from .desktop.app import run_desktop_gtk
+        desk_cfg = DesktopConfig.load()
+        desk_cfg.pet_ontop = ontop
+        desk_cfg.pet_overlay = overlay
+        run_desktop_gtk(url, desk_cfg, Path.cwd(), gpu=gpu, pet=pet)
+        return
+    except Exception as exc:
+        if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+            raise
     if not gpu:  # WebKitGTK's GPU compositing paints nothing (plain grey window) on many drivers: render in software
         os.environ.setdefault("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
         os.environ.setdefault("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
@@ -377,6 +388,11 @@ def wait_for_process_or_ctrl_c(proc: subprocess.Popen | None) -> None:
 # ------------------------------------------------------------------------ desktop entry
 def install_desktop() -> list[Path]:
     """Icon + application-menu entry (no root needed)."""
+    try:
+        from .desktop.installer import install_desktop as _inst
+        return _inst()
+    except Exception:
+        pass
     data = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
     icon_dir = data / "icons" / "hicolor" / "scalable" / "apps"
     app_dir = data / "applications"

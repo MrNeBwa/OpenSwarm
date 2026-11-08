@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Turnstone — Autonomous Research Teammate</title>
+<style>
+:root{
+  --bg:#090B0E;--panel:#11141A;--panel2:#181D26;--line:#232B38;--line-hl:#364357;
+  --text:#E6EDF3;--dim:#8B98A5;--accent:#10B981;--accent2:#059669;--glow:16,185,129;
+  --amber:#F59E0B;--blue:#38BDF8;--bad:#EF4444;--code:#0D1117;
+}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;
+  background:radial-gradient(1200px 700px at 15% -10%,rgba(var(--glow),.12),transparent 65%),
+             radial-gradient(1000px 600px at 85% 110%,rgba(56,189,248,.06),transparent 60%),
+             var(--bg);
+  color:var(--text);display:flex;overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+button,select,input,textarea{font:inherit;color:inherit}
+button{
+  cursor:pointer;border:1px solid var(--line);background:var(--panel2);
+  border-radius:10px;padding:6px 12px;font-weight:500;font-size:12.5px;
+  transition:all .15s ease;display:inline-flex;align-items:center;gap:6px;
+}
+button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--panel2) 80%,var(--accent));transform:translateY(-1px)}
+button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:var(--accent);color:#062317;font-weight:600;box-shadow:0 4px 16px -2px rgba(var(--glow),.45)}
+button.primary:hover{filter:brightness(1.08)}
+button.deep-mode{background:linear-gradient(135deg,var(--amber),#D97706);border-color:var(--amber);color:#2A1602;font-weight:700;box-shadow:0 4px 16px -2px rgba(245,158,11,.4)}
+select,input[type=text],textarea{
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 11px;outline:none;
+}
+select:focus,input[type=text]:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--glow),.25)}
+
+/* Sidebar: Brain & Research Archive */
+#brain-drawer{
+  width:320px;background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 90%,black));
+  border-right:1px solid var(--line);display:flex;flex-direction:column;flex:none;transition:margin-left .22s cubic-bezier(0.4,0,0.2,1);
+}
+#brain-drawer.closed{margin-left:-320px}
+.bd-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.bd-title{font-weight:600;font-size:14px;color:var(--text);display:flex;align-items:center;gap:6px}
+.bd-close{margin-left:auto;border:none;background:none;padding:2px 6px;color:var(--dim);border-radius:6px}
+.bd-close:hover{background:var(--panel2);color:var(--text)}
+.bd-search{padding:10px 14px;border-bottom:1px solid var(--line)}
+.bd-search input{width:100%;font-size:12px;padding:5px 9px}
+.bd-tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel2)}
+.bd-tab{flex:1;text-align:center;padding:7px 0;font-size:11.5px;font-weight:600;border:none;border-radius:0;background:none;color:var(--dim);cursor:pointer}
+.bd-tab.active{color:var(--accent);border-bottom:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.bd-content{flex:1;overflow-y:auto;padding:12px}
+.mem-card{
+  background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;
+  margin-bottom:8px;font-size:12px;display:flex;flex-direction:column;gap:4px;
+}
+.mem-cat{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);font-weight:700}
+.mem-body{color:var(--text);word-break:break-word}
+.mem-foot{display:flex;align-items:center;justify-content:space-between;color:var(--dim);font-size:10.5px;margin-top:2px}
+.mem-del{border:none;background:none;color:var(--dim);padding:0 3px;font-size:11px}
+.mem-del:hover{color:var(--bad)}
+
+/* Main View */
+#main-view{flex:1;display:flex;flex-direction:column;min-width:0;height:100%;overflow:hidden}
+#header{
+  padding:10px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;
+  background:color-mix(in srgb,var(--panel) 85%,var(--bg));backdrop-filter:blur(10px);flex:none;
+}
+.brand{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--text);letter-spacing:-.01em}
+.brand-icon{font-size:18px}
+.pill{
+  font-size:11.5px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--dim);display:inline-flex;align-items:center;gap:5px;
+}
+.pill.active{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.header-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+
+#chat-area{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:24px 20px 12px;width:100%}
+.wrap{max-width:880px;width:100%;margin:0 auto}
+
+/* Welcome Card */
+#welcome{text-align:center;margin:6vh auto 4vh;max-width:680px}
+#welcome h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 10px;color:var(--text)}
+#welcome p{color:var(--dim);font-size:14px;margin-bottom:22px;line-height:1.5}
+.starter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;text-align:left}
+.starter{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+  cursor:pointer;transition:all .15s ease;
+}
+.starter:hover{border-color:var(--accent);background:var(--panel2);transform:translateY(-1px)}
+.starter b{display:block;font-size:13px;margin-bottom:3px;color:var(--text)}
+.starter span{font-size:11.5px;color:var(--dim);display:block}
+
+/* Messages & Tools */
+.msg{margin-bottom:20px;display:flex;flex-direction:column;gap:6px}
+.msg.user{align-items:flex-end}
+.bubble{
+  max-width:85%;padding:14px 18px;border-radius:16px;background:var(--panel);
+  border:1px solid var(--line);font-size:14px;box-shadow:0 4px 16px -6px rgba(0,0,0,.4);
+}
+.user .bubble{
+  background:color-mix(in srgb,var(--accent) 15%,var(--panel2));
+  border-color:color-mix(in srgb,var(--accent) 40%,var(--line));
+  color:var(--text);border-bottom-right-radius:4px;
+}
+.bubble p{margin:0 0 10px}.bubble p:last-child{margin-bottom:0}
+.bubble pre{background:var(--code);padding:12px;border-radius:9px;overflow:auto;border:1px solid var(--line);font-size:12.5px}
+.bubble code{background:var(--code);padding:2px 5px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,monospace}
+.bubble a{color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--accent)}
+.bubble a:hover{border-bottom-style:solid}
+
+/* Tool execution accordion */
+.tool-box{
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin:6px 0;
+  overflow:hidden;font-size:12px;transition:border-color .15s;
+}
+.tool-hdr{
+  padding:7px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;
+  background:color-mix(in srgb,var(--panel2) 90%,white);color:var(--dim);font-weight:500;
+}
+.tool-hdr:hover{color:var(--text)}
+.tool-hdr .badge{margin-left:auto;font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--panel);border:1px solid var(--line)}
+.tool-body{padding:10px 12px;border-top:1px solid var(--line);background:var(--code);font-family:ui-monospace,monospace;font-size:11.5px;white-space:pre-wrap;max-height:260px;overflow:auto}
+.thought-box{
+  font-size:12px;color:var(--dim);padding:6px 10px;border-left:2px solid var(--accent);
+  margin:4px 0 8px;font-style:italic;display:flex;align-items:center;gap:6px;
+}
+
+/* Composer */
+#composer{padding:10px 20px 16px;background:transparent;flex:none;width:100%}
+#cbox{
+  max-width:880px;margin:0 auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:16px;padding:12px 14px 10px;box-shadow:0 8px 30px -8px rgba(0,0,0,.5);
+  display:flex;flex-direction:column;gap:8px;
+}
+#cbox:focus-within{border-color:color-mix(in srgb,var(--accent) 70%,var(--line))}
+#prompt{width:100%;resize:none;min-height:46px;max-height:180px;border:none;background:transparent;padding:2px 4px;font-size:14px;outline:none}
+.cbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent);padding-top:8px}
+.toglabel{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer}
+.toglabel input{cursor:pointer;accent-color:var(--accent)}
+.toglabel:hover{color:var(--text)}
+.cbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+#stopbtn{background:var(--bad);color:#fff;border-color:var(--bad);display:none}
+</style>
+</head>
+<body>
+
+<aside id="brain-drawer">
+  <div class="bd-head">
+    <div class="bd-title">🧠 Turnstone Brain</div>
+    <button class="bd-close" id="bd-close-btn" title="Скрыть память">✕</button>
+  </div>
+  <div class="bd-search">
+    <input type="text" id="bd-search-input" placeholder="Поиск в памяти и отчётах…">
+  </div>
+  <div class="bd-tabs">
+    <button class="bd-tab active" data-tab="memories">Воспоминания</button>
+    <button class="bd-tab" data-tab="researches">Отчёты исследований</button>
+  </div>
+  <div class="bd-content" id="bd-content">
+    <div style="color:var(--dim);font-size:12px;text-align:center;padding:20px 0">Загрузка памяти…</div>
+  </div>
+</aside>
+
+<section id="main-view">
+  <header id="header">
+    <button id="toggle-brain-btn" title="Открыть / скрыть постоянную память Turnstone">🧠 Память</button>
+    <div class="brand">
+      <span class="brand-icon">🪨🦅</span>
+      <span>Turnstone</span>
+    </div>
+    <span class="pill active" id="model-pill">⚡ OpenCode: google/gemini-3.5-flash</span>
+    <span class="pill" id="workdir-pill">📁 Загрузка…</span>
+    <div class="header-actions">
+      <button id="clear-chat-btn" title="Очистить диалог">↻ Новый поиск</button>
+      <button id="help-btn" title="О проекте Turnstone">?</button>
+    </div>
+  </header>
+
+  <div id="chat-area">
+    <div class="wrap" id="stream">
+      <div id="welcome">
+        <h1>🪨🦅 Turnstone</h1>
+        <p>Автономный напарник для расследований, глубокого фактчекинга и поиска инсайтов на движке <b>OpenCode</b>. Переворачивает каждый камень, копает веб и сохраняет знания в память.</p>
+        <div class="starter-grid">
+          <div class="starter" data-q="Проведи Deep Research по моделям DeepSeek V4.1 Flash Free и Beam Free в OpenCode">
+            <b>⚡ OpenCode Free Модели</b>
+            <span>Исследование DeepSeek V4.1 &amp; Beam 1M контекста</span>
+          </div>
+          <div class="starter" data-q="Найди последние новости и научные прорывы в сфере искусственного интеллекта за эту неделю">
+            <b>🌐 Актуальный веб-поиск</b>
+            <span>Свежие статьи, факты и проверенные источники</span>
+          </div>
+          <div class="starter" data-q="Просканируй текущую рабочую папку и составь архитектурную карту проекта">
+            <b>💻 Аудит проекта на диске</b>
+            <span>Использует автономные bash и filesystem инструменты</span>
+          </div>
+          <div class="starter" data-q="Запомни в память Brain, что в нашем проекте все агенты работают на бесплатных моделях OpenCode">
+            <b>🧠 Записать факт в память Brain</b>
+            <span>Сохраняет постоянный контекст в локальную память</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="composer">
+    <div id="cbox">
+      <textarea id="prompt" rows="1" placeholder="Задайте тему для глубокого расследования или вопрос Turnstone… (Enter — отправить, Shift+Enter — перенос)"></textarea>
+      <div class="cbar">
+        <label class="toglabel" title="Поиск в интернете в реальном времени">
+          <input type="checkbox" id="tog-web" checked>
+          <span>🌐 Поиск в сети</span>
+        </label>
+        <label class="toglabel" title="Подтягивать релевантные факты из долгосрочной памяти">
+          <input type="checkbox" id="tog-brain" checked>
+          <span>🧠 Память Brain</span>
+        </label>
+        <label class="toglabel" title="Включить многошаговое автономное исследование с глубоким сбором источников и отчётом">
+          <input type="checkbox" id="tog-deep">
+          <span style="font-weight:600;color:var(--amber)">🔬 Deep Research Mode</span>
+        </label>
+        <div class="cbar-right">
+          <select id="model-select" style="font-size:11.5px;padding:3px 7px" title="Бесплатные модели OpenCode">
+            <optgroup label="⚡ OpenCode Free Pool (Встроенные)">
+              <option value="opencode/deepseek-v4.1-flash-free" selected>DeepSeek V4.1 Flash Free [Быстрый · 128k]</option>
+              <option value="opencode/beam-free">Beam Free (1M) [Рассуждения · 1M]</option>
+              <option value="opencode/nemotron-3.5-super-vl-free">Nemotron 3.5 Super VL Free [Мультимодал · 1M]</option>
+              <option value="opencode/nemotron-3.5-lightning-free">Nemotron 3.5 Lightning Free [Ультра-скорость · 1M]</option>
+              <option value="opencode/glm-5.3-flash-free">GLM 5.3 Flash Free [Быстрый · 128k]</option>
+              <option value="opencode/flint-40b-free">Flint 40B Free [Код & Анализ · 128k]</option>
+              <option value="opencode/mimo-v2.6-flash-free">MiMo-V2.6-Flash Free [Легковесный · 128k]</option>
+              <option value="opencode/big-pickle">Big Pickle Free [Баланс]</option>
+            </optgroup>
+            <optgroup label="💎 Google Gemini в OpenCode">
+              <option value="google/gemini-3.5-flash">Google Gemini 3.5 Flash [Рекомендуется · 1M]</option>
+              <option value="google/gemini-3.1-flash-lite">Google Gemini 3.1 Flash-Lite [Сверхбыстрый · 1M]</option>
+              <option value="google/gemini-3-flash-preview">Google Gemini 3 Flash Preview [Рассуждения · 1M]</option>
+              <option value="google/gemini-pro-latest">Google Gemini Pro Latest [Максимальное качество · 2M]</option>
+            </optgroup>
+            <optgroup label="🏠 Локальные модели (Ollama в OpenCode)">
+              <option value="ollama/qwen2.5-coder:7b">Qwen 2.5 Coder 7B [Оффлайн · Код]</option>
+              <option value="ollama/deepseek-r1:8b">DeepSeek R1 8B [Оффлайн · Рассуждения]</option>
+            </optgroup>
+          </select>
+          <button id="sendbtn" class="primary">Исследовать ➤</button>
+          <button id="stopbtn">■ Стоп</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+let activeTab = "memories";
+let isRunning = false;
+let currentController = null;
+const conversationHistory = [];
+
+async function api(path, opts={}){
+  const res = await fetch(path, opts);
+  if(!res.ok){
+    const txt = await res.text();
+    throw new Error(txt || res.statusText);
+  }
+  return res.json();
+}
+
+async function loadStatus(){
+  try{
+    const st = await api("/api/turnstone/status");
+    $("model-pill").textContent = "⚡ " + (st.model || "OpenCode");
+    $("workdir-pill").textContent = "📁 " + (st.workdir_name || "workspace");
+    $("workdir-pill").title = st.workdir || "";
+  }catch(e){console.warn(e);}
+}
+
+async function loadModels(){
+  try{
+    const d = await api("/api/turnstone/models");
+    const sel = $("model-select");
+    sel.innerHTML = "";
+    const saved = localStorage.getItem("turnstone_model") || d.current || "opencode/deepseek-v4.1-flash-free";
+
+    (d.categories || []).forEach(cat => {
+      const grp = document.createElement("optgroup");
+      grp.label = cat.group;
+      (cat.models || []).forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = `${m.name} [${m.badge || 'free'}]`;
+        if(m.id === saved) opt.selected = true;
+        grp.appendChild(opt);
+      });
+      sel.appendChild(grp);
+    });
+
+    sel.onchange = () => {
+      localStorage.setItem("turnstone_model", sel.value);
+      $("model-pill").textContent = "⚡ " + sel.value;
+    };
+    $("model-pill").textContent = "⚡ " + (sel.value || saved);
+  }catch(e){
+    console.warn("Could not load models:", e);
+  }
+}
+
+async function loadBrain(){
+  const box = $("bd-content");
+  box.innerHTML = '<div style="color:var(--dim);font-size:12px;text-align:center;padding:20px 0">Загрузка...</div>';
+  try{
+    if(activeTab === "memories"){
+      const q = $("bd-search-input").value.trim();
+      const url = q ? `/api/turnstone/brain/recall?q=${encodeURIComponent(q)}` : "/api/turnstone/brain/memories";
+      const d = await api(url);
+      const items = d.memories || d || [];
+      if(!items.length){
+        box.innerHTML = '<div style="color:var(--dim);font-size:12px;text-align:center;padding:20px 0">Память пуста. Напишите Turnstone, чтобы он что-то запомнил.</div>';
+        return;
+      }
+      box.innerHTML = "";
+      items.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "mem-card";
+        div.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="mem-cat">${m.category || "fact"}</span>
+            <button class="mem-del" title="Забыть">✕</button>
+          </div>
+          <div class="mem-body">${escapeHtml(m.content)}</div>
+          <div class="mem-foot">
+            <span>${(m.tags||[]).map(t=>'#'+t).join(' ')}</span>
+            <span>${new Date((m.created_at||0)*1000).toLocaleDateString()}</span>
+          </div>
+        `;
+        div.querySelector(".mem-del").onclick = async () => {
+          await api(`/api/turnstone/brain/forget?id=${m.id}`, {method:"POST"});
+          loadBrain();
+        };
+        box.appendChild(div);
+      });
+    } else {
+      const d = await api("/api/turnstone/brain/researches");
+      const list = d.researches || [];
+      if(!list.length){
+        box.innerHTML = '<div style="color:var(--dim);font-size:12px;text-align:center;padding:20px 0">Пока нет завершённых отчётов Deep Research.</div>';
+        return;
+      }
+      box.innerHTML = "";
+      list.forEach(r => {
+        const div = document.createElement("div");
+        div.className = "mem-card";
+        div.style.cursor = "pointer";
+        div.innerHTML = `
+          <b style="color:var(--amber)">🔬 ${escapeHtml(r.title)}</b>
+          <div class="mem-foot" style="margin-top:4px">
+            <span>${(r.size/1024).toFixed(1)} KB</span>
+            <span>${new Date(r.modified*1000).toLocaleDateString()}</span>
+          </div>
+        `;
+        div.onclick = async () => {
+          const rep = await api(`/api/turnstone/brain/research?file=${encodeURIComponent(r.filename)}`);
+          appendAssistantMessage(rep.content || "Empty report");
+        };
+        box.appendChild(div);
+      });
+    }
+  }catch(e){
+    box.innerHTML = `<div style="color:var(--bad);font-size:12px;padding:12px">${e.message}</div>`;
+  }
+}
+
+function escapeHtml(t){
+  return (t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderMarkdown(md){
+  // Lightweight clean markdown renderer for reports & responses
+  let out = escapeHtml(md);
+  out = out.replace(/^### (.*$)/gim, '<h3 style="margin:.8em 0 .3em;color:var(--text);font-size:15px">$1</h3>');
+  out = out.replace(/^## (.*$)/gim, '<h2 style="margin:1em 0 .4em;color:var(--text);font-size:17px;border-bottom:1px solid var(--line);padding-bottom:4px">$1</h2>');
+  out = out.replace(/^# (.*$)/gim, '<h1 style="margin:1em 0 .5em;color:var(--text);font-size:20px">$1</h1>');
+  out = out.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+  out = out.replace(/\*(.*?)\*/g, '<i>$1</i>');
+  out = out.replace(/`([^`]+)`/g, '<code>$1</code>');
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  out = out.replace(/^\s*• (.*$)/gim, '<li style="margin-left:18px">$1</li>');
+  out = out.replace(/^\s*\d+\.\s+(.*$)/gim, '<li style="margin-left:18px">$1</li>');
+  out = out.replace(/\n\n+/g, '</p><p>');
+  return '<p>' + out + '</p>';
+}
+
+function appendUserMessage(text){
+  const stream = $("stream");
+  const row = document.createElement("div");
+  row.className = "msg user";
+  row.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+  stream.appendChild(row);
+  scrollToBottom();
+}
+
+function appendAssistantMessage(text){
+  const stream = $("stream");
+  const row = document.createElement("div");
+  row.className = "msg assistant";
+  row.innerHTML = `<div class="bubble">${renderMarkdown(text)}</div>`;
+  stream.appendChild(row);
+  scrollToBottom();
+}
+
+function scrollToBottom(){
+  const area = $("chat-area");
+  area.scrollTop = area.scrollHeight;
+}
+
+async function executeSearch(query){
+  if(!query.trim() || isRunning) return;
+  const promptInput = $("prompt");
+  promptInput.value = "";
+  promptInput.style.height = "auto";
+
+  const welcome = $("welcome");
+  if(welcome) welcome.remove();
+
+  appendUserMessage(query);
+  conversationHistory.push({role:"user", content:query});
+
+  const deepMode = $("tog-deep").checked;
+  const useWeb = $("tog-web").checked;
+  const useBrain = $("tog-brain").checked;
+  const model = $("model-select").value;
+
+  isRunning = true;
+  $("sendbtn").style.display = "none";
+  $("stopbtn").style.display = "inline-flex";
+
+  const stream = $("stream");
+  const row = document.createElement("div");
+  row.className = "msg assistant";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  row.appendChild(bubble);
+  stream.appendChild(row);
+
+  currentController = new AbortController();
+
+  try{
+    const response = await fetch("/api/turnstone/run", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        prompt: query,
+        history: conversationHistory.slice(-6),
+        use_web: useWeb,
+        use_brain: useBrain,
+        deep_research: deepMode,
+        model: model,
+      }),
+      signal: currentController.signal,
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, {stream:true});
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
+
+      for(const line of lines){
+        if(!line.startsWith("data: ")) continue;
+        const ev = JSON.parse(line.slice(6));
+
+        if(ev.type === "thought"){
+          const thought = document.createElement("div");
+          thought.className = "thought-box";
+          thought.innerHTML = `<span>🧠</span> <span>${escapeHtml(ev.content)}</span>`;
+          bubble.appendChild(thought);
+        } else if(ev.type === "tool_start"){
+          const tb = document.createElement("div");
+          tb.className = "tool-box";
+          tb.id = "tb-" + Date.now();
+          tb.innerHTML = `
+            <div class="tool-hdr">
+              <span>🔧</span>
+              <span>${escapeHtml(ev.content)}</span>
+              <span class="badge">working</span>
+            </div>
+            <div class="tool-body" style="display:none"></div>
+          `;
+          bubble.appendChild(tb);
+        } else if(ev.type === "tool_end"){
+          const lastTb = bubble.querySelector(".tool-box:last-of-type");
+          if(lastTb){
+            const bd = lastTb.querySelector(".badge");
+            if(bd) { bd.textContent = "done"; bd.style.color = "var(--accent)"; }
+            const bdy = lastTb.querySelector(".tool-body");
+            if(bdy && ev.metadata && ev.metadata.output){
+              bdy.textContent = JSON.stringify(ev.metadata.output, null, 2);
+            }
+            lastTb.querySelector(".tool-hdr").onclick = () => {
+              bdy.style.display = (bdy.style.display === "none") ? "block" : "none";
+            };
+          }
+        } else if(ev.type === "research_plan"){
+          const pl = document.createElement("div");
+          pl.style.padding = "8px 12px";
+          pl.style.background = "var(--panel2)";
+          pl.style.borderRadius = "8px";
+          pl.style.fontSize = "12px";
+          pl.style.margin = "6px 0";
+          pl.innerHTML = `<b style="color:var(--amber)">📋 План расследования:</b> ${escapeHtml(ev.content)}`;
+          bubble.appendChild(pl);
+        } else if(ev.type === "message"){
+          const answerDiv = document.createElement("div");
+          answerDiv.innerHTML = renderMarkdown(ev.content);
+          bubble.appendChild(answerDiv);
+          conversationHistory.push({role:"assistant", content:ev.content});
+        }
+        scrollToBottom();
+      }
+    }
+  }catch(e){
+    if(e.name !== "AbortError"){
+      const err = document.createElement("div");
+      err.style.color = "var(--bad)";
+      err.textContent = "Ошибка Turnstone: " + e.message;
+      bubble.appendChild(err);
+    }
+  }finally{
+    isRunning = false;
+    currentController = null;
+    $("sendbtn").style.display = "inline-flex";
+    $("stopbtn").style.display = "none";
+    loadBrain();
+    scrollToBottom();
+  }
+}
+
+// Event Bindings
+$("sendbtn").onclick = () => executeSearch($("prompt").value);
+$("stopbtn").onclick = () => { if(currentController) currentController.abort(); };
+$("prompt").onkeydown = e => {
+  if(e.key === "Enter" && !e.shiftKey){
+    e.preventDefault();
+    executeSearch($("prompt").value);
+  }
+};
+$("prompt").oninput = function(){
+  this.style.height = "auto";
+  this.style.height = Math.min(180, this.scrollHeight) + "px";
+};
+$("tog-deep").onchange = function(){
+  $("sendbtn").className = this.checked ? "deep-mode" : "primary";
+  $("sendbtn").textContent = this.checked ? "🔬 Deep Research ➤" : "Исследовать ➤";
+};
+$("toggle-brain-btn").onclick = () => $("brain-drawer").classList.toggle("closed");
+$("bd-close-btn").onclick = () => $("brain-drawer").classList.add("closed");
+$("clear-chat-btn").onclick = () => location.reload();
+$("bd-search-input").oninput = () => loadBrain();
+
+document.querySelectorAll(".bd-tab").forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll(".bd-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    activeTab = tab.dataset.tab;
+    loadBrain();
+  };
+});
+
+document.querySelectorAll(".starter").forEach(st => {
+  st.onclick = () => {
+    $("prompt").value = st.dataset.q;
+    if(st.dataset.q.includes("Deep Research")){
+      $("tog-deep").checked = true;
+      $("tog-deep").onchange();
+    }
+    executeSearch(st.dataset.q);
+  };
+});
+
+loadStatus();
+loadModels();
+loadBrain();
+</script>
+</body>
+</html>

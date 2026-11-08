@@ -43,6 +43,8 @@ def is_free_model(model_id: str, spec_free: bool = False) -> bool:
     m = model_id.lower()
     if m == "deepseek-harness/deepseek-flash" or m.startswith("kilo/"):
         return True
+    if m.startswith("google/"):
+        return True
     return "free" in m or m.endswith(":free") or (m.startswith("opencode/") and any(k in m for k in ("free", "nano", "pickle", "flash")))
 
 
@@ -61,8 +63,17 @@ def score_model_capabilities(model_id: str, spec_free: bool = False) -> dict[str
     coding = 68
     speed = 68
 
+    # OpenCode Google Gemini native models
+    if "gemini-3.5-flash" in m or "gemini-3.5" in m:
+        reasoning, coding, speed = 94, 96, 96
+    elif "gemini-3.1-flash-lite" in m or "gemini-flash-lite" in m:
+        reasoning, coding, speed = 91, 92, 98
+    elif "gemini-3-flash" in m or "gemini-flash" in m:
+        reasoning, coding, speed = 93, 94, 94
+    elif "gemini-pro" in m:
+        reasoning, coding, speed = 97, 96, 75
     # Specific OpenCode & DeepSeek Harness native models
-    if "beam-free" in m:
+    elif "beam-free" in m:
         reasoning, coding, speed = 93, 89, 85
     elif "deepseek-harness/deepseek-flash" in m or "deepseek-v4.1-flash" in m or "deepseek-v4" in m:
         reasoning, coding, speed = 90, 96, 94
@@ -106,11 +117,15 @@ def score_model_capabilities(model_id: str, spec_free: bool = False) -> dict[str
         reasoning = max(50, reasoning - 10)
         coding = max(52, coding - 8)
 
-    # Provider reliability bonus for native opencode/*, kilo/* and deepseek-harness/* models
-    if m.startswith(("opencode/", "deepseek-harness/", "kilo/")):
-        coding = min(98, coding + (6 if free else 4))
-        reasoning = min(98, reasoning + (6 if free else 4))
+    # Provider reliability bonus: native opencode & google get highest priority among accessible models
+    if m.startswith(("google/", "opencode/", "ollama/")):
+        coding = min(98, coding + 4)
+        reasoning = min(95, reasoning + 3)
         speed = min(98, speed + 4)
+    elif m.startswith(("deepseek-harness/", "kilo/")):
+        coding = min(94, coding + (3 if free else 1))
+        reasoning = min(92, reasoning + (3 if free else 1))
+        speed = min(94, speed + 2)
 
     tier = "S" if max(reasoning, coding) >= 92 else ("A" if max(reasoning, coding) >= 84 else ("B" if max(reasoning, coding) >= 74 else "C"))
     return {
@@ -302,11 +317,19 @@ class ModelRouter:
 
     def recommend_roles(self, cfg: SwarmConfig, priority: str | None = None) -> dict[str, str]:
         prio = (priority or getattr(cfg, "priority", "balanced") or "balanced").lower()
-        planner = self.pick_best_for_role(cfg, "planner", prio)
         coder = self.pick_best_for_role(cfg, "coder", prio)
+        planner = self.pick_best_for_role(cfg, "planner", prio)
+        if planner == coder and len(cfg.models) > 1 and prio != "quality":
+            alt_plan = self.pick_best_for_role(cfg, "planner", prio, exclude={coder})
+            if alt_plan:
+                planner = alt_plan
         reviewer = self.pick_best_for_role(cfg, "reviewer", prio)
-        # In quality/balanced mode, try to give reviewer a distinct perspective from coder when multiple strong models exist
-        if reviewer == coder and len(cfg.models) > 1:
+        # Give reviewer a distinct perspective from coder and planner when multiple strong models exist
+        if reviewer in (coder, planner) and len(cfg.models) > 2:
+            alt = self.pick_best_for_role(cfg, "reviewer", prio, exclude={coder, planner})
+            if alt:
+                reviewer = alt
+        elif reviewer == coder and len(cfg.models) > 1:
             alt = self.pick_best_for_role(cfg, "reviewer", prio, exclude={coder})
             if alt:
                 reviewer = alt

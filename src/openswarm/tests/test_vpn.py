@@ -125,6 +125,40 @@ class VpnUnit(Env):
         self.assertEqual(res["target"], "custom.target:443")
         self.assertIsNotNone(res["latency_ms"])
 
+    def test_tier1_prioritization_and_restricted_exclusion(self):
+        from openswarm.vpn import country_flag
+        self.assertEqual(country_flag("DE"), "🇩🇪")
+        self.assertEqual(country_flag("NL"), "🇳🇱")
+        self.assertEqual(country_flag("US"), "🇺🇸")
+
+        def fake_mixed_bridge(args: list[str]) -> str:
+            if args[0] == "list":
+                return json.dumps([
+                    {"id": "edge-ru", "name": "RU", "country": "RU", "country_code": "RU", "city": "", "protocol": "wireguard", "edge": True},
+                    {"id": "edge-cn", "name": "CN", "country": "CN", "country_code": "CN", "city": "", "protocol": "wireguard", "edge": True},
+                    {"id": "edge-fr", "name": "FR", "country": "FR", "country_code": "FR", "city": "", "protocol": "wireguard", "edge": True},
+                    {"id": "edge-de", "name": "DE", "country": "DE", "country_code": "DE", "city": "", "protocol": "wireguard", "edge": True},
+                ])
+            return json.dumps({})
+
+        s = VpnSettings()
+        mgr = VpnManager(s, bridge=fake_mixed_bridge)
+        cands = mgr.candidates()
+        # Restricted countries are excluded:
+        self.assertNotIn("edge-ru", cands)
+        self.assertNotIn("edge-cn", cands)
+        # Tier-1 countries (DE, FR) are included:
+        self.assertEqual(cands, ["edge-de", "edge-fr"])
+
+        # status() includes flag and tier1 metadata:
+        st = mgr.status(with_servers=True)
+        self.assertEqual(len(st["servers"]), 4)
+        de_srv = next(x for x in st["servers"] if x["id"] == "edge-de")
+        self.assertEqual(de_srv["flag"], "🇩🇪")
+        self.assertTrue(de_srv["tier1"])
+        ru_srv = next(x for x in st["servers"] if x["id"] == "edge-ru")
+        self.assertFalse(ru_srv["tier1"])
+
     async def test_web_api_vpn_endpoints(self):
         import asyncio
         import http.client

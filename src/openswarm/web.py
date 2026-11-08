@@ -392,6 +392,14 @@ class WebApp:
             s.title = prompt.replace("\n", " ")[:48]
         s.busy = True
         s.save_meta()
+        if sel.planner_model:
+            self.cfg.roles.planner = sel.planner_model
+            self.cfg.roles.architect = sel.planner_model
+        if sel.coder_model:
+            self.cfg.roles.coder = sel.coder_model
+            self.cfg.roles.chat = sel.coder_model
+        if sel.reviewer_model:
+            self.cfg.roles.reviewer = sel.reviewer_model
         st = snapshot(mode, sel.planner_model or cfg.roles.planner, sel.coder_model or cfg.roles.coder,
                       sel.reviewer_model or cfg.roles.reviewer, skills, cfg.priority, cfg.effort)
         st["parallel"] = cfg.max_parallel
@@ -416,6 +424,15 @@ class WebApp:
             payload["tid"] = payload.pop("id")
         if kind == "snapshot":
             s.snapshot = payload.get("tid", "")
+        if kind == "role_model_updated":
+            r_name = str(payload.get("role") or "")
+            r_mdl = str(payload.get("model") or "")
+            if r_name and r_mdl and hasattr(self.cfg.roles, r_name):
+                setattr(self.cfg.roles, r_name, r_mdl)
+                if r_name == "coder":
+                    self.cfg.roles.chat = r_mdl
+                elif r_name == "planner":
+                    self.cfg.roles.architect = r_mdl
         if kind == "permission":
             s.emit("permission", agent=agent, req={**payload, "id": payload.get("tid")})
         elif kind == "permission_resolved":
@@ -441,7 +458,12 @@ class WebApp:
             if summary.session_id:
                 s.oc_session = summary.session_id
                 s.emit("log", text=f"opencode session {summary.session_id} captured")
-            s.emit("done", ok=summary.ok, merged=summary.merged, failed=summary.failed, snapshot=summary.snapshot, usage=summary.usage, mode=mode)
+            roles_now = {
+                "planner": self.cfg.roles.planner,
+                "coder": self.cfg.roles.coder,
+                "reviewer": self.cfg.roles.reviewer,
+            }
+            s.emit("done", ok=summary.ok, merged=summary.merged, failed=summary.failed, snapshot=summary.snapshot, usage=summary.usage, mode=mode, roles=roles_now)
             asyncio.create_task(self._notify_integrations(s, prompt, summary))
         except asyncio.CancelledError:
             s.emit("done", ok=False, merged=[], failed=["cancelled"])
@@ -735,7 +757,7 @@ class WebApp:
             return await self.vpn_route(method, parts[1:], js, writer)
         if parts and parts[0] == "heal":
             return await self.heal_route(method, parts[1:], q, js, writer)
-        if parts and parts[0] in ("router", "priority"):
+        if parts and parts[0] in ("router", "priority", "roles"):
             return await self.router_route(method, parts, q, js, writer)
         if parts and parts[0] == "plugins":
             return await self.plugins_route(method, parts[1:], q, js, writer)
@@ -1241,6 +1263,60 @@ class WebApp:
         if parts == ["router", "reset"] and method == "POST":
             router.clear_cooldowns()
             return await _json(writer, {"ok": True, "recommended_roles": router.recommend_roles(self.cfg, self.cfg.priority)})
+        if parts in (["roles"], ["router", "roles"]) and method == "GET":
+            return await _json(writer, {
+                "ok": True,
+                "roles": {
+                    "planner": self.cfg.roles.planner,
+                    "architect": self.cfg.roles.architect,
+                    "coder": self.cfg.roles.coder,
+                    "reviewer": self.cfg.roles.reviewer,
+                    "chat": self.cfg.roles.chat,
+                },
+            })
+        if parts in (["roles"], ["router", "roles"]) and method == "POST":
+            if js.get("auto_distinct"):
+                prio = str(js.get("priority") or self.cfg.priority or "balanced").lower()
+                if prio not in VALID_PRIORITIES:
+                    prio = "balanced"
+                rec = router.recommend_roles(self.cfg, prio)
+                for r, m in rec.items():
+                    if hasattr(self.cfg.roles, r) and m:
+                        setattr(self.cfg.roles, r, m)
+            else:
+                roles_in = js.get("roles") if isinstance(js.get("roles"), dict) else {}
+                single_role = str(js.get("role") or "").strip()
+                single_mdl = str(js.get("model") or "").strip()
+                if single_role and single_mdl:
+                    if single_role == "all":
+                        roles_in = {"planner": single_mdl, "coder": single_mdl, "reviewer": single_mdl}
+                    else:
+                        roles_in[single_role] = single_mdl
+                for r in ("planner", "architect", "coder", "reviewer", "chat", "researcher", "writer"):
+                    if r in roles_in and roles_in[r]:
+                        setattr(self.cfg.roles, r, str(roles_in[r]))
+                if "planner" in roles_in and roles_in["planner"] and "architect" not in roles_in:
+                    self.cfg.roles.architect = str(roles_in["planner"])
+                if "coder" in roles_in and roles_in["coder"] and "chat" not in roles_in:
+                    self.cfg.roles.chat = str(roles_in["coder"])
+            st = load_state()
+            st["roles"] = {
+                "planner": self.cfg.roles.planner,
+                "architect": self.cfg.roles.architect,
+                "coder": self.cfg.roles.coder,
+                "reviewer": self.cfg.roles.reviewer,
+            }
+            save_state(st)
+            return await _json(writer, {
+                "ok": True,
+                "roles": {
+                    "planner": self.cfg.roles.planner,
+                    "architect": self.cfg.roles.architect,
+                    "coder": self.cfg.roles.coder,
+                    "reviewer": self.cfg.roles.reviewer,
+                    "chat": self.cfg.roles.chat,
+                },
+            })
         if parts in (["priority"], ["router", "priority"]) and method == "POST":
             prio = str(js.get("priority") or "balanced").lower()
             if prio not in VALID_PRIORITIES:
@@ -1690,41 +1766,44 @@ class WebApp:
         return {
             "categories": [
                 {
-                    "title": "OpenCode Встроенные (100% бесплатно, без ключей)",
-                    "desc": "Работают сразу из коробки через нативный движок OpenCode",
+                    "title": "OpenCode & Google Gemini (Нативно в OpenCode · 1M контекст)",
+                    "desc": "Работает прямо через OpenCode и ваш Google-аккаунт — быстро, надёжно, без ограничений Kilo",
                     "models": [
-                        {"id": "opencode/deepseek-v4.1-flash-free", "name": "DeepSeek V4.1 Flash", "role": "Кодер / Чат", "badge": "Рекомендуется для кода", "speed": "Быстро", "context": "128k"},
-                        {"id": "opencode/beam-free", "name": "Beam Free (1M)", "role": "Архитектор / План", "badge": "Глубокие рассуждения", "speed": "Средне", "context": "1M"},
-                        {"id": "opencode/nemotron-3.5-lightning-free", "name": "Nemotron 3.5 Lightning", "role": "Быстрый ассистент", "badge": "Ультра-скорость", "speed": "Мгновенно", "context": "1M"},
-                        {"id": "opencode/nemotron-3.5-super-vl-free", "name": "Nemotron 3.5 Super VL", "role": "Ревьюер / Зрение", "badge": "Мультимодальный", "speed": "Быстро", "context": "1M"},
-                        {"id": "opencode/glm-5.3-flash-free", "name": "GLM 5.3 Flash", "role": "Общий ассистент", "badge": "Быстрый ответ", "speed": "Быстро", "context": "128k"},
+                        {"id": "google/gemini-3.5-flash", "name": "Google Gemini 3.5 Flash", "role": "Кодер / Планнер / Чат", "best_role": "coder", "badge": "⚡ 1M · Нативно в OpenCode", "speed": "Мгновенно", "context": "1M"},
+                        {"id": "google/gemini-3.1-flash-lite", "name": "Google Gemini 3.1 Flash-Lite", "role": "Ревьюер / Анализ", "best_role": "reviewer", "badge": "⚡ Сверхбыстрый ревьюер", "speed": "Мгновенно", "context": "1M"},
+                        {"id": "google/gemini-3-flash-preview", "name": "Google Gemini 3 Flash Preview", "role": "Архитектор / Планнер", "best_role": "planner", "badge": "🧠 Глубокое рассуждение", "speed": "Быстро", "context": "1M"},
+                        {"id": "google/gemini-flash-latest", "name": "Google Gemini Flash Latest", "role": "Универсальный ассистент", "best_role": "coder", "badge": "🔄 Последняя версия Flash", "speed": "Быстро", "context": "1M"},
+                        {"id": "google/gemini-pro-latest", "name": "Google Gemini Pro Latest", "role": "Флагман / Анализ", "best_role": "planner", "badge": "💎 Максимальное качество", "speed": "Средне", "context": "2M"},
+                        {"id": "deepseek-harness/deepseek-flash", "name": "DeepSeek Harness Flash", "role": "Архитектор / Кодер", "best_role": "coder", "badge": "🦈 DeepSeek Harness 1M", "speed": "Быстро", "context": "1M"},
                     ]
                 },
                 {
-                    "title": "Kilo AI Gateway (Бесплатно, без API ключей · Работают без лимитов)",
-                    "desc": "Анонимный доступ к пулу моделей через Kilo Gateway (~200 запросов/час на IP)",
+                    "title": "Локальные нейросети (100% оффлайн · OpenCode & Ollama)",
+                    "desc": "Запуск локально на вашем компьютере без интернета через OpenCode и Ollama",
                     "models": [
-                        {"id": "kilo/nvidia/nemotron-3.5-super-vl:free", "name": "Nemotron 3.5 Super VL Free (1M)", "role": "Кодер / Чат / Зрение", "badge": "100% Работает · 1M", "speed": "Быстро", "context": "1M"},
-                        {"id": "kilo/cohere/north-mini-code:free", "name": "North Mini Code Free", "role": "Кодинг / Скрипты", "badge": "100% Работает · Код", "speed": "Очень быстро", "context": "256k"},
-                        {"id": "kilo/reflection/beam-free", "name": "Reflection Beam 1.0 Free (1M)", "role": "Архитектор / План", "badge": "Kilo Free · 1M", "speed": "Быстро", "context": "1M"},
-                        {"id": "kilo/kilo-auto/free", "name": "Kilo Auto Router", "role": "Авто-маршрутизация", "badge": "Умный выбор", "speed": "Быстро", "context": "256k"},
+                        {"id": "ollama/qwen2.5-coder:7b", "name": "Qwen 2.5 Coder 7B", "role": "Оффлайн-кодер", "best_role": "coder", "badge": "🏠 Ollama в OpenCode", "info": "Локальная модель для кода"},
+                        {"id": "ollama/deepseek-r1:8b", "name": "DeepSeek R1 8B", "role": "Оффлайн-рассуждения", "best_role": "planner", "badge": "🏠 Ollama в OpenCode", "info": "Локальная модель с цепочкой мыслей"},
                     ]
                 },
                 {
-                    "title": "Внешние бесплатные провайдеры (Нужен бесплатный ключ)",
-                    "desc": "Провайдеры с щедрыми бесплатными тарифами без привязки карты",
+                    "title": "OpenCode Встроенные (zen-free пул)",
+                    "desc": "Встроенный бесплатный пул OpenCode",
                     "models": [
-                        {"id": "deepseek-harness/deepseek-flash", "name": "DeepSeek Harness Flash", "provider": "DeepSeek Harness", "badge": "1M контекст", "info": "Встроенный безлимитный режим"},
-                        {"id": "google/gemini-2.0-flash-exp:free", "name": "Google Gemini 2.0 Flash", "provider": "Google AI Studio", "badge": "15 RPM бесплатно", "info": "Получить ключ бесплатно на aistudio.google.com"},
-                        {"id": "groq/llama-3.3-70b-versatile", "name": "Groq Llama 3.3 70B", "provider": "Groq Cloud", "badge": "300+ токенов/сек", "info": "Бесплатный ключ на console.groq.com"},
+                        {"id": "opencode/deepseek-v4.1-flash-free", "name": "DeepSeek V4.1 Flash Free", "role": "Кодер / Чат", "best_role": "coder", "badge": "OpenCode Zen Free", "speed": "Быстро", "context": "128k"},
+                        {"id": "opencode/beam-free", "name": "Beam Free (1M)", "role": "Архитектор / План", "best_role": "planner", "badge": "Глубокие рассуждения", "speed": "Средне", "context": "1M"},
+                        {"id": "opencode/nemotron-3.5-lightning-free", "name": "Nemotron 3.5 Lightning", "role": "Быстрый ассистент", "best_role": "coder", "badge": "Ультра-скорость", "speed": "Мгновенно", "context": "1M"},
+                        {"id": "opencode/nemotron-3.5-super-vl-free", "name": "Nemotron 3.5 Super VL", "role": "Ревьюер / Зрение", "best_role": "reviewer", "badge": "Мультимодальный", "speed": "Быстро", "context": "1M"},
+                        {"id": "opencode/glm-5.3-flash-free", "name": "GLM 5.3 Flash", "role": "Общий ассистент", "best_role": "reviewer", "badge": "Быстрый ответ", "speed": "Быстро", "context": "128k"},
                     ]
                 },
                 {
-                    "title": "Локальные нейросети (100% оффлайн, без интернета)",
-                    "desc": "Запуск прямо на вашем компьютере через Ollama или LM Studio",
+                    "title": "Альтернативные внешние шлюзы (Kilo Gateway / OpenRouter)",
+                    "desc": "Резервные сторонние шлюзы (для тех, кто хочет использовать альтернативные провайдеры)",
                     "models": [
-                        {"id": "ollama/qwen2.5-coder:7b", "name": "Qwen 2.5 Coder 7B", "role": "Оффлайн-кодер", "badge": "Ollama", "info": "Команда: ollama run qwen2.5-coder:7b"},
-                        {"id": "ollama/deepseek-r1:8b", "name": "DeepSeek R1 8B", "role": "Оффлайн-рассуждения", "badge": "Ollama", "info": "Команда: ollama run deepseek-r1:8b"},
+                        {"id": "kilo/cohere/north-mini-code:free", "name": "Cohere North Mini Code Free", "role": "Кодер / Чат", "best_role": "coder", "badge": "Kilo Gateway", "speed": "Мгновенно", "context": "256k"},
+                        {"id": "kilo/reflection/beam-free", "name": "Reflection Beam 1.0 Free", "role": "Архитектор / Планнер", "best_role": "planner", "badge": "Kilo Gateway", "speed": "Быстро", "context": "1M"},
+                        {"id": "kilo/nvidia/nemotron-3.5-super-vl:free", "name": "Nemotron 3.5 Super VL Free", "role": "Ревьюер", "best_role": "reviewer", "badge": "Kilo Gateway", "speed": "Быстро", "context": "1M"},
+                        {"id": "kilo/kilo-auto/free", "name": "Kilo Auto Free Router", "role": "Авто-балансировщик", "best_role": "coder", "badge": "Kilo Gateway", "speed": "Быстро", "context": "256k"},
                     ]
                 }
             ]
@@ -2012,6 +2091,15 @@ async def _serve(app: WebApp, host: str, url_open: bool, as_window: bool, ready:
         ready.set_result(url)
     await app.scheduler.ensure_started()
     auto_task = asyncio.create_task(app.automation.run()) if (app.cfg.schedules or app.cfg.triggers) else None
+    if app.cfg.opencode.discover_models:
+        async def _bg_discover() -> None:
+            try:
+                found = await discover_models(app.cfg)
+                if found:
+                    reconcile_models(app.cfg, found)
+            except Exception:
+                pass
+        asyncio.create_task(_bg_discover())
     watcher: asyncio.Task | None = None
     if url_open:
         proc = _open_app_window(url) if as_window else None
@@ -2059,8 +2147,6 @@ def web_main(argv: list[str]) -> int:
         return 2
     if not a.no_memory:
         apply_state(cfg, load_state())
-    if cfg.opencode.discover_models:
-        reconcile_models(cfg, asyncio.run(discover_models(cfg)))
     app = WebApp(cfg, workdir, a.port, a.token or secrets.token_urlsafe(18))
     try:
         asyncio.run(_serve(app, "127.0.0.1", not a.no_open, a.app))

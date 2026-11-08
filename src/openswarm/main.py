@@ -190,6 +190,9 @@ def bus_main(argv: list[str]) -> int:
 
 def main(argv: list[str] | None = None) -> None:
     argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] in ("turnstone", "bot", "grok"):
+        from .turnstone.app import turnstone_main
+        sys.exit(turnstone_main(argv[1:]))
     if argv and argv[0] in ("msg", "bus"):  # `openswarm msg send|ask|reply|read`
         sys.exit(bus_main(argv[1:]))
     if argv and argv[0] == "doc":  # `openswarm doc ...`: file tool used by agents, no config needed
@@ -358,7 +361,7 @@ def main(argv: list[str] | None = None) -> None:
         else:
             print("\n".join(list_snapshots(d)) or "(no snapshots for this directory)")
         sys.exit(0)
-    if argv and argv[0] == "gui":  # native window (GTK4/WebKitGTK -> Chromium app -> browser)
+    if argv and argv[0] in ("gui", "desktop"):  # native desktop application window
         from .gui import gui_main
 
         sys.exit(gui_main(argv[1:]))

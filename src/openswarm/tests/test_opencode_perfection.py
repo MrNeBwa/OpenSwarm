@@ -37,11 +37,11 @@ class OpenCodePerfectionTests(unittest.TestCase):
         self.assertGreaterEqual(score_ds["coding"], 95)
         self.assertGreaterEqual(score_ds["speed"], 90)
 
-        # Check recommendations prioritize opencode / deepseek-harness native models
+        # Check recommendations prioritize opencode / google / deepseek-harness native models
         router = get_router()
         rec = router.recommend_roles(cfg, "balanced")
-        self.assertTrue(rec["coder"].startswith(("opencode/", "deepseek-harness/")))
-        self.assertTrue(rec["planner"].startswith(("opencode/", "deepseek-harness/")))
+        self.assertTrue(rec["coder"].startswith(("google/", "opencode/", "deepseek-harness/")))
+        self.assertTrue(rec["planner"].startswith(("google/", "opencode/", "deepseek-harness/")))
 
     def test_reasoning_effort_and_runner_flags(self) -> None:
         cfg = default_config()
