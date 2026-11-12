@@ -208,6 +208,16 @@ class ModelRouter:
             st["last_error"] = ""
         self._save()
 
+    def clear_model_cooldown(self, model_id: str) -> None:
+        if not model_id:
+            return
+        st = self.stats.get(model_id)
+        if st:
+            st["cooldown_until"] = 0.0
+            st["streak_fail"] = 0
+            st["last_error"] = ""
+            self._save()
+
     def health_info(self, model_id: str) -> dict[str, Any]:
         now = self._clock()
         st = self.stats.get(model_id) or {}
@@ -221,6 +231,9 @@ class ModelRouter:
             "streak_fail": int(st.get("streak_fail", 0)),
             "last_error": str(st.get("last_error", "")),
         }
+
+    def is_healthy(self, model_id: str) -> bool:
+        return bool(self.health_info(model_id)["healthy"])
 
     def score_for_role(self, model_id: str, spec_free: bool, role: str, priority: str = "balanced", has_or_keys: bool = False) -> float:
         cap = score_model_capabilities(model_id, spec_free)

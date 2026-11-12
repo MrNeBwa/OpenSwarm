@@ -321,8 +321,11 @@ class VpnSettings(BaseModel):
     max_rotations_per_request: int = 8
     rotate_pattern: str = (
         r"rate.?limit|\b429\b|too many requests|quota|usage limit|limit (?:reached|exceeded)|exceeded[^\n]{0,40}limit"
-        r"|free (?:tier|usage)|requests per (?:minute|hour|day)|\b403\b[^\n]{0,60}(?:region|country|location)"
+        r"|free (?:tier|usage)|FreeUsageLimitError|QuotaExceeded|ResourceExhausted|RateLimitError"
+        r"|insufficient_quota|credits?.?exhausted|requests per (?:minute|hour|day)|\b403\b[^\n]{0,60}(?:region|country|location)"
     )
+    auto_enable_on_limit: bool = True  # automatically turn on VPN exit rotation when a free-tier or provider limit hits
+    prefer_vpn_before_model_switch: bool = True  # rotate VPN IP first to keep the user's chosen model before falling back
     health_target: str = "www.gstatic.com:443"  # CONNECTed through the tunnel to prove the exit works
     no_proxy: str = "localhost,127.0.0.1,::1"
 
@@ -695,16 +698,43 @@ async def discover_models(cfg: SwarmConfig, max_age: float = 600.0, timeout: flo
     return res
 
 
+def _friendly_model_label(mid: str) -> str:
+    """Generate a clean human-readable label for a discovered model ID."""
+    known = {m.id: m.label for m in default_config().models if m.label}
+    if mid in known:
+        return known[mid]
+    prov, _, slug = mid.partition("/")
+    if not slug:
+        return mid
+    clean = slug.replace(":free", "").replace("-free", "")
+    parts = [p.capitalize() if not p.isupper() else p for p in re.split(r"[-_]", clean) if p]
+    title = " ".join(parts)
+    if prov == "opencode":
+        suffix = " Free · OpenCode" if (slug.endswith("-free") or slug == "big-pickle") else " · OpenCode"
+        return f"{title}{suffix}"
+    if prov == "google":
+        return f"Google {title} · OpenCode"
+    if prov == "ollama":
+        return f"Ollama: {slug} (local · OpenCode)"
+    if prov == "kilo":
+        return f"{title} · Kilo Gateway"
+    if prov == "openrouter":
+        return f"{title} · OpenRouter"
+    return f"{title} ({prov})"
+
+
 def reconcile_models(cfg: SwarmConfig, discovered: list[str]) -> None:
     """Merge the live `opencode models` list into the config (in memory only)."""
     if not discovered:
         return
     from .router import get_router, is_free_model
 
-    known = set(discovered)
-    cfg.models = [m for m in cfg.models if not m.builtin or m.id in known]
     have = set(cfg.model_ids())
-    cfg.models += [ModelSpec(id=mid, free=is_free_model(mid)) for mid in discovered if mid not in have]
+    for mid in discovered:
+        if mid not in have:
+            free = is_free_model(mid) or mid.startswith(("google/", "ollama/")) or mid.endswith(("-free", ":free"))
+            cfg.models.append(ModelSpec(id=mid, label=_friendly_model_label(mid), free=free, builtin=True))
+            have.add(mid)
     ids = set(cfg.model_ids())
     router = get_router()
     for role in ROLES:

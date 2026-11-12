@@ -191,6 +191,54 @@ class VpnUnit(Env):
             self.assertEqual(status, 200)
             self.assertIn("ok", v)
             self.assertIn("check", v)
+
+            # 3. GET & POST /api/autorotation
+            status, ar = await asyncio.to_thread(call, "GET", "/api/autorotation")
+            self.assertEqual(status, 200)
+            self.assertTrue(ar["prefer_vpn_before_model_switch"])
+            self.assertTrue(ar["auto_model_failover"])
+
+            status, ar2 = await asyncio.to_thread(
+                call,
+                "POST",
+                "/api/autorotation",
+                {
+                    "auto_switch_vpn": False,
+                    "prefer_vpn_before_model_switch": False,
+                    "auto_model_failover": True,
+                    "clear_cooldowns": True,
+                },
+            )
+            self.assertEqual(status, 200)
+            self.assertFalse(ar2["autorotation"]["auto_switch_vpn"])
+            self.assertFalse(ar2["autorotation"]["prefer_vpn_before_model_switch"])
+
+            # 4. POST /api/roles clears cooldowns on assigned model
+            from openswarm.router import get_router
+            get_router().record_failure("opencode/gpt-5-nano", reason="rate_limit", kind="rate_limit")
+            self.assertFalse(get_router().is_healthy("opencode/gpt-5-nano"))
+            status, r_res = await asyncio.to_thread(
+                call, "POST", "/api/roles", {"roles": {"coder": "opencode/gpt-5-nano"}}
+            )
+            self.assertEqual(status, 200)
+            self.assertEqual(r_res["roles"]["coder"], "opencode/gpt-5-nano")
+            self.assertTrue(get_router().is_healthy("opencode/gpt-5-nano"))
         finally:
             srv.close()
             await app.shutdown()
+
+    def test_limit_pattern_matches_opencode_free_limits_and_native_bridge_error(self):
+        from unittest import mock
+        from openswarm.vpn import VpnError
+
+        s = VpnSettings(python="/nonexistent/venv/python")
+        mgr = VpnManager(s)
+        self.assertTrue(mgr.is_limit("FreeUsageLimitError: Free usage limit reached"))
+        self.assertTrue(mgr.is_limit("QuotaExceeded: daily quota exceeded"))
+        self.assertTrue(mgr.is_limit("ResourceExhausted: 429 Too Many Requests"))
+
+        with mock.patch("openswarm.vpn._native_bridge", side_effect=VpnError("Edge handshake timeout")):
+            with self.assertRaises(VpnError) as ctx:
+                mgr._bridge(["config", "edge-de"])
+            self.assertIn("Edge handshake timeout", str(ctx.exception))
+            self.assertNotIn("NinjaVPN python not found", str(ctx.exception))

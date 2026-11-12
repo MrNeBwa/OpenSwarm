@@ -279,7 +279,7 @@ class OpenSwarmMainWindow:
 
         try:
             bg = Gdk.RGBA()
-            bg.parse("#10121a")
+            bg.parse("#090a0f")
             self.web_view.set_background_color(bg)
         except Exception:
             pass

@@ -281,6 +281,23 @@ class WebApp:
     def valid_mode(self, m: Any) -> bool:
         return isinstance(m, str) and m in {x["id"] for x in self.mode_list()}
 
+    def autorotation_view(self) -> dict[str, Any]:
+        from .dsh import is_opencode_free_limited
+        from .vpn import get_vpn
+
+        vpn = get_vpn(self.cfg)
+        return {
+            "auto_model_failover": bool(getattr(self.cfg, "auto_model_failover", True)),
+            "auto_switch_on_limits": bool(vpn.auto_switch_on_limits),
+            "auto_switch_vpn": bool(vpn.auto_switch_on_limits),
+            "auto_enable_on_limit": bool(getattr(self.cfg.vpn, "auto_enable_on_limit", True)),
+            "prefer_vpn_before_model_switch": bool(getattr(self.cfg.vpn, "prefer_vpn_before_model_switch", True)),
+            "vpn_enabled": bool(vpn.enabled),
+            "vpn_running": bool(vpn.running()),
+            "vpn_current": vpn.current,
+            "opencode_free_limited": bool(is_opencode_free_limited()),
+        }
+
     def state(self) -> dict[str, Any]:
         from .dsh import dsh_status
         from .kilo import kilo_status
@@ -296,6 +313,7 @@ class WebApp:
             "effort": getattr(c, "effort", "medium"),
             "efforts": ["default", "none", "minimal", "low", "medium", "high", "xhigh", "max"],
             "recommended_roles": router.recommend_roles(c, c.priority),
+            "autorotation": self.autorotation_view(),
             "dsh": dsh_status(),
             "kilo": kilo_status(),
             "optimizer": get_optimizer_stats(),
@@ -305,7 +323,7 @@ class WebApp:
             "automation": {"schedules": [x.id for x in c.schedules], "triggers": [x.id for x in c.triggers]},
             "integrations": self.integrations.to_dict(),
             "scheduled_count": len([t for t in self.scheduler.tasks.values() if t.status == "pending"]),
-            "models": [{"id": m.id, "label": m.display()} for m in c.models],
+            "models": [{"id": m.id, "label": m.display(), "free": bool(m.free)} for m in c.models],
             "roles": {"planner": c.roles.planner, "coder": c.roles.coder, "reviewer": c.roles.reviewer},
             "skills": [{"id": s.id, "label": s.label, "category": s.category, "default": s.default, "hint": s.prompt_hint} for s in c.skills],
             "presets": [p.model_dump() for p in c.presets],
@@ -757,7 +775,7 @@ class WebApp:
             return await self.vpn_route(method, parts[1:], js, writer)
         if parts and parts[0] == "heal":
             return await self.heal_route(method, parts[1:], q, js, writer)
-        if parts and parts[0] in ("router", "priority", "roles"):
+        if parts and parts[0] in ("router", "priority", "roles", "autorotation"):
             return await self.router_route(method, parts, q, js, writer)
         if parts and parts[0] == "plugins":
             return await self.plugins_route(method, parts[1:], q, js, writer)
@@ -1261,8 +1279,46 @@ class WebApp:
                 "rankings": router.rank_models(self.cfg, role=role, priority=prio)[:25],
             })
         if parts == ["router", "reset"] and method == "POST":
+            from .dsh import clear_opencode_free_limited
+            clear_opencode_free_limited()
             router.clear_cooldowns()
-            return await _json(writer, {"ok": True, "recommended_roles": router.recommend_roles(self.cfg, self.cfg.priority)})
+            return await _json(writer, {
+                "ok": True,
+                "autorotation": self.autorotation_view(),
+                "recommended_roles": router.recommend_roles(self.cfg, self.cfg.priority),
+            })
+        if parts in (["autorotation"], ["router", "autorotation"]) and method == "GET":
+            view = self.autorotation_view()
+            return await _json(writer, {"ok": True, "autorotation": view, **view})
+        if parts in (["autorotation"], ["router", "autorotation"]) and method == "POST":
+            from .dsh import clear_opencode_free_limited
+            from .vpn import get_vpn
+
+            vpn = get_vpn(self.cfg)
+            if "auto_model_failover" in js:
+                self.cfg.auto_model_failover = bool(js["auto_model_failover"])
+            if "auto_switch_on_limits" in js:
+                vpn.set_auto_switch(bool(js["auto_switch_on_limits"]))
+            if "auto_switch_vpn" in js:
+                vpn.set_auto_switch(bool(js["auto_switch_vpn"]))
+            if "auto_enable_on_limit" in js:
+                self.cfg.vpn.auto_enable_on_limit = bool(js["auto_enable_on_limit"])
+            if "prefer_vpn_before_model_switch" in js:
+                self.cfg.vpn.prefer_vpn_before_model_switch = bool(js["prefer_vpn_before_model_switch"])
+            if js.get("clear_cooldowns"):
+                clear_opencode_free_limited()
+                router.clear_cooldowns()
+                vpn.cooldown.clear()
+                vpn._save()
+            st = load_state()
+            st["autorotation"] = {
+                "auto_model_failover": self.cfg.auto_model_failover,
+                "auto_enable_on_limit": self.cfg.vpn.auto_enable_on_limit,
+                "prefer_vpn_before_model_switch": self.cfg.vpn.prefer_vpn_before_model_switch,
+            }
+            save_state(st)
+            view = self.autorotation_view()
+            return await _json(writer, {"ok": True, "autorotation": view, **view})
         if parts in (["roles"], ["router", "roles"]) and method == "GET":
             return await _json(writer, {
                 "ok": True,
@@ -1273,8 +1329,11 @@ class WebApp:
                     "reviewer": self.cfg.roles.reviewer,
                     "chat": self.cfg.roles.chat,
                 },
+                "autorotation": self.autorotation_view(),
             })
         if parts in (["roles"], ["router", "roles"]) and method == "POST":
+            from .dsh import clear_opencode_free_limited
+
             if js.get("auto_distinct"):
                 prio = str(js.get("priority") or self.cfg.priority or "balanced").lower()
                 if prio not in VALID_PRIORITIES:
@@ -1283,6 +1342,7 @@ class WebApp:
                 for r, m in rec.items():
                     if hasattr(self.cfg.roles, r) and m:
                         setattr(self.cfg.roles, r, m)
+                        router.clear_model_cooldown(m)
             else:
                 roles_in = js.get("roles") if isinstance(js.get("roles"), dict) else {}
                 single_role = str(js.get("role") or "").strip()
@@ -1294,11 +1354,17 @@ class WebApp:
                         roles_in[single_role] = single_mdl
                 for r in ("planner", "architect", "coder", "reviewer", "chat", "researcher", "writer"):
                     if r in roles_in and roles_in[r]:
-                        setattr(self.cfg.roles, r, str(roles_in[r]))
+                        m_val = str(roles_in[r])
+                        setattr(self.cfg.roles, r, m_val)
+                        router.clear_model_cooldown(m_val)
+                        if m_val.startswith("opencode/"):
+                            clear_opencode_free_limited()
                 if "planner" in roles_in and roles_in["planner"] and "architect" not in roles_in:
                     self.cfg.roles.architect = str(roles_in["planner"])
                 if "coder" in roles_in and roles_in["coder"] and "chat" not in roles_in:
                     self.cfg.roles.chat = str(roles_in["coder"])
+                if "chat" in roles_in and roles_in["chat"] and "coder" not in roles_in:
+                    self.cfg.roles.coder = str(roles_in["chat"])
             st = load_state()
             st["roles"] = {
                 "planner": self.cfg.roles.planner,
@@ -1316,6 +1382,7 @@ class WebApp:
                     "reviewer": self.cfg.roles.reviewer,
                     "chat": self.cfg.roles.chat,
                 },
+                "autorotation": self.autorotation_view(),
             })
         if parts in (["priority"], ["router", "priority"]) and method == "POST":
             prio = str(js.get("priority") or "balanced").lower()
@@ -1763,49 +1830,70 @@ class WebApp:
         raise HttpError(404, "unknown endpoint in desktop api")
 
     def free_models_catalog(self) -> dict[str, Any]:
+        google_models = [
+            {"id": "google/gemini-3.5-flash", "name": "Google Gemini 3.5 Flash", "role": "Кодер / Планнер / Чат", "best_role": "coder", "badge": "⚡ 1M · Нативно в OpenCode", "speed": "Мгновенно", "context": "1M"},
+            {"id": "google/gemini-3.1-flash-lite", "name": "Google Gemini 3.1 Flash-Lite", "role": "Ревьюер / Анализ", "best_role": "reviewer", "badge": "⚡ Сверхбыстрый ревьюер", "speed": "Мгновенно", "context": "1M"},
+            {"id": "google/gemini-3-flash-preview", "name": "Google Gemini 3 Flash Preview", "role": "Архитектор / Планнер", "best_role": "planner", "badge": "🧠 Глубокое рассуждение", "speed": "Быстро", "context": "1M"},
+            {"id": "google/gemini-flash-latest", "name": "Google Gemini Flash Latest", "role": "Универсальный ассистент", "best_role": "coder", "badge": "🔄 Последняя версия Flash", "speed": "Быстро", "context": "1M"},
+            {"id": "google/gemini-pro-latest", "name": "Google Gemini Pro Latest", "role": "Флагман / Анализ", "best_role": "planner", "badge": "💎 Максимальное качество", "speed": "Средне", "context": "2M"},
+            {"id": "deepseek-harness/deepseek-flash", "name": "DeepSeek Harness Flash", "role": "Архитектор / Кодер", "best_role": "coder", "badge": "🦈 DeepSeek Harness 1M", "speed": "Быстро", "context": "1M"},
+        ]
+        opencode_models = [
+            {"id": "opencode/deepseek-v4.1-flash-free", "name": "DeepSeek V4.1 Flash Free", "role": "Кодер / Чат", "best_role": "coder", "badge": "OpenCode Zen Free + VPN", "speed": "Быстро", "context": "128k"},
+            {"id": "opencode/beam-free", "name": "Beam Free (1M)", "role": "Архитектор / План", "best_role": "planner", "badge": "Глубокие рассуждения", "speed": "Средне", "context": "1M"},
+            {"id": "opencode/nemotron-3.5-lightning-free", "name": "Nemotron 3.5 Lightning", "role": "Быстрый ассистент", "best_role": "coder", "badge": "Ультра-скорость", "speed": "Мгновенно", "context": "1M"},
+            {"id": "opencode/nemotron-3.5-super-vl-free", "name": "Nemotron 3.5 Super VL", "role": "Ревьюер / Зрение", "best_role": "reviewer", "badge": "Мультимодальный", "speed": "Быстро", "context": "1M"},
+            {"id": "opencode/glm-5.3-flash-free", "name": "GLM 5.3 Flash Free", "role": "Общий ассистент", "best_role": "reviewer", "badge": "Быстрый ответ", "speed": "Быстро", "context": "128k"},
+            {"id": "opencode/minimax-m3.1-flash-free", "name": "MiniMax M3.1 Flash Free", "role": "Кодер / Чат", "best_role": "coder", "badge": "OpenCode Zen Free", "speed": "Быстро", "context": "256k"},
+            {"id": "opencode/mimo-v2.6-flash-free", "name": "MiMo V2.6 Flash Free", "role": "Быстрый кодер", "best_role": "coder", "badge": "OpenCode Zen Free", "speed": "Мгновенно", "context": "128k"},
+            {"id": "opencode/flint-40b-free", "name": "Flint 40B Free", "role": "Ревьюер / Код", "best_role": "reviewer", "badge": "OpenCode Zen Free", "speed": "Быстро", "context": "128k"},
+            {"id": "opencode/big-pickle", "name": "Big Pickle", "role": "Универсальный агент", "best_role": "coder", "badge": "OpenCode Zen Free", "speed": "Быстро", "context": "200k"},
+        ]
+        local_models = [
+            {"id": "ollama/qwen2.5-coder:7b", "name": "Qwen 2.5 Coder 7B", "role": "Оффлайн-кодер", "best_role": "coder", "badge": "🏠 Ollama в OpenCode", "info": "Локальная модель для кода"},
+            {"id": "ollama/deepseek-r1:8b", "name": "DeepSeek R1 8B", "role": "Оффлайн-рассуждения", "best_role": "planner", "badge": "🏠 Ollama в OpenCode", "info": "Локальная модель с цепочкой мыслей"},
+        ]
+        kilo_models = [
+            {"id": "kilo/cohere/north-mini-code:free", "name": "Cohere North Mini Code Free", "role": "Кодер / Чат", "best_role": "coder", "badge": "Kilo Gateway", "speed": "Мгновенно", "context": "256k"},
+            {"id": "kilo/reflection/beam-free", "name": "Reflection Beam 1.0 Free", "role": "Архитектор / Планнер", "best_role": "planner", "badge": "Kilo Gateway", "speed": "Быстро", "context": "1M"},
+            {"id": "kilo/nvidia/nemotron-3.5-super-vl:free", "name": "Nemotron 3.5 Super VL Free", "role": "Ревьюер", "best_role": "reviewer", "badge": "Kilo Gateway", "speed": "Быстро", "context": "1M"},
+            {"id": "kilo/kilo-auto/free", "name": "Kilo Auto Free Router", "role": "Авто-балансировщик", "best_role": "coder", "badge": "Kilo Gateway", "speed": "Быстро", "context": "256k"},
+        ]
+        seen = {m["id"] for m in (*google_models, *opencode_models, *local_models, *kilo_models)}
+        for m in self.cfg.models:
+            if m.id in seen:
+                continue
+            seen.add(m.id)
+            if m.id.startswith("google/"):
+                google_models.append({"id": m.id, "name": m.display(), "role": "Универсальный", "best_role": "coder", "badge": "⚡ Нативно в OpenCode", "speed": "Быстро", "context": "1M"})
+            elif m.id.startswith("opencode/") and (m.free or m.id.endswith("-free")):
+                opencode_models.append({"id": m.id, "name": m.display(), "role": "Кодер / Чат", "best_role": "coder", "badge": "OpenCode Zen Free + VPN", "speed": "Быстро", "context": "128k"})
+            elif m.id.startswith("ollama/"):
+                local_models.append({"id": m.id, "name": m.display(), "role": "Оффлайн", "best_role": "coder", "badge": "🏠 Ollama в OpenCode", "info": "Локальная модель"})
+            elif m.id.startswith(("kilo/", "openrouter/")) and m.free:
+                kilo_models.append({"id": m.id, "name": m.display(), "role": "Внешний шлюз", "best_role": "coder", "badge": "Free Gateway", "speed": "Быстро", "context": "128k"})
         return {
             "categories": [
                 {
                     "title": "OpenCode & Google Gemini (Нативно в OpenCode · 1M контекст)",
                     "desc": "Работает прямо через OpenCode и ваш Google-аккаунт — быстро, надёжно, без ограничений Kilo",
-                    "models": [
-                        {"id": "google/gemini-3.5-flash", "name": "Google Gemini 3.5 Flash", "role": "Кодер / Планнер / Чат", "best_role": "coder", "badge": "⚡ 1M · Нативно в OpenCode", "speed": "Мгновенно", "context": "1M"},
-                        {"id": "google/gemini-3.1-flash-lite", "name": "Google Gemini 3.1 Flash-Lite", "role": "Ревьюер / Анализ", "best_role": "reviewer", "badge": "⚡ Сверхбыстрый ревьюер", "speed": "Мгновенно", "context": "1M"},
-                        {"id": "google/gemini-3-flash-preview", "name": "Google Gemini 3 Flash Preview", "role": "Архитектор / Планнер", "best_role": "planner", "badge": "🧠 Глубокое рассуждение", "speed": "Быстро", "context": "1M"},
-                        {"id": "google/gemini-flash-latest", "name": "Google Gemini Flash Latest", "role": "Универсальный ассистент", "best_role": "coder", "badge": "🔄 Последняя версия Flash", "speed": "Быстро", "context": "1M"},
-                        {"id": "google/gemini-pro-latest", "name": "Google Gemini Pro Latest", "role": "Флагман / Анализ", "best_role": "planner", "badge": "💎 Максимальное качество", "speed": "Средне", "context": "2M"},
-                        {"id": "deepseek-harness/deepseek-flash", "name": "DeepSeek Harness Flash", "role": "Архитектор / Кодер", "best_role": "coder", "badge": "🦈 DeepSeek Harness 1M", "speed": "Быстро", "context": "1M"},
-                    ]
+                    "models": google_models,
+                },
+                {
+                    "title": "OpenCode Встроенные (zen-free пул + авто-обход лимитов через VPN)",
+                    "desc": "Встроенный бесплатный пул OpenCode. При достижении лимита тарифа OpenSwarm автоматически меняет VPN-сервер или переключает модель",
+                    "models": opencode_models,
                 },
                 {
                     "title": "Локальные нейросети (100% оффлайн · OpenCode & Ollama)",
                     "desc": "Запуск локально на вашем компьютере без интернета через OpenCode и Ollama",
-                    "models": [
-                        {"id": "ollama/qwen2.5-coder:7b", "name": "Qwen 2.5 Coder 7B", "role": "Оффлайн-кодер", "best_role": "coder", "badge": "🏠 Ollama в OpenCode", "info": "Локальная модель для кода"},
-                        {"id": "ollama/deepseek-r1:8b", "name": "DeepSeek R1 8B", "role": "Оффлайн-рассуждения", "best_role": "planner", "badge": "🏠 Ollama в OpenCode", "info": "Локальная модель с цепочкой мыслей"},
-                    ]
-                },
-                {
-                    "title": "OpenCode Встроенные (zen-free пул)",
-                    "desc": "Встроенный бесплатный пул OpenCode",
-                    "models": [
-                        {"id": "opencode/deepseek-v4.1-flash-free", "name": "DeepSeek V4.1 Flash Free", "role": "Кодер / Чат", "best_role": "coder", "badge": "OpenCode Zen Free", "speed": "Быстро", "context": "128k"},
-                        {"id": "opencode/beam-free", "name": "Beam Free (1M)", "role": "Архитектор / План", "best_role": "planner", "badge": "Глубокие рассуждения", "speed": "Средне", "context": "1M"},
-                        {"id": "opencode/nemotron-3.5-lightning-free", "name": "Nemotron 3.5 Lightning", "role": "Быстрый ассистент", "best_role": "coder", "badge": "Ультра-скорость", "speed": "Мгновенно", "context": "1M"},
-                        {"id": "opencode/nemotron-3.5-super-vl-free", "name": "Nemotron 3.5 Super VL", "role": "Ревьюер / Зрение", "best_role": "reviewer", "badge": "Мультимодальный", "speed": "Быстро", "context": "1M"},
-                        {"id": "opencode/glm-5.3-flash-free", "name": "GLM 5.3 Flash", "role": "Общий ассистент", "best_role": "reviewer", "badge": "Быстрый ответ", "speed": "Быстро", "context": "128k"},
-                    ]
+                    "models": local_models,
                 },
                 {
                     "title": "Альтернативные внешние шлюзы (Kilo Gateway / OpenRouter)",
                     "desc": "Резервные сторонние шлюзы (для тех, кто хочет использовать альтернативные провайдеры)",
-                    "models": [
-                        {"id": "kilo/cohere/north-mini-code:free", "name": "Cohere North Mini Code Free", "role": "Кодер / Чат", "best_role": "coder", "badge": "Kilo Gateway", "speed": "Мгновенно", "context": "256k"},
-                        {"id": "kilo/reflection/beam-free", "name": "Reflection Beam 1.0 Free", "role": "Архитектор / Планнер", "best_role": "planner", "badge": "Kilo Gateway", "speed": "Быстро", "context": "1M"},
-                        {"id": "kilo/nvidia/nemotron-3.5-super-vl:free", "name": "Nemotron 3.5 Super VL Free", "role": "Ревьюер", "best_role": "reviewer", "badge": "Kilo Gateway", "speed": "Быстро", "context": "1M"},
-                        {"id": "kilo/kilo-auto/free", "name": "Kilo Auto Free Router", "role": "Авто-балансировщик", "best_role": "coder", "badge": "Kilo Gateway", "speed": "Быстро", "context": "256k"},
-                    ]
-                }
+                    "models": kilo_models,
+                },
             ]
         }
 

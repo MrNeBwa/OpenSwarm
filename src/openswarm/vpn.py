@@ -159,31 +159,38 @@ def _native_bridge(args: list[str]) -> str:
     except ImportError:
         raise VpnError("Embedded VPN engine not available")
 
+    def _valid(s) -> bool:
+        proto = getattr(s.protocol, "value", str(s.protocol)).lower()
+        if proto == "vless":
+            creds = getattr(s, "credentials", {}) or {}
+            params = getattr(s, "params", {}) or {}
+            uid = creds.get("uuid") or creds.get("id") or params.get("uuid") or params.get("id") or ""
+            if not str(uid).strip():
+                return False
+        return True
+
     r = ServerRepository()
     try:
         r.load_cache()
     except Exception:
         pass
-    if not r.servers:
-        bundled = Path(__file__).resolve().parent / "data" / "vpn_servers.json"
-        if bundled.exists():
-            try:
-                items = json.loads(bundled.read_text(encoding="utf-8"))
-                r.servers = [Server.from_dict(it) for it in items]
-            except Exception:
-                pass
+    bundled = Path(__file__).resolve().parent / "data" / "vpn_servers.json"
+    if bundled.exists():
+        try:
+            items = json.loads(bundled.read_text(encoding="utf-8"))
+            bundled_servers = [Server.from_dict(it) for it in items]
+            if not r.servers:
+                r.servers = bundled_servers
+            else:
+                known_ids = {s.id for s in r.servers}
+                for bs in bundled_servers:
+                    if bs.id not in known_ids:
+                        r.servers.append(bs)
+        except Exception:
+            pass
+    r.servers = [s for s in r.servers if _valid(s)]
 
     if args[0] == "list":
-        def _valid(s):
-            proto = getattr(s.protocol, "value", str(s.protocol)).lower()
-            if proto == "vless":
-                creds = getattr(s, "credentials", {}) or {}
-                params = getattr(s, "params", {}) or {}
-                uid = creds.get("uuid") or creds.get("id") or params.get("uuid") or params.get("id") or ""
-                if not str(uid).strip():
-                    return False
-            return True
-
         def public(s):
             return {
                 "id": s.id, "name": s.name, "country": s.country, "country_code": s.country_code, "city": s.city,
@@ -207,15 +214,34 @@ def _native_bridge(args: list[str]) -> str:
             from .vpn_engine.schema import Protocol, Security, Transport
 
             async def _install():
-                return await EdgeProvider(settings, load_identity()).install(server)
+                saved_env = {}
+                for k in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+                    if k in os.environ:
+                        saved_env[k] = os.environ.pop(k)
+                provider = EdgeProvider(settings, load_identity())
+                try:
+                    return await provider.install(server)
+                finally:
+                    try:
+                        await provider.close()
+                    except Exception:
+                        pass
+                    os.environ.update(saved_env)
 
             try:
-                loop = asyncio.get_running_loop()
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    install = pool.submit(asyncio.run, _install()).result()
-            except RuntimeError:
-                install = asyncio.run(_install())
+                try:
+                    asyncio.get_running_loop()
+                    in_loop = True
+                except RuntimeError:
+                    in_loop = False
+                if in_loop:
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                        install = pool.submit(asyncio.run, _install()).result(timeout=45)
+                else:
+                    install = asyncio.run(_install())
+            except Exception as exc:
+                raise VpnError(f"Edge handshake failed for {sid}: {exc}") from exc
 
             p = install.profile
             edges = [_clean_edge(x) for x in (install.response.get("edges") or [])]
@@ -444,13 +470,17 @@ class VpnManager:
     def _bridge(self, args: list[str], timeout: float = 60) -> str:
         if self._bridge_fn:
             return self._bridge_fn(args)
+        native_exc: Exception | None = None
         try:
             return _native_bridge(args)
         except Exception as exc:
-            # Fallback to subprocess bridge if native bridge encounters an unexpected issue
-            pass
+            native_exc = exc
         py = self._python()
         if not Path(py).exists():
+            if native_exc is not None:
+                if isinstance(native_exc, VpnError):
+                    raise native_exc
+                raise VpnError(f"VPN engine error: {native_exc}") from native_exc
             raise VpnError(f"NinjaVPN python not found: {py} (set vpn.ninjavpn_dir or vpn.python)")
         src = Path(self.s.ninjavpn_dir).expanduser() / "src"
         env = {**os.environ, "PYTHONPATH": str(src) + os.pathsep + os.environ.get("PYTHONPATH", "")}
@@ -582,7 +612,11 @@ class VpnManager:
 
         if conn_ok:
             dns_ok = True
+            t_probe = time.perf_counter()
             ip = _probe_exit_ip(self.s.http_port, timeout=min(3.0, timeout))
+            probe_ms = round((time.perf_counter() - t_probe) * 1000)
+            if ip and latency_ms < 5:
+                latency_ms = max(1, probe_ms)
         else:
             err = f"Proxy CONNECT to {target} failed or timed out ({timeout}s)"
 
@@ -627,14 +661,14 @@ class VpnManager:
         if settle > 0 and not self._bridge_fn:
             time.sleep(settle)
 
+        self.current = sid
         if self.s.health_target:
             check_res = self.verify(target=self.s.health_target)
             if getattr(self.s, "verify_on_rotate", True) and not check_res.get("ok"):
                 self._kill()
+                self.current = ""
                 err_msg = check_res.get("error") or f"tunnel via {sid} does not pass traffic"
                 raise VpnError(err_msg)
-
-        self.current = sid
 
     def running(self) -> bool:
         if self._proc is not None:
@@ -710,8 +744,13 @@ class VpnManager:
             self.last_rotate = self._clock()
             if ok:
                 self.rotations += 1
-                if getattr(self.s, "verify_on_rotate", True):
+                if getattr(self.s, "verify_on_rotate", True) and (self.last_check or {}).get("server") != self.current:
                     self.verify()
+                try:
+                    from .dsh import clear_opencode_free_limited
+                    clear_opencode_free_limited()
+                except Exception:
+                    pass
                 rec = {
                     "t": self.last_rotate,
                     "from": old,
@@ -736,8 +775,13 @@ class VpnManager:
                 self.last_error = str(exc)
                 return False
             self.last_error, self.preferred = "", sid
-            if getattr(self.s, "verify_on_rotate", True):
+            if getattr(self.s, "verify_on_rotate", True) and (self.last_check or {}).get("server") != self.current:
                 self.verify()
+            try:
+                from .dsh import clear_opencode_free_limited
+                clear_opencode_free_limited()
+            except Exception:
+                pass
             self._save()
             return True
 
@@ -745,12 +789,19 @@ class VpnManager:
         with self._lock:
             self.enabled = on
             self._save()
+            if not self._bridge_fn:
+                _reap_stale_opencode_service()
             if not on:
                 self.stop()
                 return True
-            if not self._bridge_fn:
-                _reap_stale_opencode_service()
-            return self.ensure()
+            ok = self.ensure()
+            if ok:
+                try:
+                    from .dsh import clear_opencode_free_limited
+                    clear_opencode_free_limited()
+                except Exception:
+                    pass
+            return ok
 
     def set_auto_switch(self, on: bool) -> bool:
         with self._lock:
@@ -763,6 +814,8 @@ class VpnManager:
             if self.current:
                 self.preferred = self.current
             self._kill()
+            if not self._bridge_fn:
+                _reap_stale_opencode_service()
             self.current = ""
 
     def is_limit(self, text: str) -> bool:
@@ -819,7 +872,7 @@ _MGR: tuple[tuple, VpnManager] | None = None
 def get_vpn(cfg: SwarmConfig) -> VpnManager:
     global _MGR
     s = cfg.vpn
-    sig = (s.provider, s.ninjavpn_dir, s.python, s.xray_path, s.http_port, s.socks_port)
+    sig = (str(vpn_state_path()), s.provider, s.ninjavpn_dir, s.python, s.xray_path, s.http_port, s.socks_port)
     if _MGR is None or _MGR[0] != sig:
         if _MGR is not None:
             _MGR[1].stop()

@@ -521,7 +521,12 @@ class Orchestrator:
                 res, done_api = api_res, api_res.ok
                 err_combo = res.errors + "\n" + res.output
                 if not res.ok and re.search(r"Free usage limit reached|FreeUsageLimitError|QuotaExceeded", err_combo, re.I):
-                    if is_opencode_free_model(mdl):
+                    can_try_vpn = bool(
+                        vpn.auto_switch_on_limits
+                        and getattr(self.cfg.vpn, "prefer_vpn_before_model_switch", True)
+                        and (vpn.enabled or getattr(self.cfg.vpn, "auto_enable_on_limit", True))
+                    )
+                    if is_opencode_free_model(mdl) and not can_try_vpn:
                         mark_opencode_free_limited()
                     done_api = False
                     break
@@ -593,6 +598,8 @@ class Orchestrator:
         eff = self.sel.effort or getattr(self.cfg, "effort", "")
         while not done_api and attempt <= oc.retries:
             att_flag = caps.attach_flag(oc)
+            if vpn.enabled or is_kilo_model(mdl) or is_dsh_model(mdl):
+                use_server = False
             if keyrun:
                 await keyrun.next_key()
             used_vpn = vpn.current
@@ -659,16 +666,52 @@ class Orchestrator:
             if not res.ok and keyrun and await keyrun.failed(text[-3000:]):
                 self._line_cb(agent_id, "OpenRouter key limit/credits/auth problem - retrying with the next key", True)
                 continue
+            is_free_quota_exceeded = bool(
+                not res.ok and re.search(r"Free usage limit reached|FreeUsageLimitError|QuotaExceeded|model_not_found", text, re.I)
+            )
+            prefer_vpn_first = bool(getattr(self.cfg.vpn, "prefer_vpn_before_model_switch", True))
+            can_auto_vpn = bool(vpn.enabled or getattr(self.cfg.vpn, "auto_enable_on_limit", True))
+            if (
+                not res.ok
+                and can_auto_vpn
+                and vpn.auto_switch_on_limits
+                and (vpn.is_limit(text[-3000:]) or is_free_quota_exceeded)
+                and (prefer_vpn_first or not is_free_quota_exceeded)
+                and vpn_rotations < min(3, max(1, self.cfg.vpn.max_rotations_per_request))
+            ):
+                vpn_rotations += 1
+                self._line_cb(agent_id, "-> Лимит тарифа / провайдера обнаружен! Переключаю VPN-сервер для обхода...", True)
+                if not vpn.enabled:
+                    rotated = await asyncio.to_thread(vpn.set_enabled, True)
+                else:
+                    rotated = await asyncio.to_thread(vpn.rotate, "provider/free limit (runner)", True, used_vpn)
+                if rotated:
+                    use_server = False
+                    if self.pool:
+                        await self.pool.close()
+                        self.pool.api_bad = False
+                    if is_free_quota_exceeded:
+                        from .dsh import clear_opencode_free_limited
+                        clear_opencode_free_limited()
+                        session_id = ""
+                        continue_session = False
+                    chk = getattr(vpn, "last_check", {})
+                    info_parts = []
+                    if chk.get("latency_ms") is not None:
+                        info_parts.append(f"{chk['latency_ms']}ms")
+                    if chk.get("exit_ip"):
+                        info_parts.append(f"IP {chk['exit_ip']}")
+                    diag = f" ({', '.join(info_parts)})" if info_parts else ""
+                    self._line_cb(agent_id, f"-> VPN-узел переключен на {vpn.current}{diag}, повторяю запрос на {mdl}", False)
+                    await self._log(f"{title}: swapped VPN server to {vpn.current}{diag} after limit")
+                    continue
             if not res.ok:
-                is_free_quota_exceeded = bool(
-                    re.search(r"Free usage limit reached|FreeUsageLimitError|QuotaExceeded|model_not_found", text, re.I)
-                )
                 if is_free_quota_exceeded and is_opencode_free_model(mdl):
                     mark_opencode_free_limited()
                 should_fallback_free = is_free_quota_exceeded or (
                     is_dsh_model(mdl) or is_kilo_model(mdl)
                 )
-                if should_fallback_free:
+                if should_fallback_free and getattr(self.cfg, "auto_model_failover", True):
                     router.record_failure(mdl, text[-300:], "rate_limit" if is_free_quota_exceeded else "model_broken")
                     next_free = next_free_fallback_model(mdl, tried_models)
                     if next_free:
@@ -684,30 +727,6 @@ class Orchestrator:
                         await self._log(f"{title}: free limit/failure on {old_mdl} -> switched to {mdl}")
                         use_server = False
                         continue
-            if (
-                not res.ok
-                and vpn.enabled
-                and vpn.auto_switch_on_limits
-                and vpn.is_limit(text[-3000:])
-                and vpn_rotations < min(2, self.cfg.vpn.max_rotations_per_request)
-            ):
-                vpn_rotations += 1
-                self._line_cb(agent_id, "-> Provider limit/rate limit detected! Swapping VPN server...", True)
-                rotated = await asyncio.to_thread(vpn.rotate, "provider limit (runner)", True, used_vpn)
-                if rotated:
-                    if use_server and self.pool:
-                        await self.pool.close()
-                        self.pool.api_bad = False
-                    chk = getattr(vpn, "last_check", {})
-                    info_parts = []
-                    if chk.get("latency_ms") is not None:
-                        info_parts.append(f"{chk['latency_ms']}ms")
-                    if chk.get("exit_ip"):
-                        info_parts.append(f"IP {chk['exit_ip']}")
-                    diag = f" ({', '.join(info_parts)})" if info_parts else ""
-                    self._line_cb(agent_id, f"-> Swapped VPN exit server to {vpn.current}{diag}, repeating request", False)
-                    await self._log(f"{title}: swapped VPN server to {vpn.current}{diag} after limit")
-                    continue
             if not res.ok and runner.server_url and re.search(r"ECONNREFUSED|fetch failed|unable to connect|failed to connect|\b401\b|unauthori", text, re.I):
                 self.pool.mark_bad(cwd, env, sandbox)  # type: ignore[union-attr]
                 self._line_cb(agent_id, "warm server unreachable; retrying without it", True)

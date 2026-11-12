@@ -443,7 +443,7 @@ class EdgeProvider:
         private_key, public_key = _generate_wireguard_keypair()
         client = self._client
         if client is None:
-            config = self.load_config()
+            config = self.load_config(fallback_builtin=True)
             client = self._make_client(config)
             self._client = client
         preferred = self._preferred()

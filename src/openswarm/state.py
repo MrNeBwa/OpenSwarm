@@ -85,10 +85,30 @@ def apply_state(cfg: SwarmConfig, state: dict[str, Any]) -> bool:
     if isinstance(eff, str) and eff in EFFORTS:
         cfg.effort = eff
         restored = True
+    autorot = state.get("autorotation")
+    if isinstance(autorot, dict):
+        if isinstance(autorot.get("auto_model_failover"), bool):
+            cfg.auto_model_failover = autorot["auto_model_failover"]
+            restored = True
+        if isinstance(autorot.get("auto_enable_on_limit"), bool):
+            cfg.vpn.auto_enable_on_limit = autorot["auto_enable_on_limit"]
+            restored = True
+        if isinstance(autorot.get("prefer_vpn_before_model_switch"), bool):
+            cfg.vpn.prefer_vpn_before_model_switch = autorot["prefer_vpn_before_model_switch"]
+            restored = True
     return restored
 
 
-def snapshot(mode: str, planner: str, coder: str, reviewer: str, skills: list[str], priority: str = "", effort: str = "") -> dict[str, Any]:
+def snapshot(
+    mode: str,
+    planner: str,
+    coder: str,
+    reviewer: str,
+    skills: list[str],
+    priority: str = "",
+    effort: str = "",
+    autorotation: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     out: dict[str, Any] = {
         "mode": mode,
         "roles": {"planner": planner, "architect": planner, "coder": coder, "reviewer": reviewer},
@@ -98,4 +118,10 @@ def snapshot(mode: str, planner: str, coder: str, reviewer: str, skills: list[st
         out["priority"] = priority
     if effort:
         out["effort"] = effort
+    if autorotation is not None:
+        out["autorotation"] = autorotation
+    else:
+        prev = load_state().get("autorotation")
+        if isinstance(prev, dict):
+            out["autorotation"] = prev
     return out

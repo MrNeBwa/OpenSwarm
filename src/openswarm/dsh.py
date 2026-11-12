@@ -76,6 +76,12 @@ def mark_opencode_free_limited(cooldown_s: float = 1800.0) -> None:
     _OPENCODE_FREE_LIMITED_UNTIL = time.time() + cooldown_s
 
 
+def clear_opencode_free_limited() -> None:
+    """Clear the OpenCode free-tier quota cooldown (e.g. after rotating to a fresh VPN exit IP)."""
+    global _OPENCODE_FREE_LIMITED_UNTIL
+    _OPENCODE_FREE_LIMITED_UNTIL = 0.0
+
+
 def is_opencode_free_limited() -> bool:
     """Return True if OpenCode's built-in `opencode/*-free` models recently hit `Free usage limit reached`."""
     return time.time() < _OPENCODE_FREE_LIMITED_UNTIL
